@@ -1,0 +1,56 @@
+{
+  "name": "poker-settlements",
+  "version": "6.1.0",
+  "private": true,
+  "description": "Poker Settlements desktop app (Histórico via arquivo + logging)",
+  "main": "electron/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "electron": "cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
+    "dist": "electron-builder --win nsis",
+    "dist:portable": "electron-builder --win portable"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "vite-plugin-pwa": "^1.0.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
+    "autoprefixer": "^10.4.18",
+    "cross-env": "^7.0.3",
+    "electron": "^28.2.0",
+    "electron-builder": "^24.13.3",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "vite": "^5.0.10"
+  },
+  "build": {
+    "appId": "br.com.luis.poker",
+    "productName": "Poker Settlements",
+    "files": [
+      "renderer/**",
+      "electron/**",
+      "node_modules/**",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "build"
+    },
+    "artifactName": "Poker-Settlements-${version}-setup.${ext}",
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "sign": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false
+    }
+  }
+}
