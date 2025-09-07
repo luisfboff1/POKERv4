@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from './supabaseClient';
+import { Bar } from 'react-chartjs-2';
+import { Chart, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js';
+Chart.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 const currencySymbols = { BRL: "R$", USD: "$", EUR: "€" };
 const uid = () =>
@@ -102,6 +105,37 @@ function PokerSettlementsApp({ user }) {
   const [currency, setCurrency] = useLocalStorage("poker_currency", "BRL");
   const [tab, setTab] = useLocalStorage("poker_active_tab", "sessao");
   const [note, setNote] = useState("");
+  const [sessionSettlements, setSessionSettlements] = useState([]);
+  // Novo: recomendações de pagamento
+  const [recommendedPayments, setRecommendedPayments] = useState([]);
+  const [recFrom, setRecFrom] = useState("");
+  const [recTo, setRecTo] = useState("");
+  const [recAmount, setRecAmount] = useState("");
+
+  // Atualiza settlements sempre que players ou recommendedPayments mudar, mas só na aba sessão
+  useEffect(() => {
+    if (tab === "sessao") {
+      // Remove recomendações inválidas (ex: jogadores removidos)
+      const validRecs = recommendedPayments.filter(r => players.find(p => p.name === r.from) && players.find(p => p.name === r.to));
+      // Calcula o saldo de cada jogador considerando as recomendações
+      let tempPlayers = players.map(p => ({ ...p }));
+      validRecs.forEach(r => {
+        const payer = tempPlayers.find(p => p.name === r.from);
+        const receiver = tempPlayers.find(p => p.name === r.to);
+        if (payer && receiver) {
+          payer.cashOut -= Number(r.amount);
+          receiver.cashOut += Number(r.amount);
+        }
+      });
+      // Otimiza o restante
+      const optimized = optimizeTransfers(tempPlayers).map(t => ({ ...t, paid: false }));
+      // Junta recomendações (fixas) + otimizadas
+      setSessionSettlements([
+        ...validRecs.map(r => ({ from: r.from, to: r.to, amount: Number(r.amount), paid: false, recommended: true })),
+        ...optimized
+      ]);
+    }
+  }, [players, tab, recommendedPayments]);
 
   // Histórico via Supabase
   const [history, setHistory] = useState([]);
@@ -189,14 +223,15 @@ function PokerSettlementsApp({ user }) {
       id: uid(),
       dateISO: new Date().toISOString(),
       label: note.trim() || undefined,
-      players: players.map(p => ({ id: uid(), name: p.name, buyIns: [...p.buyIns], cashOut: +p.cashOut || 0 }))
+      players: players.map(p => ({ id: uid(), name: p.name, buyIns: [...p.buyIns], cashOut: +p.cashOut || 0 })),
+      settlements: sessionSettlements // salva settlements com status atual
     };
     try {
       const { error } = await supabase.from('sessions').insert({
         user_id: user.id,
         date_iso: snapshot.dateISO,
         label: snapshot.label,
-        snapshot: { players: snapshot.players }
+        snapshot: { players: snapshot.players, settlements: snapshot.settlements }
       });
       if (error) throw error;
       setNote("");
@@ -225,17 +260,48 @@ function PokerSettlementsApp({ user }) {
   const totals = useMemo(()=>summarize(players),[players]);
   const settlements = useMemo(()=>optimizeTransfers(players),[players]);
 
+  // Formulário de recomendação de pagamento
+  function handleAddRecommendation(e) {
+    e.preventDefault();
+    if (!recFrom || !recTo || !recAmount || recFrom === recTo || !players.find(p => p.name === recFrom) || !players.find(p => p.name === recTo)) return;
+    setRecommendedPayments(prev => [...prev, { from: recFrom, to: recTo, amount: Number(recAmount) }]);
+    setRecFrom(""); setRecTo(""); setRecAmount("");
+  }
+
+  // Dark mode toggle
+  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark');
+  useEffect(() => {
+    if (dark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [dark]);
+
   return (
-    <div className="min-h-screen w-full bg-slate-50 text-slate-900 p-6">
-      <div className="mx-auto max-w-6xl space-y-5">
-        <header className="flex items-center justify-between">
-          <h1 className="text-2xl md:text-3xl font-semibold">Poker — Buy-ins, Cash-out, Histórico & Ranking</h1>
+    <div className="min-h-screen w-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2 sm:p-6">
+      <div className="mx-auto max-w-[98vw] space-y-5">
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-3xl">🂡</span>
+            <h1 className="text-2xl md:text-3xl font-semibold leading-tight">Home Game</h1>
+          </div>
           <div className="flex gap-2 items-center">
-            <span className="text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-700">
+            <span className="text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200">
               Persistência: Supabase
             </span>
+            {/* Botão de modo escuro/claro */}
+            <button
+              onClick={() => setDark(d => !d)}
+              className="rounded-full border px-2 py-1 bg-white dark:bg-slate-800 shadow text-xl flex items-center"
+              title={dark ? 'Modo claro' : 'Modo escuro'}
+            >
+              {dark ? '🌞' : '🌙'}
+            </button>
             <label className="text-sm">Moeda</label>
-            <select value={currency} onChange={e=>setCurrency(e.target.value)} className="rounded-xl border px-3 py-1.5 shadow-sm bg-white">
+            <select value={currency} onChange={e=>setCurrency(e.target.value)} className="rounded-xl border px-3 py-1.5 shadow-sm bg-white dark:bg-slate-800 dark:text-slate-100">
               {Object.keys(currencySymbols).map(c=>(<option key={c} value={c}>{c}</option>))}
             </select>
             <button onClick={resetAll} className="rounded-2xl bg-red-600 text-white px-4 py-2 shadow hover:opacity-90" title="Limpar sessão">
@@ -244,10 +310,10 @@ function PokerSettlementsApp({ user }) {
           </div>
         </header>
 
-        <nav className="flex gap-2">
-          {[{id:"sessao",label:"Sessão"},{id:"historico",label:"Histórico"},{id:"ranking",label:"Ranking"}].map(t=>(
+        <nav className="flex gap-2 overflow-x-auto">
+          {[{id:"sessao",label:"Sessão"},{id:"historico",label:"Histórico"},{id:"ranking",label:"Ranking"},{id:"dashboard",label:"Dashboard"}].map(t=>(
             <button key={t.id} onClick={()=>setTab(t.id)}
-              className={`px-4 py-2 rounded-2xl border shadow-sm ${tab===t.id?"bg-slate-900 text-white":"bg-white"}`}>
+              className={`px-4 py-2 rounded-2xl border shadow-sm whitespace-nowrap ${tab===t.id?"bg-slate-900 text-white":"bg-white"}`}>
               {t.label}
             </button>
           ))}
@@ -268,6 +334,39 @@ function PokerSettlementsApp({ user }) {
                 nameInputRef={nameInputRef}
                 currencySymbol={currencySymbols[currency]}
               />
+              {/* Formulário de recomendação de pagamento */}
+              <form onSubmit={handleAddRecommendation} className="flex flex-wrap gap-2 items-end mt-4 bg-white p-4 rounded-2xl shadow">
+                <div>
+                  <label className="block text-xs mb-1">Quem paga</label>
+                  <select value={recFrom} onChange={e=>setRecFrom(e.target.value)} className="rounded-xl border px-3 py-2 min-w-[120px]">
+                    <option value="">Selecione</option>
+                    {players.map(p=>(<option key={p.name} value={p.name}>{p.name}</option>))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs mb-1">Quem recebe</label>
+                  <select value={recTo} onChange={e=>setRecTo(e.target.value)} className="rounded-xl border px-3 py-2 min-w-[120px]">
+                    <option value="">Selecione</option>
+                    {players.map(p=>(<option key={p.name} value={p.name}>{p.name}</option>))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs mb-1">Valor</label>
+                  <input type="number" min="0.01" step="0.01" value={recAmount} onChange={e=>setRecAmount(e.target.value)} className="rounded-xl border px-3 py-2 w-24" placeholder="0,00" />
+                </div>
+                <button type="submit" className="rounded-2xl bg-emerald-600 text-white px-4 py-2 shadow">Adicionar recomendação</button>
+              </form>
+              {/* Lista de recomendações já feitas */}
+              {recommendedPayments.length > 0 && (
+                <div className="mt-2 bg-emerald-50 rounded-xl p-3 text-sm">
+                  <div className="font-semibold mb-1">Pagamentos recomendados:</div>
+                  <ul className="space-y-1">
+                    {recommendedPayments.map((r,i)=>(
+                      <li key={i}>{r.from} → {r.to}: {formatMoney(Number(r.amount), currencySymbols[currency])}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div className="mt-3 flex flex-wrap gap-2 items-center">
                 <input
                   value={note}
@@ -284,7 +383,11 @@ function PokerSettlementsApp({ user }) {
 
             <div className="md:col-span-1">
               <SessionSummary totals={totals} currencySymbol={currencySymbols[currency]} />
-              <OptimizerPanel settlements={settlements} currencySymbol={currencySymbols[currency]} />
+              <OptimizerPanel
+                settlements={sessionSettlements}
+                currencySymbol={currencySymbols[currency]}
+                onTogglePaid={(idx, paid) => setSessionSettlements(s => s.map((t, i) => i === idx ? { ...t, paid } : t))}
+              />
             </div>
           </section>
         )}
@@ -295,6 +398,9 @@ function PokerSettlementsApp({ user }) {
         )}
 
         {tab==="ranking" && (<RankingPanel history={history} currencySymbol={currencySymbols[currency]} />)}
+        {tab==="dashboard" && (
+          <DashboardPanel history={history} currencySymbol={currencySymbols[currency]} />
+        )}
       </div>
     </div>
   );
@@ -304,9 +410,11 @@ function PlayersEditor({
   players, onAddPlayer, onRemovePlayer, onAddBuyIn, onRemoveBuyIn, onSetCashOut,
   name, setName, nameInputRef, currencySymbol
 }){
+  // Detecta se está em mobile
+  const isMobile = window.innerWidth < 640;
   return (
     <div className="space-y-3">
-      <div className="rounded-2xl bg-white p-4 shadow">
+      <div className="rounded-2xl bg-white dark:bg-slate-800 p-4 shadow">
         <h2 className="text-lg font-semibold mb-3">Jogadores</h2>
         <div className="flex gap-2">
           <input
@@ -317,46 +425,87 @@ function PlayersEditor({
             onChange={e=>setName(e.target.value)}
             onKeyDown={e=>e.key==="Enter"&&onAddPlayer()}
           />
-          <button onClick={onAddPlayer} className="rounded-2xl bg-slate-900 text-white px-4 py-2 shadow">
+          <button onClick={onAddPlayer} className="rounded-2xl bg-slate-900 text-white px-4 py-2 shadow whitespace-nowrap">
             Adicionar
           </button>
         </div>
       </div>
-
-      <div className="rounded-2xl bg-white p-4 shadow overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="text-left text-slate-600">
-            <tr><th className="py-2">Jogador</th><th className="py-2">Buy-ins</th><th className="py-2">Total Buy-in</th><th className="py-2">Cash-out</th><th className="py-2">Net</th><th className="py-2"></th></tr>
-          </thead>
-          <tbody>
-            {players.length===0 && (<tr><td colSpan={6} className="text-center py-6 text-slate-500">Adicione jogadores para começar</td></tr>)}
-            {players.map(p=>{
-              const totalBuy=p.buyIns.reduce((a,b)=>a+b,0); const net=(p.cashOut||0)-totalBuy;
+      {/* Mobile: cards, Desktop: tabela */}
+      <div className="rounded-2xl bg-white dark:bg-slate-800 p-4 shadow">
+        {isMobile ? (
+          <div className="space-y-4">
+            {players.length === 0 && (
+              <div className="text-center py-6 text-slate-500">Adicione jogadores para começar</div>
+            )}
+            {players.map(p => {
+              const totalBuy = p.buyIns.reduce((a, b) => a + b, 0);
+              const net = (p.cashOut || 0) - totalBuy;
               return (
-                <tr key={p.id} className="border-t last:border-b align-top">
-                  <td className="py-2 font-medium">{p.name}</td>
-                  <td className="py-2 space-y-2">
-                    <div className="flex flex-wrap gap-2">
-                      {p.buyIns.map((b,i)=>(
-                        <span key={i} className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2 py-1">
-                          {formatMoney(b, currencySymbol)}
-                          <button onClick={()=>onRemoveBuyIn(p.id,i)} className="text-rose-600 hover:text-rose-700" title="Remover este buy-in">×</button>
-                        </span>
-                      ))}
-                    </div>
-                    <AddAmount label="Add buy-in" onAdd={(amt)=>onAddBuyIn(p.id, amt)} />
-                  </td>
-                  <td className="py-2">{formatMoney(totalBuy, currencySymbol)}</td>
-                  <td className="py-2"><NumberInput value={p.cashOut||0} onChange={v=>onSetCashOut(p.id, v)} placeholder="0,00" /></td>
-                  <td className={`py-2 font-semibold ${net>=0?"text-emerald-600":"text-rose-600"}`}>{formatMoney(net, currencySymbol)}</td>
-                  <td className="py-2 text-right">
-                    <button onClick={()=>onRemovePlayer(p.id)} className="text-rose-600 hover:underline">Remover</button>
-                  </td>
-                </tr>
+                <div key={p.id} className="rounded-xl border p-3 shadow-sm space-y-2">
+                  <div className="font-medium text-base">{p.name}</div>
+                  <div className="text-sm text-slate-600">Buy-ins: {p.buyIns.map((b, i) => (
+                    <span key={i} className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2 py-1 mr-1">
+                      {formatMoney(b, currencySymbol)}
+                      <button onClick={() => onRemoveBuyIn(p.id, i)} className="text-rose-600 hover:text-rose-700" title="Remover este buy-in">×</button>
+                    </span>
+                  ))}</div>
+                  <div className="flex gap-2 items-center">
+                    <AddAmount label="Adicionar buy-in" onAdd={amt => onAddBuyIn(p.id, amt)} />
+                  </div>
+                  <div className="text-sm">Total Buy-in: <span className="font-semibold">{formatMoney(totalBuy, currencySymbol)}</span></div>
+                  <div className="text-sm">Cash-out: <NumberInput value={p.cashOut || 0} onChange={v => onSetCashOut(p.id, v)} placeholder="0,00" /></div>
+                  <div className={`text-sm font-semibold ${net >= 0 ? "text-emerald-600" : "text-rose-600"}`}>Lucro Líquido: {formatMoney(net, currencySymbol)}</div>
+                  <div className="text-right">
+                    <button onClick={() => onRemovePlayer(p.id)} className="text-rose-600 hover:underline">Remover</button>
+                  </div>
+                </div>
               );
             })}
-          </tbody>
-        </table>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm table-fixed">
+              <thead className="text-left text-slate-600">
+                <tr>
+                  <th className="py-2 w-32 whitespace-normal">Jogador</th>
+                  <th className="py-2 w-56 whitespace-normal">Buy-ins</th>
+                  <th className="py-2 w-20 whitespace-normal">Buy-in</th>
+                  <th className="py-2 w-24 whitespace-normal">Cash</th>
+                  <th className="py-2 w-20 whitespace-normal">Net</th>
+                  <th className="py-2 w-20"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {players.length === 0 && (<tr><td colSpan={6} className="text-center py-6 text-slate-500">Adicione jogadores para começar</td></tr>)}
+                {players.map(p => {
+                  const totalBuy = p.buyIns.reduce((a, b) => a + b, 0); const net = (p.cashOut || 0) - totalBuy;
+                  return (
+                    <tr key={p.id} className="border-t last:border-b align-top">
+                      <td className="py-2 font-medium">{p.name}</td>
+                      <td className="py-2 space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {p.buyIns.map((b, i) => (
+                            <span key={i} className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2 py-1">
+                              {formatMoney(b, currencySymbol)}
+                              <button onClick={() => onRemoveBuyIn(p.id, i)} className="text-rose-600 hover:text-rose-700" title="Remover este buy-in">×</button>
+                            </span>
+                          ))}
+                        </div>
+                        <AddAmount label={<span className="whitespace-nowrap">Adicionar buy-in</span>} onAdd={amt => onAddBuyIn(p.id, amt)} />
+                      </td>
+                      <td className="py-2">{formatMoney(totalBuy, currencySymbol)}</td>
+                      <td className="py-2"><NumberInput value={p.cashOut || 0} onChange={v => onSetCashOut(p.id, v)} placeholder="0,00" /></td>
+                      <td className={`py-2 font-semibold ${net >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{formatMoney(net, currencySymbol)}</td>
+                      <td className="py-2 text-right">
+                        <button onClick={() => onRemovePlayer(p.id)} className="text-rose-600 hover:underline">Remover</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -379,7 +528,7 @@ function AddAmount({ onAdd, label }){
   return (
     <div className="flex gap-2 items-center">
       <input type="number" inputMode="decimal" value={v} onChange={e=>setV(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter') commit(); }} placeholder="valor" step="0.01" min="0" className="w-28 rounded-xl border px-3 py-2" />
-      <button onClick={commit} className="rounded-2xl bg-slate-900 text-white px-3 py-2">{label ?? 'Adicionar'}</button>
+      <button onClick={commit} className="rounded-2xl bg-slate-900 text-white px-3 py-2 whitespace-nowrap">{label ?? 'Adicionar buy-in'}</button>
       <div className="flex gap-1">{[20,50,100,200].map(x=>(<button key={x} onClick={()=>onAdd(x)} className="rounded-xl border px-2 py-1 text-xs hover:bg-slate-50">+{x}</button>))}</div>
     </div>
   );
@@ -387,7 +536,7 @@ function AddAmount({ onAdd, label }){
 
 function SessionSummary({ totals, currencySymbol }){
   return (
-    <div className="rounded-2xl bg-white p-4 shadow space-y-2 mb-4">
+    <div className="rounded-2xl bg-white dark:bg-slate-800 p-4 shadow space-y-2 mb-4">
       <h2 className="text-lg font-semibold">Resumo</h2>
       <Row label="Total Buy-ins" value={formatMoney(totals.totalBuyIn, currencySymbol)} />
       <Row label="Total Cash-out" value={formatMoney(totals.totalCashOut, currencySymbol)} />
@@ -398,14 +547,27 @@ function SessionSummary({ totals, currencySymbol }){
 }
 function Row({label,value}){ return (<div className="flex items-center justify-between"><span className="text-slate-600">{label}</span><span className="font-semibold">{value}</span></div>); }
 
-function OptimizerPanel({ settlements, currencySymbol }){
+function OptimizerPanel({ settlements, currencySymbol, sessionId, onTogglePaid }){
   const totalTransfers=settlements.length; const totalVolume=settlements.reduce((a,t)=>a+t.amount,0);
   return (
-    <div className="rounded-2xl bg-white p-4 shadow space-y-3">
+    <div className="rounded-2xl bg-white dark:bg-slate-800 p-4 shadow space-y-3">
       <h2 className="text-lg font-semibold">Otimização de Transferências</h2>
       {totalTransfers===0 ? (<div className="text-slate-500">Nada a liquidar.</div>) : (<>
         <div className="text-sm text-slate-600">Sugestão com número mínimo de transferências (≤ N-1):</div>
-        <ul className="space-y-2">{settlements.map((t,i)=>(<li key={i} className="rounded-xl bg-slate-50 px-3 py-2"><span className="font-medium">{t.from}</span> paga para <span className="font-medium">{t.to}</span> {formatMoney(t.amount, currencySymbol)}</li>))}</ul>
+        <ul className="space-y-2">
+          {settlements.map((t,i)=>(
+            <li key={i} className={`rounded-xl bg-slate-50 px-3 py-2 flex items-center gap-2 ${t.recommended ? 'border-2 border-emerald-400' : ''}`}>
+              <span className="font-medium">{t.from}</span> paga para <span className="font-medium">{t.to}</span> {formatMoney(t.amount, currencySymbol)}
+              {t.recommended && <span className="text-xs text-emerald-700 ml-2">(Recomendado)</span>}
+              {typeof t.paid !== 'undefined' && (
+                <label className="flex items-center gap-1 ml-2">
+                  <input type="checkbox" checked={!!t.paid} onChange={()=>onTogglePaid && onTogglePaid(i, !t.paid)} />
+                  <span className="text-xs">Pago?</span>
+                </label>
+              )}
+            </li>
+          ))}
+        </ul>
         <div className="text-sm text-slate-600 pt-2">{totalTransfers} transferência(s), volume total {formatMoney(totalVolume, currencySymbol)}</div>
       </>)}
     </div>
@@ -419,7 +581,32 @@ function ImportExport({ players, setPlayers }){
 }
 
 function HistoryPanel({ history, currencySymbol, onDelete, onReload }){
-  if(history.length===0) return (<div className="rounded-2xl bg-white p-6 shadow">Nenhuma sessão salva ainda. Volte na aba Sessão e clique em "Salvar sessão".</div>);
+  const [expanded, setExpanded] = useState(null); // id da sessão expandida
+  const [editSettlements, setEditSettlements] = useState({}); // { [sessionId]: settlements[] }
+
+  // Atualiza settlements editáveis ao expandir uma sessão
+  function handleExpand(sessionId, settlements) {
+    if (expanded !== sessionId && settlements) {
+      setEditSettlements(prev => ({ ...prev, [sessionId]: settlements.map(t => ({ ...t })) }));
+    }
+    setExpanded(expanded === sessionId ? null : sessionId);
+  }
+
+  async function handleSaveSettlements(sessionId) {
+    const settlements = editSettlements[sessionId];
+    // Buscar snapshot atual
+    const { data, error } = await supabase.from('sessions').select('snapshot').eq('id', sessionId).single();
+    if (error) { alert('Erro ao buscar sessão: ' + error.message); return; }
+    const snapshot = data.snapshot;
+    snapshot.settlements = settlements;
+    // Atualizar no banco
+    const { error: upError } = await supabase.from('sessions').update({ snapshot }).eq('id', sessionId);
+    if (upError) { alert('Erro ao atualizar pagamentos: ' + upError.message); return; }
+    onReload && onReload();
+    alert('Alterações salvas!');
+  }
+
+  if(history.length===0) return (<div className="rounded-2xl bg-white dark:bg-slate-800 p-6 shadow">Nenhuma sessão salva ainda. Volte na aba Sessão e clique em "Salvar sessão".</div>);
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
@@ -427,8 +614,10 @@ function HistoryPanel({ history, currencySymbol, onDelete, onReload }){
       </div>
       {history.map(s=>{
         const totals=summarize(s.players); const date=new Date(s.dateISO); const label=s.label?` — ${s.label}`:"";
+        const settlements = s.raw.snapshot?.settlements || [];
+        const isOpen = expanded === s.id;
         return (
-          <div key={s.id} className="rounded-2xl bg-white p-4 shadow">
+          <div key={s.id} className="rounded-2xl bg-white dark:bg-slate-800 p-4 shadow space-y-2">
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-semibold">{date.toLocaleDateString()} {date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}{label}</div>
@@ -436,8 +625,8 @@ function HistoryPanel({ history, currencySymbol, onDelete, onReload }){
               </div>
               <button onClick={()=>onDelete(s.id)} className="text-rose-600 hover:underline">Excluir</button>
             </div>
-            <details className="mt-2">
-              <summary className="cursor-pointer text-slate-700">Ver detalhes</summary>
+            <details open={isOpen}>
+              <summary className="cursor-pointer text-slate-700" onClick={e => { e.preventDefault(); handleExpand(s.id, settlements); }}>Ver detalhes</summary>
               <div className="overflow-x-auto mt-2">
                 <table className="w-full text-sm">
                   <thead className="text-left text-slate-600"><tr><th className="py-1">Jogador</th><th>Buy-ins</th><th>Total Buy-in</th><th>Cash-out</th><th>Net</th></tr></thead>
@@ -453,6 +642,30 @@ function HistoryPanel({ history, currencySymbol, onDelete, onReload }){
                   </tbody>
                 </table>
               </div>
+              {/* NOVO: Exibir settlements se existirem */}
+              {isOpen && editSettlements[s.id] && editSettlements[s.id].length > 0 && (
+                <div className="mt-4">
+                  <h3 className="font-semibold mb-2">Transferências (Otimização)</h3>
+                  <ul className="space-y-2">
+                    {editSettlements[s.id].map((t, i) => (
+                      <li key={i} className="rounded-xl bg-slate-50 px-3 py-2 flex items-center gap-2">
+                        <span className="font-medium">{t.from}</span> paga para <span className="font-medium">{t.to}</span> {formatMoney(t.amount, currencySymbol)}
+                        <label className="flex items-center gap-1 ml-2">
+                          <input type="checkbox" checked={!!t.paid} onChange={e=>{
+                            e.stopPropagation();
+                            setEditSettlements(prev => ({
+                              ...prev,
+                              [s.id]: prev[s.id].map((tt, idx) => idx === i ? { ...tt, paid: !tt.paid } : tt)
+                            }));
+                          }} />
+                          <span className="text-xs">Pago?</span>
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                  <button onClick={()=>handleSaveSettlements(s.id)} className="mt-3 rounded-2xl bg-emerald-600 text-white px-4 py-2 shadow">Salvar alterações</button>
+                </div>
+              )}
             </details>
           </div>
         );
@@ -465,25 +678,45 @@ function RankingPanel({ history, currencySymbol }){
   const stats = buildRanking(history);
   const totalSessions = history.length || 1;
   const rows = Object.values(stats).sort((a,b)=>b.net-a.net);
+  const [expand, setExpand] = useState(false);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
   return (
-    <div className="rounded-2xl bg-white p-4 shadow overflow-x-auto">
+    <div className="rounded-2xl bg-white dark:bg-slate-800 p-4 shadow overflow-x-auto">
       <h2 className="text-lg font-semibold mb-3">Ranking (Histórico)</h2>
-      {rows.length===0 ? (<div className="text-slate-500">Sem dados ainda — salve algumas sessões na aba Histórico.</div>) : (
+      {rows.length===0 ? (
+        <div className="text-slate-500 dark:text-slate-400">Sem dados ainda — salve algumas sessões na aba Histórico.</div>
+      ) : (
+        <>
         <table className="w-full text-sm">
-          <thead className="text-left text-slate-600"><tr><th className="py-2">Jogador</th><th className="py-2">Participações</th><th className="py-2">% do total</th><th className="py-2">Buy-ins (R$)</th><th className="py-2">Premiações (R$)</th><th className="py-2">Lucro Líquido (R$)</th></tr></thead>
+          <thead className="text-left text-slate-600 dark:text-slate-300">
+            <tr>
+              <th className="py-2">Jogador</th>
+              <th className="py-2">Participações</th>
+              {(!isMobile || expand) && <th className="py-2">% do total</th>}
+              {(!isMobile || expand) && <th className="py-2">Buy-ins</th>}
+              {(!isMobile || expand) && <th className="py-2">Premiações</th>}
+              <th className="py-2">Lucro Líquido</th>
+            </tr>
+          </thead>
           <tbody>
             {rows.map(r=>(
-              <tr key={r.name} className="border-t">
+              <tr key={r.name} className="border-t dark:border-slate-700">
                 <td className="py-2 font-medium">{r.name}</td>
                 <td className="py-2">{r.participations}</td>
-                <td className="py-2">{((r.participations/totalSessions)*100).toFixed(0)}%</td>
-                <td className="py-2">{formatMoney(r.totalBuyIns, currencySymbol)}</td>
-                <td className="py-2">{formatMoney(r.totalCashOut, currencySymbol)}</td>
-                <td className={`py-2 font-semibold ${r.net>=0?"text-emerald-600":"text-rose-600"}`}>{formatMoney(r.net, currencySymbol)}</td>
+                {(!isMobile || expand) && <td className="py-2">{((r.participations/totalSessions)*100).toFixed(0)}%</td>}
+                {(!isMobile || expand) && <td className="py-2">{formatMoney(r.totalBuyIns, currencySymbol)}</td>}
+                {(!isMobile || expand) && <td className="py-2">{formatMoney(r.totalCashOut, currencySymbol)}</td>}
+                <td className={`py-2 font-semibold ${r.net>=0?"text-emerald-600 dark:text-emerald-400":"text-rose-600 dark:text-rose-400"}`}>{formatMoney(r.net, currencySymbol)}</td>
               </tr>
             ))}
           </tbody>
         </table>
+        {isMobile && (
+          <button onClick={()=>setExpand(e=>!e)} className="mt-2 text-xs underline text-emerald-700 dark:text-emerald-300">
+            {expand ? 'Ver menos' : 'Ver mais'}
+          </button>
+        )}
+        </>
       )}
     </div>
   );
@@ -516,4 +749,58 @@ function buildRanking(history){
     present.forEach(nm=>{ map[nm].participations += 1; });
   }
   return map;
+}
+
+// DashboardPanel: novo componente para o gráfico
+function DashboardPanel({ history, currencySymbol }) {
+  // Ranking já existe, vamos usar buildRanking
+  const stats = buildRanking(history);
+  const rows = Object.values(stats).sort((a,b)=>b.net-a.net);
+  const data = {
+    labels: rows.map(r => r.name),
+    datasets: [
+      {
+        label: 'Lucro Líquido',
+        data: rows.map(r => r.net),
+        backgroundColor: rows.map(r => r.net >= 0 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(239, 68, 68, 0.7)'),
+      },
+    ],
+  };
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => `${currencySymbol} ${ctx.parsed.y.toLocaleString(undefined,{minimumFractionDigits:2})}` } }
+    },
+    scales: {
+      y: { beginAtZero: true, ticks: { callback: v => `${currencySymbol} ${v}` } }
+    }
+  };
+  return (
+    <div className="rounded-2xl bg-white dark:bg-slate-800 p-4 shadow overflow-x-auto max-w-full">
+      <h2 className="text-lg font-semibold mb-3">Dashboard — Gráfico de Ranking</h2>
+      {rows.length === 0 ? (
+        <div className="text-slate-500">Sem dados ainda — salve algumas sessões na aba Histórico.</div>
+      ) : (
+        <div className="w-full max-w-[600px] mx-auto">
+          <Bar data={data} options={options} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Atualizar settlements no banco
+async function updateSettlementPaid(sessionId, idx, paid) {
+  // Buscar sessão atual
+  const { data, error } = await supabase.from('sessions').select('snapshot').eq('id', sessionId).single();
+  if (error) { alert('Erro ao buscar sessão: ' + error.message); return; }
+  const snapshot = data.snapshot;
+  if (!snapshot.settlements) return;
+  snapshot.settlements[idx].paid = paid;
+  // Atualizar no banco
+  const { error: upError } = await supabase.from('sessions').update({ snapshot }).eq('id', sessionId);
+  if (upError) { alert('Erro ao atualizar pagamento: ' + upError.message); }
+  // Recarregar histórico após update
+  if (typeof window.reloadHistory === 'function') window.reloadHistory();
 }
