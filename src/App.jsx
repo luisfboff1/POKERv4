@@ -113,7 +113,6 @@ function PokerSettlementsApp({ user }) {
     const { data, error } = await supabase
       .from('sessions')
       .select('*')
-      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
     if (error) {
       alert('Erro ao carregar histórico: ' + error.message);
