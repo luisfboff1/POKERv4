@@ -1,6 +1,31 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://hgmvmpzntxrdwzqvakws.supabase.co'; // Substitua pela URL do seu projeto Supabase
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhnbXZtcHpudHhyZHd6cXZha3dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxOTA3MDAsImV4cCI6MjA3Mjc2NjcwMH0.kI0Z0LCcwn48zjFVTkUCk3Pe9-zaW6QF8wuI1tnekS4'; // Substitua pela chave pública do seu projeto Supabase
+// Configuração otimizada para IPv4 (Vercel compatible)
+const supabaseUrl = 'https://jrdhftjekefbwjktbauu.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpyZGhmdGpla2VmYndqa3RiYXV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxOTAxOTcsImV4cCI6MjA3Mjc2NjE5N30.WuxY3dwgMdizjlFmeUBNmdnQm0T48Ideo320FPTY9go';
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// Configuração para IPv4 compatibility (Transaction Pooler)
+const supabaseOptions = {
+  db: {
+    schema: 'public',
+  },
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce'
+  },
+  global: {
+    headers: {
+      'x-application-name': 'poker-settlements',
+      'x-client-info': 'poker-settlements@1.0.0'
+    },
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  }
+};
+
+export const supabase = createClient(supabaseUrl, supabaseKey, supabaseOptions);
