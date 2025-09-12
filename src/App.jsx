@@ -268,6 +268,15 @@ function PokerSettlementsApp({ user }) {
   const [sessionSettlements, setSessionSettlements] = useState([]);
   // Novo: recomendações de pagamento
   const [recommendedPayments, setRecommendedPayments] = useState([]);
+  
+  // Estados para a funcionalidade da janta
+  const [dinnerData, setDinnerData] = useState({
+    totalAmount: 0,
+    payer: '',
+    divisionType: 'equal', // 'equal' ou 'custom'
+    customAmounts: {}, // {playerId: amount}
+    payments: {} // {playerId: {paid: boolean, amount: number}}
+  });
   const [recFrom, setRecFrom] = useState("");
   const [recTo, setRecTo] = useState("");
   const [recAmount, setRecAmount] = useState("");
@@ -328,6 +337,70 @@ function PokerSettlementsApp({ user }) {
       loadUsers();
     }
   }, [user, tab, isUserAdmin]);
+
+  // Carregar dados da janta quando a aba for ativada (opcional)
+  useEffect(() => {
+    if (tab === 'janta' && name) {
+      loadDinnerData();
+    }
+  }, [tab, name]);
+
+  // Função global para carregar janta para edição
+  useEffect(() => {
+    window.loadDinnerForEdit = async (dinnerId) => {
+      try {
+        // Carregar dados da janta
+        await loadDinnerData(dinnerId);
+        
+        // Ir para a aba janta
+        setTab('janta');
+        
+        alert('Janta carregada para edição!');
+      } catch (error) {
+        console.error('Erro ao carregar janta para edição:', error);
+        alert('Erro ao carregar janta para edição');
+      }
+    };
+
+    // Função global para carregar sessão para edição
+    window.loadSessionForEdit = async (sessionId) => {
+      try {
+        // Buscar dados da sessão
+        const { data, error } = await supabase
+          .from('sessions')
+          .select('*')
+          .eq('id', sessionId)
+          .single();
+
+        if (error) throw error;
+
+        // Carregar dados da sessão
+        if (data.snapshot?.players) {
+          setPlayers(data.snapshot.players);
+          setName(data.label || `Sessão ${new Date(data.date_iso).toLocaleDateString()}`);
+          setNote(data.label || '');
+          
+          // Carregar settlements se existirem
+          if (data.snapshot.settlements) {
+            setSessionSettlements(data.snapshot.settlements);
+          }
+        }
+        
+        // Ir para a aba sessão
+        setTab('sessao');
+        
+        alert('Sessão carregada para edição!');
+      } catch (error) {
+        console.error('Erro ao carregar sessão para edição:', error);
+        alert('Erro ao carregar sessão para edição');
+      }
+    };
+
+    return () => {
+      delete window.loadDinnerForEdit;
+      delete window.loadSessionForEdit;
+    };
+  }, []);
 
   // Histórico via Supabase
   const [history, setHistory] = useState([]);
@@ -449,6 +522,48 @@ function PokerSettlementsApp({ user }) {
     }
   }
 
+  // Função para excluir janta (independente ou associada a sessão)
+  async function deleteDinnerOrSession(id, isDinnerOnly = false) {
+    try {
+      if (isDinnerOnly) {
+        // Excluir apenas dados da janta
+        await deleteDinnerData(id);
+        // Recarregar histórico para atualizar a lista
+        reloadHistory();
+      } else {
+        // Excluir sessão (que pode ter dados de janta associados)
+        await deleteSession(id);
+      }
+    } catch (error) {
+      console.error('Erro ao excluir:', error);
+      alert('Erro ao excluir item');
+    }
+  }
+
+  // Função para excluir dados da janta do histórico
+  const deleteDinnerData = async (sessionId) => {
+    try {
+      // Tentar deletar do Supabase
+      const { error } = await supabase
+        .from('dinner_data')
+        .delete()
+        .eq('session_id', sessionId);
+
+      if (error && !error.message?.includes('relation "dinner_data" does not exist')) {
+        throw error;
+      }
+
+      // Deletar do localStorage também (fallback)
+      localStorage.removeItem(`dinner_data_${sessionId}`);
+      
+      alert('Dados da janta excluídos com sucesso!');
+      return true;
+    } catch (error) {
+      console.error('Erro ao excluir dados da janta:', error);
+      throw error;
+    }
+  };
+
   const totals = useMemo(()=>summarize(players),[players]);
   const settlements = useMemo(()=>optimizeTransfers(players, []),[players]);
 
@@ -497,6 +612,212 @@ function PokerSettlementsApp({ user }) {
     console.log('✅ Novo settlements:', newSettlements);
     setSessionSettlements(newSettlements);
   }
+
+  // Funções para gerenciar a janta
+  const handleDinnerTotalChange = (value) => {
+    setDinnerData(prev => ({
+      ...prev,
+      totalAmount: parseFloat(value) || 0
+    }));
+  };
+
+  const handleDinnerPayerChange = (payerId) => {
+    setDinnerData(prev => ({
+      ...prev,
+      payer: payerId
+    }));
+  };
+
+  const handleDivisionTypeChange = (type) => {
+    setDinnerData(prev => ({
+      ...prev,
+      divisionType: type,
+      customAmounts: type === 'equal' ? {} : prev.customAmounts
+    }));
+  };
+
+  const handleCustomAmountChange = (playerId, amount) => {
+    setDinnerData(prev => ({
+      ...prev,
+      customAmounts: {
+        ...prev.customAmounts,
+        [playerId]: parseFloat(amount) || 0
+      }
+    }));
+  };
+
+  const handlePaymentToggle = (playerId) => {
+    setDinnerData(prev => {
+      const currentPayment = prev.payments[playerId];
+      const amount = prev.divisionType === 'equal' 
+        ? prev.totalAmount / players.length 
+        : prev.customAmounts[playerId] || 0;
+      
+      return {
+        ...prev,
+        payments: {
+          ...prev.payments,
+          [playerId]: {
+            paid: !currentPayment?.paid,
+            amount: amount
+          }
+        }
+      };
+    });
+  };
+
+  const saveDinnerData = async () => {
+    try {
+      if (dinnerData.totalAmount <= 0) {
+        alert('Por favor, preencha o valor total da janta');
+        return;
+      }
+
+      if (players.length === 0) {
+        alert('Por favor, adicione pelo menos um jogador para a janta');
+        return;
+      }
+
+      // Gerar um ID único para a janta se não existir
+      const dinnerId = name || `dinner_${Date.now()}`;
+      
+      // Buscar dados existentes para preservar a data original
+      let originalCreatedAt = new Date().toISOString();
+      try {
+        const { data: existingData } = await supabase
+          .from('dinner_data')
+          .select('created_at')
+          .eq('session_id', dinnerId)
+          .single();
+        
+        if (existingData) {
+          originalCreatedAt = existingData.created_at;
+        }
+      } catch (e) {
+        // Se não existir, usa a data atual
+      }
+
+      // Preparar dados dos jogadores com nomes
+      const playersData = players.map(player => ({
+        id: player.id,
+        name: player.name
+      }));
+
+      const { data, error } = await supabase
+        .from('dinner_data')
+        .upsert({
+          session_id: dinnerId,
+          total_amount: dinnerData.totalAmount,
+          payer: dinnerData.payer,
+          division_type: dinnerData.divisionType,
+          custom_amounts: dinnerData.customAmounts,
+          payments: dinnerData.payments,
+          players: playersData, // Salvar dados dos jogadores com nomes
+          created_at: originalCreatedAt, // Preserva data original
+          updated_at: new Date().toISOString() // Nova data de atualização
+        }, {
+          onConflict: 'session_id'
+        });
+
+      if (error) {
+        console.error('Erro detalhado:', error);
+        throw error;
+      }
+      
+      alert('Dados da janta salvos com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar dados da janta:', error);
+      
+      // Se a tabela não existir, salvar no localStorage como fallback
+      if (error.message?.includes('relation "dinner_data" does not exist')) {
+        const dinnerId = name || `dinner_${Date.now()}`;
+        const fallbackData = {
+          session_id: dinnerId,
+          total_amount: dinnerData.totalAmount,
+          payer: dinnerData.payer,
+          division_type: dinnerData.divisionType,
+          custom_amounts: dinnerData.customAmounts,
+          payments: dinnerData.payments,
+          players: playersData, // Salvar dados dos jogadores com nomes
+          created_at: new Date().toISOString()
+        };
+        
+        localStorage.setItem(`dinner_data_${dinnerId}`, JSON.stringify(fallbackData));
+        alert('Dados salvos localmente (tabela ainda não criada no Supabase)');
+      } else {
+        alert(`Erro ao salvar dados da janta: ${error.message}`);
+      }
+    }
+  };
+
+  const loadDinnerData = async (dinnerId = null) => {
+    try {
+      const idToLoad = dinnerId || name;
+      if (!idToLoad) return;
+
+      const { data, error } = await supabase
+        .from('dinner_data')
+        .select('*')
+        .eq('session_id', idToLoad)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      if (data) {
+        setDinnerData({
+          totalAmount: data.total_amount || 0,
+          payer: data.payer || '',
+          divisionType: data.division_type || 'equal',
+          customAmounts: data.custom_amounts || {},
+          payments: data.payments || {}
+        });
+        
+        // Se há dados de jogadores salvos, carregar na sessão atual
+        if (data.players && data.players.length > 0) {
+          const loadedPlayers = data.players.map(p => ({
+            id: p.id,
+            name: p.name,
+            buyIns: [],
+            cashOut: 0
+          }));
+          setPlayers(loadedPlayers);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados da janta:', error);
+      
+      // Fallback para localStorage se a tabela não existir
+      if (error.message?.includes('relation "dinner_data" does not exist')) {
+        const idToLoad = dinnerId || name;
+        const fallbackData = localStorage.getItem(`dinner_data_${idToLoad}`);
+        if (fallbackData) {
+          try {
+            const parsed = JSON.parse(fallbackData);
+            setDinnerData({
+              totalAmount: parsed.total_amount || 0,
+              payer: parsed.payer || '',
+              divisionType: parsed.division_type || 'equal',
+              customAmounts: parsed.custom_amounts || {},
+              payments: parsed.payments || {}
+            });
+            
+            // Se há dados de jogadores salvos, carregar na sessão atual
+            if (parsed.players && parsed.players.length > 0) {
+              const loadedPlayers = parsed.players.map(p => ({
+                id: p.id,
+                name: p.name,
+                buyIns: [],
+                cashOut: 0
+              }));
+              setPlayers(loadedPlayers);
+            }
+          } catch (parseError) {
+            console.error('Erro ao fazer parse dos dados locais:', parseError);
+          }
+        }
+      }
+    }
+  };
 
   // Funções para gerenciar usuários
   async function loadUsers() {
@@ -622,7 +943,7 @@ function PokerSettlementsApp({ user }) {
         </header>
 
         <nav className="flex gap-2 overflow-x-auto">
-          {[{id:"sessao",label:"Sessão"},{id:"historico",label:"Histórico"},{id:"ranking",label:"Ranking"},{id:"dashboard",label:"Dashboard"},{id:"usuarios",label:"Usuários"}].map(t=>(
+          {[{id:"sessao",label:"Sessão"},{id:"janta",label:"Janta"},{id:"historico",label:"Histórico"},{id:"ranking",label:"Ranking"},{id:"dashboard",label:"Dashboard"},{id:"usuarios",label:"Usuários"}].map(t=>(
             <button key={t.id} onClick={()=>setTab(t.id)}
               className={`px-4 py-2 rounded-2xl border shadow-sm whitespace-nowrap ${tab===t.id?"bg-slate-900 text-white":"bg-white"}`}>
               {t.label}
@@ -725,13 +1046,28 @@ function PokerSettlementsApp({ user }) {
 
         {tab==="historico" && (
           loadingHistory ? <div>Carregando histórico...</div> :
-          <HistoryPanel history={history} currencySymbol={currencySymbols[currency]} onDelete={deleteSession} onReload={reloadHistory} />
+          <HistoryPanel history={history} currencySymbol={currencySymbols[currency]} onDelete={deleteDinnerOrSession} onReload={reloadHistory} />
         )}
 
         {tab==="ranking" && (<RankingPanel history={history} currencySymbol={currencySymbols[currency]} />)}
         {tab==="dashboard" && (
           <DashboardPanel history={history} currencySymbol={currencySymbols[currency]} />
         )}
+        {tab==="janta" && (
+          <DinnerPanel 
+            players={players}
+            dinnerData={dinnerData}
+            onTotalChange={handleDinnerTotalChange}
+            onPayerChange={handleDinnerPayerChange}
+            onDivisionTypeChange={handleDivisionTypeChange}
+            onCustomAmountChange={handleCustomAmountChange}
+            onPaymentToggle={handlePaymentToggle}
+            onSave={saveDinnerData}
+            onDelete={() => deleteDinnerData(name)}
+            currencySymbol={currencySymbols[currency]}
+          />
+        )}
+
         {tab==="usuarios" && (
           <div className="p-6">
             <div className="mb-4 p-4 bg-blue-50 rounded-lg">
@@ -1078,9 +1414,207 @@ function ImportExport({ players, setPlayers }){
   return (<div className="flex items-center gap-2"><button onClick={exportJSON} className="rounded-2xl bg-slate-900 text-white px-4 py-2 shadow">Exportar JSON</button><label className="inline-flex items-center gap-2 rounded-2xl border px-4 py-2 bg-white shadow-sm cursor-pointer"><input type="file" accept="application/json" className="hidden" onChange={importJSON} />Importar JSON</label></div>);
 }
 
+// Componente para editar janta no modal
+function EditDinnerModal({ dinnerData, onSave, onCancel }) {
+  const [formData, setFormData] = useState({
+    totalAmount: dinnerData.dinnerData?.total_amount || 0,
+    payer: dinnerData.dinnerData?.payer || '',
+    divisionType: dinnerData.dinnerData?.division_type || 'equal',
+    customAmounts: dinnerData.dinnerData?.custom_amounts || {},
+    payments: dinnerData.dinnerData?.payments || {}
+  });
+
+  // Calcular valor por pessoa
+  const valuePerPerson = formData.totalAmount / (dinnerData.players?.length || 1);
+
+  const handlePaymentToggle = (playerId) => {
+    setFormData(prev => ({
+      ...prev,
+      payments: {
+        ...prev.payments,
+        [playerId]: !prev.payments[playerId]
+      }
+    }));
+  };
+
+  const handleSave = () => {
+    onSave({
+      ...dinnerData,
+      dinnerData: {
+        ...dinnerData.dinnerData,
+        ...formData
+      }
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium mb-1">Valor Total (R$)</label>
+        <input
+          type="number"
+          step="0.01"
+          value={formData.totalAmount}
+          onChange={(e) => setFormData(prev => ({...prev, totalAmount: parseFloat(e.target.value) || 0}))}
+          className="w-full px-3 py-2 border rounded-lg"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Quem Pagou a Conta</label>
+        <select
+          value={formData.payer}
+          onChange={(e) => setFormData(prev => ({...prev, payer: e.target.value}))}
+          className="w-full px-3 py-2 border rounded-lg"
+        >
+          <option value="">Selecione...</option>
+          {dinnerData.players?.map(player => (
+            <option key={player.id} value={player.id}>
+              {player.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Tipo de Divisão</label>
+        <select
+          value={formData.divisionType}
+          onChange={(e) => setFormData(prev => ({...prev, divisionType: e.target.value}))}
+          className="w-full px-3 py-2 border rounded-lg"
+        >
+          <option value="equal">Divisão Igual</option>
+          <option value="custom">Valores Personalizados</option>
+        </select>
+      </div>
+
+      {/* Lista de jogadores com status de pagamento */}
+      <div>
+        <label className="block text-sm font-medium mb-2">Status de Pagamento dos Jogadores</label>
+        <div className="space-y-2 max-h-40 overflow-y-auto border rounded-lg p-3">
+          {dinnerData.players?.map(player => (
+            <div key={player.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+              <div className="flex items-center gap-3">
+                <span className="font-medium">{player.name}</span>
+                <span className="text-sm text-gray-600">
+                  R$ {valuePerPerson.toFixed(2).replace('.', ',')}
+                </span>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!!formData.payments[player.id]}
+                  onChange={() => handlePaymentToggle(player.id)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">
+                  {formData.payments[player.id] ? '✓ Pago' : '✗ Pendente'}
+                </span>
+              </label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex gap-2 pt-4">
+        <button
+          onClick={handleSave}
+          className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700"
+        >
+          Salvar
+        </button>
+        <button
+          onClick={onCancel}
+          className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400"
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Componente para editar sessão no modal
+function EditSessionModal({ sessionData, onSave, onCancel }) {
+  const [formData, setFormData] = useState({
+    name: sessionData.name || '',
+    note: sessionData.note || ''
+  });
+
+  const handleSave = () => {
+    onSave({
+      ...sessionData,
+      ...formData
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium mb-1">Nome da Sessão</label>
+        <input
+          type="text"
+          value={formData.name}
+          onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))}
+          className="w-full px-3 py-2 border rounded-lg"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Observações</label>
+        <textarea
+          value={formData.note}
+          onChange={(e) => setFormData(prev => ({...prev, note: e.target.value}))}
+          className="w-full px-3 py-2 border rounded-lg h-20"
+        />
+      </div>
+
+      <div className="flex gap-2 pt-4">
+        <button
+          onClick={handleSave}
+          className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700"
+        >
+          Salvar
+        </button>
+        <button
+          onClick={onCancel}
+          className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400"
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function HistoryPanel({ history, currencySymbol, onDelete, onReload }){
   const [expanded, setExpanded] = useState(null); // id da sessão expandida
   const [editSettlements, setEditSettlements] = useState({}); // { [sessionId]: settlements[] }
+  const [historyTab, setHistoryTab] = useState('jogos'); // 'jogos' ou 'jantas'
+  const [dinnerHistory, setDinnerHistory] = useState([]); // dados de janta do histórico
+  const [editModal, setEditModal] = useState(null); // {type: 'dinner'|'session', data: {...}}
+
+  // Carregar dados de janta do histórico
+  useEffect(() => {
+    const loadDinnerHistory = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('dinner_data')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error && !error.message?.includes('relation "dinner_data" does not exist')) {
+          console.error('Erro ao carregar dados de janta:', error);
+        } else if (data) {
+          setDinnerHistory(data);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados de janta:', error);
+      }
+    };
+
+    loadDinnerHistory();
+  }, []);
 
   // Atualiza settlements editáveis ao expandir uma sessão
   function handleExpand(sessionId, settlements) {
@@ -1104,70 +1638,376 @@ function HistoryPanel({ history, currencySymbol, onDelete, onReload }){
     alert('Alterações salvas!');
   }
 
+  // Filtrar histórico para jogos (sessões sem dados de janta)
+  const gamesHistory = history.filter(session => {
+    return !dinnerHistory.some(dinner => dinner.session_id === session.id);
+  });
+
+  // Filtrar histórico para jantas (sessões com dados de janta + jantas independentes)
+  const dinnersHistory = [
+    // Sessões com dados de janta
+    ...history.filter(session => {
+      return dinnerHistory.some(dinner => dinner.session_id === session.id);
+    }),
+    // Jantas independentes (sem sessão de poker)
+    ...dinnerHistory
+      .filter(dinner => !history.some(session => session.id === dinner.session_id))
+      .map(dinner => {
+        // Extrair jogadores dos dados salvos da janta
+        const playersFromDinner = [];
+        if (dinner.players && dinner.players.length > 0) {
+          // Usar dados dos jogadores salvos (com nomes)
+          dinner.players.forEach(player => {
+            const payment = dinner.payments?.[player.id];
+            playersFromDinner.push({
+              id: player.id,
+              name: player.name,
+              buyIns: [],
+              cashOut: 0,
+              dinnerPayment: payment
+            });
+          });
+        } else if (dinner.payments) {
+          // Fallback: extrair dos dados de pagamento (sem nomes)
+          Object.keys(dinner.payments).forEach(playerId => {
+            const payment = dinner.payments[playerId];
+            playersFromDinner.push({
+              id: playerId,
+              name: `Jogador ${playerId}`,
+              buyIns: [],
+              cashOut: 0,
+              dinnerPayment: payment
+            });
+          });
+        }
+        
+        // Encontrar o nome de quem pagou
+        const payerName = playersFromDinner.find(p => p.id === dinner.payer)?.name || dinner.payer;
+
+        return {
+          id: dinner.session_id,
+          dateISO: dinner.created_at,
+          label: 'Janta Independente',
+          players: playersFromDinner,
+          raw: { snapshot: { players: playersFromDinner } },
+          isDinnerOnly: true,
+          dinnerData: {
+            ...dinner,
+            payerName: payerName // Adicionar nome do pagador
+          }
+        };
+      })
+  ].sort((a, b) => new Date(b.dateISO) - new Date(a.dateISO));
+
   if(history.length===0) return (<div className="rounded-2xl bg-white dark:bg-slate-800 p-6 shadow">Nenhuma sessão salva ainda. Volte na aba Sessão e clique em "Salvar sessão".</div>);
+  
   return (
     <div className="space-y-3">
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center">
+        {/* Abas do histórico */}
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setHistoryTab('jogos')}
+            className={`px-4 py-2 rounded-2xl border shadow-sm whitespace-nowrap ${
+              historyTab === 'jogos' ? 'bg-slate-900 text-white' : 'bg-white'
+            }`}
+          >
+            🎮 Jogos ({gamesHistory.length})
+          </button>
+          <button 
+            onClick={() => setHistoryTab('jantas')}
+            className={`px-4 py-2 rounded-2xl border shadow-sm whitespace-nowrap ${
+              historyTab === 'jantas' ? 'bg-slate-900 text-white' : 'bg-white'
+            }`}
+          >
+            🍽️ Jantas ({dinnersHistory.length})
+          </button>
+        </div>
+        
         <button onClick={onReload} className="text-sm rounded-xl border px-3 py-1 bg-white shadow-sm">Recarregar histórico</button>
       </div>
-      {history.map(s=>{
-        const totals=summarize(s.players); const date=new Date(s.dateISO); const label=s.label?` — ${s.label}`:"";
-        const settlements = s.raw.snapshot?.settlements || [];
-        const isOpen = expanded === s.id;
-        return (
-          <div key={s.id} className="rounded-2xl bg-white dark:bg-slate-800 p-4 shadow space-y-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-semibold">{date.toLocaleDateString()} {date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}{label}</div>
-                <div className="text-sm text-slate-600">{s.players.length} jogador(es) • Buy-ins {formatMoney(totals.totalBuyIn, currencySymbol)} • Cash-out {formatMoney(totals.totalCashOut, currencySymbol)}</div>
-              </div>
-              <button onClick={()=>onDelete(s.id)} className="text-rose-600 hover:underline">Excluir</button>
+
+      {/* Conteúdo das abas */}
+      {historyTab === 'jogos' && (
+        <div className="space-y-3">
+          {gamesHistory.length === 0 ? (
+            <div className="rounded-2xl bg-white dark:bg-slate-800 p-6 shadow text-center">
+              <p className="text-slate-500">Nenhuma sessão de jogo encontrada.</p>
+              <p className="text-sm text-slate-400 mt-2">As sessões de jogo são aquelas sem dados de janta associados.</p>
             </div>
-            <details open={isOpen}>
-              <summary className="cursor-pointer text-slate-700" onClick={e => { e.preventDefault(); handleExpand(s.id, settlements); }}>Ver detalhes</summary>
-              <div className="overflow-x-auto mt-2">
-                <table className="w-full text-sm">
-                  <thead className="text-left text-slate-600"><tr><th className="py-1">Jogador</th><th>Buy-ins</th><th>Total Buy-in</th><th>Cash-out</th><th>Net</th></tr></thead>
-                  <tbody>
-                    {s.players.map(p=>{ const tb=p.buyIns.reduce((a,b)=>a+b,0); const net=(p.cashOut||0)-tb; return (
-                      <tr key={p.id} className="border-t">
-                        <td className="py-1">{p.name}</td>
-                        <td className="py-1">{p.buyIns.map((b,i)=>(<span key={i} className="mr-1">{formatMoney(b, currencySymbol)}</span>))}</td>
-                        <td className="py-1">{formatMoney(tb, currencySymbol)}</td>
-                        <td className="py-1">{formatMoney(p.cashOut||0, currencySymbol)}</td>
-                        <td className={`py-1 ${net>=0?"text-emerald-600":"text-rose-600"}`}>{formatMoney(net, currencySymbol)}</td>
-                      </tr>)})}
-                  </tbody>
-                </table>
-              </div>
-              {/* NOVO: Exibir settlements se existirem */}
-              {isOpen && editSettlements[s.id] && editSettlements[s.id].length > 0 && (
-                <div className="mt-4">
-                  <h3 className="font-semibold mb-2">Transferências (Otimização)</h3>
-                  <ul className="space-y-2">
-                    {editSettlements[s.id].map((t, i) => (
-                      <li key={i} className="rounded-xl bg-slate-50 px-3 py-2 flex items-center gap-2">
-                        <span className="font-medium">{t.from}</span> paga para <span className="font-medium">{t.to}</span> {formatMoney(t.amount, currencySymbol)}
-                        <label className="flex items-center gap-1 ml-2">
-                          <input type="checkbox" checked={!!t.paid} onChange={e=>{
-                            e.stopPropagation();
-                            setEditSettlements(prev => ({
-                              ...prev,
-                              [s.id]: prev[s.id].map((tt, idx) => idx === i ? { ...tt, paid: !tt.paid } : tt)
-                            }));
-                          }} />
-                          <span className="text-xs">Pago?</span>
-                        </label>
-                      </li>
-                    ))}
-                  </ul>
-                  <button onClick={()=>handleSaveSettlements(s.id)} className="mt-3 rounded-2xl bg-emerald-600 text-white px-4 py-2 shadow">Salvar alterações</button>
+          ) : (
+            gamesHistory.map(s=>{
+              const totals=summarize(s.players); const date=new Date(s.dateISO); const label=s.label?` — ${s.label}`:"";
+              const settlements = s.raw.snapshot?.settlements || [];
+              const isOpen = expanded === s.id;
+              return (
+                <div key={s.id} className="rounded-2xl bg-white dark:bg-slate-800 p-4 shadow space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-semibold">{date.toLocaleDateString()} {date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}{label}</div>
+                      <div className="text-sm text-slate-600">{s.players.length} jogador(es) • Buy-ins {formatMoney(totals.totalBuyIn, currencySymbol)} • Cash-out {formatMoney(totals.totalCashOut, currencySymbol)}</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => setEditModal({type: 'session', data: s})}
+                        className="text-blue-600 hover:underline"
+                      >
+                        Editar
+                      </button>
+                      <button onClick={()=>onDelete(s.id, false)} className="text-rose-600 hover:underline">Excluir</button>
+                    </div>
+                  </div>
+                  <details open={isOpen}>
+                    <summary className="cursor-pointer text-slate-700" onClick={e => { e.preventDefault(); handleExpand(s.id, settlements); }}>Ver detalhes</summary>
+                    <div className="overflow-x-auto mt-2">
+                      <table className="w-full text-sm">
+                        <thead className="text-left text-slate-600"><tr><th className="py-1">Jogador</th><th>Buy-ins</th><th>Total Buy-in</th><th>Cash-out</th><th>Net</th></tr></thead>
+                        <tbody>
+                          {s.players.map(p=>{ const tb=p.buyIns.reduce((a,b)=>a+b,0); const net=(p.cashOut||0)-tb; return (
+                            <tr key={p.id} className="border-t">
+                              <td className="py-1">{p.name}</td>
+                              <td className="py-1">{p.buyIns.map((b,i)=>(<span key={i} className="mr-1">{formatMoney(b, currencySymbol)}</span>))}</td>
+                              <td className="py-1">{formatMoney(tb, currencySymbol)}</td>
+                              <td className="py-1">{formatMoney(p.cashOut||0, currencySymbol)}</td>
+                              <td className={`py-1 ${net>=0?"text-emerald-600":"text-rose-600"}`}>{formatMoney(net, currencySymbol)}</td>
+                            </tr>)})}
+                        </tbody>
+                      </table>
+                    </div>
+                    {/* Exibir settlements se existirem */}
+                    {isOpen && editSettlements[s.id] && editSettlements[s.id].length > 0 && (
+                      <div className="mt-4">
+                        <h3 className="font-semibold mb-2">Transferências (Otimização)</h3>
+                        <ul className="space-y-2">
+                          {editSettlements[s.id].map((t, i) => (
+                            <li key={i} className="rounded-xl bg-slate-50 px-3 py-2 flex items-center gap-2">
+                              <span className="font-medium">{t.from}</span> paga para <span className="font-medium">{t.to}</span> {formatMoney(t.amount, currencySymbol)}
+                              <label className="flex items-center gap-1 ml-2">
+                                <input type="checkbox" checked={!!t.paid} onChange={e=>{
+                                  e.stopPropagation();
+                                  setEditSettlements(prev => ({
+                                    ...prev,
+                                    [s.id]: prev[s.id].map((tt, idx) => idx === i ? { ...tt, paid: !tt.paid } : tt)
+                                  }));
+                                }} />
+                                <span className="text-xs">Pago?</span>
+                              </label>
+                            </li>
+                          ))}
+                        </ul>
+                        <button onClick={()=>handleSaveSettlements(s.id)} className="mt-3 rounded-2xl bg-emerald-600 text-white px-4 py-2 shadow">Salvar alterações</button>
+                      </div>
+                    )}
+                  </details>
                 </div>
-              )}
-            </details>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {historyTab === 'jantas' && (
+        <div className="space-y-3">
+          {dinnersHistory.length === 0 ? (
+            <div className="rounded-2xl bg-white dark:bg-slate-800 p-6 shadow text-center">
+              <p className="text-slate-500">Nenhuma sessão de janta encontrada.</p>
+              <p className="text-sm text-slate-400 mt-2">As sessões de janta são aquelas com dados de janta associados.</p>
+            </div>
+          ) : (
+            dinnersHistory.map(s=>{
+              const totals=summarize(s.players); const date=new Date(s.dateISO); const label=s.label?` — ${s.label}`:"";
+              const settlements = s.raw.snapshot?.settlements || [];
+              const isOpen = expanded === s.id;
+              const dinnerData = s.isDinnerOnly ? s.dinnerData : dinnerHistory.find(d => d.session_id === s.id);
+              
+              return (
+                <div key={s.id} className="rounded-2xl bg-white dark:bg-slate-800 p-4 shadow space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-semibold">{date.toLocaleDateString()} {date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}{label}</div>
+                      {s.isDinnerOnly ? (
+                        <div className="text-sm text-orange-600">
+                          🍽️ Janta Independente: {formatMoney(dinnerData.total_amount, currencySymbol)}
+                          {dinnerData.payer && (
+                            <span> • Pago por: {dinnerData.payerName || dinnerData.payer}</span>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          <div className="text-sm text-slate-600">{s.players.length} jogador(es) • Buy-ins {formatMoney(totals.totalBuyIn, currencySymbol)} • Cash-out {formatMoney(totals.totalCashOut, currencySymbol)}</div>
+                          {dinnerData && (
+                            <div className="text-sm text-orange-600 mt-1">
+                              🍽️ Janta: {formatMoney(dinnerData.total_amount, currencySymbol)} • Pago por: {s.players.find(p => p.id === dinnerData.payer)?.name || 'N/A'}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      {s.isDinnerOnly && (
+                        <button 
+                          onClick={() => setEditModal({type: 'dinner', data: s})}
+                          className="text-blue-600 hover:underline"
+                        >
+                          Editar
+                        </button>
+                      )}
+                      <button onClick={()=>onDelete(s.id, s.isDinnerOnly)} className="text-rose-600 hover:underline">Excluir</button>
+                    </div>
+                  </div>
+                  <details open={isOpen}>
+                    <summary className="cursor-pointer text-slate-700" onClick={e => { e.preventDefault(); handleExpand(s.id, settlements); }}>Ver detalhes</summary>
+                    <div className="overflow-x-auto mt-2">
+                      {s.isDinnerOnly ? (
+                        // Exibição específica para jantas independentes
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-orange-800">Participantes da Janta</h4>
+                          {s.players.length > 0 ? (
+                            <div className="space-y-2">
+                              {s.players.map(p => (
+                                <div key={p.id} className="flex items-center justify-between p-2 bg-orange-50 rounded-lg">
+                                  <div className="flex items-center gap-3">
+                                    <span className="font-medium">{p.name}</span>
+                                    <span className="text-sm text-gray-600">
+                                      {currencySymbol} {p.dinnerPayment?.amount?.toFixed(2) || '0.00'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-sm font-medium ${
+                                      p.dinnerPayment?.paid ? 'text-green-600' : 'text-red-600'
+                                    }`}>
+                                      {p.dinnerPayment?.paid ? '✓ Pago' : '✗ Pendente'}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-gray-500 text-sm">Nenhum participante registrado</p>
+                          )}
+                          
+                          {/* Dados da janta */}
+                          <div className="mt-4 p-3 bg-orange-50 rounded-lg">
+                            <h3 className="font-semibold mb-2 text-orange-800">🍽️ Dados da Janta</h3>
+                            <div className="text-sm space-y-1">
+                              <div><strong>Valor total:</strong> {formatMoney(dinnerData.total_amount, currencySymbol)}</div>
+                              <div><strong>Pago por:</strong> {dinnerData.payerName || dinnerData.payer || 'N/A'}</div>
+                              <div><strong>Tipo de divisão:</strong> {dinnerData.division_type === 'equal' ? 'Divisão igual' : 'Valores personalizados'}</div>
+                              {dinnerData.division_type === 'equal' && s.players.length > 0 && (
+                                <div><strong>Valor por pessoa:</strong> {formatMoney(dinnerData.total_amount / s.players.length, currencySymbol)}</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        // Exibição normal para sessões com poker
+                        <>
+                          <table className="w-full text-sm">
+                            <thead className="text-left text-slate-600"><tr><th className="py-1">Jogador</th><th>Buy-ins</th><th>Total Buy-in</th><th>Cash-out</th><th>Net</th></tr></thead>
+                            <tbody>
+                              {s.players.map(p=>{ const tb=p.buyIns.reduce((a,b)=>a+b,0); const net=(p.cashOut||0)-tb; return (
+                                <tr key={p.id} className="border-t">
+                                  <td className="py-1">{p.name}</td>
+                                  <td className="py-1">{p.buyIns.map((b,i)=>(<span key={i} className="mr-1">{formatMoney(b, currencySymbol)}</span>))}</td>
+                                  <td className="py-1">{formatMoney(tb, currencySymbol)}</td>
+                                  <td className="py-1">{formatMoney(p.cashOut||0, currencySymbol)}</td>
+                                  <td className={`py-1 ${net>=0?"text-emerald-600":"text-rose-600"}`}>{formatMoney(net, currencySymbol)}</td>
+                                </tr>)})}
+                            </tbody>
+                          </table>
+                          
+                          {/* Dados da janta */}
+                          {dinnerData && (
+                            <div className="mt-4 p-3 bg-orange-50 rounded-lg">
+                              <h3 className="font-semibold mb-2 text-orange-800">🍽️ Dados da Janta</h3>
+                              <div className="text-sm space-y-1">
+                                <div><strong>Valor total:</strong> {formatMoney(dinnerData.total_amount, currencySymbol)}</div>
+                                <div><strong>Pago por:</strong> {s.players.find(p => p.id === dinnerData.payer)?.name || 'N/A'}</div>
+                                <div><strong>Tipo de divisão:</strong> {dinnerData.division_type === 'equal' ? 'Divisão igual' : 'Valores personalizados'}</div>
+                                {dinnerData.division_type === 'equal' && (
+                                  <div><strong>Valor por pessoa:</strong> {formatMoney(dinnerData.total_amount / s.players.length, currencySymbol)}</div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    
+                    {/* Exibir settlements se existirem */}
+                    {isOpen && editSettlements[s.id] && editSettlements[s.id].length > 0 && (
+                      <div className="mt-4">
+                        <h3 className="font-semibold mb-2">Transferências (Otimização)</h3>
+                        <ul className="space-y-2">
+                          {editSettlements[s.id].map((t, i) => (
+                            <li key={i} className="rounded-xl bg-slate-50 px-3 py-2 flex items-center gap-2">
+                              <span className="font-medium">{t.from}</span> paga para <span className="font-medium">{t.to}</span> {formatMoney(t.amount, currencySymbol)}
+                              <label className="flex items-center gap-1 ml-2">
+                                <input type="checkbox" checked={!!t.paid} onChange={e=>{
+                                  e.stopPropagation();
+                                  setEditSettlements(prev => ({
+                                    ...prev,
+                                    [s.id]: prev[s.id].map((tt, idx) => idx === i ? { ...tt, paid: !tt.paid } : tt)
+                                  }));
+                                }} />
+                                <span className="text-xs">Pago?</span>
+                              </label>
+                            </li>
+                          ))}
+                        </ul>
+                        <button onClick={()=>handleSaveSettlements(s.id)} className="mt-3 rounded-2xl bg-emerald-600 text-white px-4 py-2 shadow">Salvar alterações</button>
+                      </div>
+                    )}
+                  </details>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* Modal de Edição */}
+      {editModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">
+                Editar {editModal.type === 'dinner' ? 'Janta' : 'Sessão'}
+              </h3>
+              <button 
+                onClick={() => setEditModal(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            {editModal.type === 'dinner' ? (
+              <EditDinnerModal 
+                dinnerData={editModal.data}
+                onSave={(updatedData) => {
+                  // Aqui você pode implementar a lógica de salvamento
+                  console.log('Salvando janta:', updatedData);
+                  setEditModal(null);
+                  onReload(); // Recarregar histórico
+                }}
+                onCancel={() => setEditModal(null)}
+              />
+            ) : (
+              <EditSessionModal 
+                sessionData={editModal.data}
+                onSave={(updatedData) => {
+                  // Aqui você pode implementar a lógica de salvamento
+                  console.log('Salvando sessão:', updatedData);
+                  setEditModal(null);
+                  onReload(); // Recarregar histórico
+                }}
+                onCancel={() => setEditModal(null)}
+              />
+            )}
           </div>
-        );
-      })}
+        </div>
+      )}
     </div>
   );
 }
@@ -1385,6 +2225,208 @@ function UsersPanel({
           <div>
             <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 mr-2">Visualizador</span>
             <span className="text-gray-600">Apenas visualização</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Componente para gerenciar a janta
+function DinnerPanel({ 
+  players, 
+  dinnerData, 
+  onTotalChange, 
+  onPayerChange, 
+  onDivisionTypeChange, 
+  onCustomAmountChange, 
+  onPaymentToggle, 
+  onSave, 
+  onDelete,
+  currencySymbol 
+}) {
+  const amountPerPerson = dinnerData.divisionType === 'equal' 
+    ? players.length > 0 ? dinnerData.totalAmount / players.length : 0 
+    : 0;
+
+  const totalCustomAmount = Object.values(dinnerData.customAmounts).reduce((sum, amount) => sum + amount, 0);
+
+  return (
+    <div className="p-6">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">🍽️ Controle da Janta</h2>
+        
+        {/* Informação sobre jantas */}
+        <div className="bg-blue-50 rounded-lg p-4 mb-6">
+          <h3 className="text-lg font-semibold mb-2 text-blue-800">💡 Como usar</h3>
+          <div className="text-sm text-blue-700 space-y-1">
+            <p>• Adicione jogadores na aba "Sessão" primeiro</p>
+            <p>• Configure os dados da janta abaixo</p>
+            <p>• Salve a janta independentemente</p>
+            <p>• Veja e edite jantas salvas na aba "Histórico" → "Jantas"</p>
+          </div>
+        </div>
+        
+        {/* Configuração da Janta */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h3 className="text-lg font-semibold mb-4">Configuração da Janta</h3>
+          
+          {/* Valor Total */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Valor Total da Janta
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={dinnerData.totalAmount}
+              onChange={(e) => onTotalChange(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="0,00"
+            />
+          </div>
+
+          {/* Quem Pagou */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Quem Pagou a Janta
+            </label>
+            <select
+              value={dinnerData.payer}
+              onChange={(e) => onPayerChange(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Selecione quem pagou</option>
+              {players.map(player => (
+                <option key={player.id} value={player.id}>
+                  {player.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Tipo de Divisão */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tipo de Divisão
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="equal"
+                  checked={dinnerData.divisionType === 'equal'}
+                  onChange={(e) => onDivisionTypeChange(e.target.value)}
+                  className="mr-2"
+                />
+                Divisão Igual (Churrasco)
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="custom"
+                  checked={dinnerData.divisionType === 'custom'}
+                  onChange={(e) => onDivisionTypeChange(e.target.value)}
+                  className="mr-2"
+                />
+                Valores Personalizados (Xis, etc.)
+              </label>
+            </div>
+          </div>
+
+          {/* Valores Personalizados */}
+          {dinnerData.divisionType === 'custom' && (
+            <div className="mb-4">
+              <h4 className="text-md font-medium text-gray-700 mb-2">Valores por Pessoa</h4>
+              {players.map(player => (
+                <div key={player.id} className="flex items-center gap-2 mb-2">
+                  <span className="w-24 text-sm">{player.name}:</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={dinnerData.customAmounts[player.id] || 0}
+                    onChange={(e) => onCustomAmountChange(player.id, e.target.value)}
+                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
+                    placeholder="0,00"
+                  />
+                </div>
+              ))}
+              <div className="mt-2 text-sm text-gray-600">
+                Total personalizado: {currencySymbol} {totalCustomAmount.toFixed(2)}
+              </div>
+            </div>
+          )}
+
+          {/* Resumo */}
+          {dinnerData.divisionType === 'equal' && dinnerData.totalAmount > 0 && (
+            <div className="mb-4 p-3 bg-blue-50 rounded-md">
+              <p className="text-sm text-blue-800">
+                <strong>Divisão Igual:</strong> {currencySymbol} {amountPerPerson.toFixed(2)} por pessoa
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Lista de Pagamentos */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold mb-4">Lista de Pagamentos</h3>
+          
+          {players.length === 0 ? (
+            <p className="text-gray-500 text-center py-4">
+              Adicione jogadores na aba "Sessão" primeiro
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {players.map(player => {
+                const payment = dinnerData.payments[player.id];
+                const amount = dinnerData.divisionType === 'equal' 
+                  ? amountPerPerson 
+                  : dinnerData.customAmounts[player.id] || 0;
+                
+                return (
+                  <div key={player.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={payment?.paid || false}
+                        onChange={() => onPaymentToggle(player.id)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                      <span className="font-medium">{player.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-gray-600">
+                        {currencySymbol} {amount.toFixed(2)}
+                      </span>
+                      {payment?.paid && (
+                        <span className="text-green-600 text-sm font-medium">✓ Pago</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Botões Salvar e Excluir */}
+          <div className="mt-6 flex justify-between">
+            <button
+              onClick={() => {
+                if (confirm('Tem certeza que deseja excluir os dados da janta desta sessão?')) {
+                  onDelete();
+                }
+              }}
+              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+            >
+              🗑️ Excluir do Histórico
+            </button>
+            
+            <button
+              onClick={onSave}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+              💾 Salvar Dados da Janta
+            </button>
           </div>
         </div>
       </div>
