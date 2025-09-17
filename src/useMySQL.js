@@ -1,15 +1,17 @@
 // Hook personalizado para usar MySQL ao invés de localStorage
 import { useState, useEffect } from 'react';
 
-// Detectar ambiente: desenvolvimento = mock, produção = MySQL real
+// Detectar ambiente: desenvolvimento = mock, produção = API HTTP
 const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
 
 // Função para obter o serviço correto
 async function getService() {
   if (isDevelopment) {
+    // Desenvolvimento: usar mock
     return await import('./mysqlService-mock.js');
   } else {
-    return await import('./mysqlService.js');
+    // Produção: usar API HTTP
+    return await import('./mysqlService-api.js');
   }
 }
 
