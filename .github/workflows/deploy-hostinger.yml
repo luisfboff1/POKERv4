@@ -24,7 +24,11 @@ jobs:
       run: npm ci
       
     - name: Build project
-      run: NODE_ENV=production npm run build
+      run: |
+        echo "Building project..."
+        NODE_ENV=production npm run build
+        echo "Build completed. Checking dist folder..."
+        ls -la dist/
       
     - name: Deploy to Hostinger via FTP
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
