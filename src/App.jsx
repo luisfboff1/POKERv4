@@ -50,7 +50,7 @@ function Auth({ onAuth }) {
 }
 
 function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState({ id: 1, email: 'admin@poker.com', role: 'admin' });
 
   useEffect(() => {
     // Usuário padrão para desenvolvimento
@@ -285,7 +285,8 @@ function PokerSettlementsApp({ user }) {
       setTab("historico");
       alert("Sessão salva!");
     } else {
-      alert("Falha ao salvar a sessão.");
+      console.error("Erro ao salvar sessão:", sessionData);
+      alert("Falha ao salvar a sessão. Verifique o console para mais detalhes.");
     }
   }
 

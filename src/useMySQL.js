@@ -39,9 +39,13 @@ export function useSessions() {
 
   const addSession = async (sessionData) => {
     try {
+      console.log("Tentando salvar sessão:", sessionData);
       const service = await getService();
+      console.log("Serviço obtido:", service);
       const { data, error } = await service.saveSession(sessionData);
+      console.log("Resultado do saveSession:", { data, error });
       if (error) {
+        console.error("Erro ao salvar sessão:", error);
         setError(error);
         return false;
       } else {
@@ -49,6 +53,7 @@ export function useSessions() {
         return true;
       }
     } catch (err) {
+      console.error("Erro catch ao salvar sessão:", err);
       setError(err.message);
       return false;
     }
