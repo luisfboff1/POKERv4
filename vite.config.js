@@ -29,6 +29,19 @@ export default defineConfig({
       },
     }),
   ],
-  base:'./',
-  build:{ outDir:'renderer' }
+  base: process.env.NODE_ENV === 'production' ? '/' : './',
+  build: { 
+    outDir: process.env.NODE_ENV === 'production' ? 'dist' : 'renderer',
+    assetsDir: 'assets',
+    sourcemap: false,
+    minify: 'terser',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          charts: ['chart.js', 'react-chartjs-2']
+        }
+      }
+    }
+  }
 })
