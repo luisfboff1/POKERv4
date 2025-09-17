@@ -1,22 +1,30 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { supabase } from './supabaseClient';
-// import { testSupabaseConnection, diagnoseConnectionIssue } from './connectionTest';
-import { 
-  isAdmin, 
-  hasPermission, 
-  getCurrentUserInfo, 
-  getAllUsers, 
-  approveUser, 
-  rejectUser, 
-  updateUserPermissions, 
-  createUserPermission, 
-  isUserPending,
-  updateLastSeen,
-  getUserStats,
-  ROLES,
-  PERMISSIONS,
-  ADMIN_EMAIL
-} from './permissionsService';
+import { useSessions, useDinnerData, usePlayers, useConfig } from './useMySQL';
+// Constantes de permissões (removido do permissionsService)
+const ROLES = {
+  ADMIN: 'admin',
+  USER: 'user'
+};
+
+const PERMISSIONS = {
+  ADMIN: 'admin',
+  USER: 'user'
+};
+
+const ADMIN_EMAIL = 'admin@poker.com';
+
+// Funções de permissão simplificadas (removido do permissionsService)
+const isAdmin = () => true; // Simplificado para desenvolvimento
+const hasPermission = () => true; // Simplificado para desenvolvimento
+const getCurrentUserInfo = () => ({ email: ADMIN_EMAIL, role: 'admin' });
+const getAllUsers = () => [];
+const approveUser = () => {};
+const rejectUser = () => {};
+const updateUserPermissions = () => {};
+const createUserPermission = () => {};
+const isUserPending = () => false;
+const updateLastSeen = () => {};
+const getUserStats = () => ({});
 import { Bar } from 'react-chartjs-2';
 import { Chart, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js';
 Chart.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
@@ -27,230 +35,30 @@ const uid = () =>
     ? window.crypto.randomUUID()
     : `id_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 
-function useLocalStorage(key, initial) {
-  const [state, setState] = useState(() => {
-    try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : initial; } catch { return initial; }
-  });
-  React.useEffect(() => { try { localStorage.setItem(key, JSON.stringify(state)); } catch {} }, [key, state]);
-  return [state, setState];
-}
+// useLocalStorage removido - agora usando MySQL
 
+// Autenticação simplificada - usuário padrão
 function Auth({ onAuth }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [connectionStatus, setConnectionStatus] = useState('checking'); // 'checking', 'connected', 'disconnected'
-  const [userStatus, setUserStatus] = useState('checking'); // 'checking', 'approved', 'pending', 'rejected'
-  const [userInfo, setUserInfo] = useState(null);
-
-  // Verificar conectividade na inicialização
   useEffect(() => {
-    const checkConnection = async () => {
-      // const result = await testSupabaseConnection();
-      const result = { success: true, message: 'Conectividade OK' };
-      
-      if (result.success) {
-        setConnectionStatus('connected');
-      } else {
-        setConnectionStatus('disconnected');
-        console.error('Falha na conectividade:', result.error);
-        
-        // Diagnosticar o problema
-        // const diagnosis = await diagnoseConnectionIssue(result.details || { message: result.error });
-        const diagnosis = { message: 'Problema de conectividade detectado' };
-        console.log('Diagnóstico do problema:', diagnosis);
-      }
-    };
-    
-    checkConnection();
-  }, []);
+    // Usuário padrão para desenvolvimento
+    onAuth({ email: 'admin@poker.com', id: 1 });
+  }, [onAuth]);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    
-    try {
-      // Teste de conectividade primeiro
-      const { data: testData, error: testError } = await supabase
-        .from('sessions')
-        .select('count')
-        .limit(1);
-      
-      if (testError) {
-        console.error('Erro de conectividade com Supabase:', testError);
-        setError('Erro de conexão com o servidor. Verifique sua internet e tente novamente.');
-        setLoading(false);
-        return;
-      }
+  return null; // Não renderiza nada, apenas autentica automaticamente
 
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        console.error('Erro de login:', error);
-        setError(error.message);
-      } else {
-        onAuth();
-      }
-    } catch (err) {
-      console.error('Erro inesperado:', err);
-      setError('Erro inesperado. Verifique sua conexão e tente novamente.');
-    }
-    
-    setLoading(false);
-  };
-
-  const handleSignUp = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    
-    try {
-      // Teste de conectividade primeiro
-      const { data: testData, error: testError } = await supabase
-        .from('sessions')
-        .select('count')
-        .limit(1);
-      
-      if (testError) {
-        console.error('Erro de conectividade com Supabase:', testError);
-        setError('Erro de conexão com o servidor. Verifique sua internet e tente novamente.');
-        setLoading(false);
-        return;
-      }
-
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) {
-        console.error('Erro de cadastro:', error);
-        setError(error.message);
-      } else {
-        // Criar permissão automaticamente para o novo usuário
-        try {
-          await createUserPermission(email);
-          console.log(`✅ Permissão criada para ${email} como VIEWER (pendente)`);
-        } catch (permError) {
-          console.error('Erro ao criar permissão:', permError);
-          // Não falha o cadastro se der erro na permissão
-        }
-        onAuth();
-      }
-    } catch (err) {
-      console.error('Erro inesperado:', err);
-      setError('Erro inesperado. Verifique sua conexão e tente novamente.');
-    }
-    
-    setLoading(false);
-  };
-
-  return (
-    <div style={{ maxWidth: 320, margin: 'auto', padding: 16 }}>
-      <h2>Entrar ou Cadastrar</h2>
-      
-      {/* Indicador de conectividade */}
-      <div style={{ 
-        marginBottom: 16, 
-        padding: 8, 
-        borderRadius: 8, 
-        fontSize: 12,
-        textAlign: 'center',
-        backgroundColor: connectionStatus === 'connected' ? '#d1fae5' : 
-                        connectionStatus === 'disconnected' ? '#fee2e2' : '#fef3c7',
-        color: connectionStatus === 'connected' ? '#065f46' : 
-               connectionStatus === 'disconnected' ? '#991b1b' : '#92400e'
-      }}>
-        {connectionStatus === 'checking' && '🔄 Verificando conexão...'}
-        {connectionStatus === 'connected' && '✅ Conectado ao servidor'}
-        {connectionStatus === 'disconnected' && (
-          <div>
-            ❌ Sem conexão com o servidor
-            <button 
-              onClick={async () => {
-                setConnectionStatus('checking');
-                // const result = await testSupabaseConnection();
-      const result = { success: true, message: 'Conectividade OK' };
-                setConnectionStatus(result.success ? 'connected' : 'disconnected');
-                if (!result.success) {
-                  console.error('Teste de conexão falhou:', result.error);
-                }
-              }}
-              style={{
-                marginLeft: 8,
-                padding: '2px 8px',
-                fontSize: 10,
-                backgroundColor: '#3b82f6',
-                color: 'white',
-                border: 'none',
-                borderRadius: 4,
-                cursor: 'pointer'
-              }}
-            >
-              Testar novamente
-            </button>
-          </div>
-        )}
-      </div>
-      
-      <form>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          style={{ width: '100%', marginBottom: 8 }}
-        />
-        <input
-          type="password"
-          placeholder="Senha"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          style={{ width: '100%', marginBottom: 8 }}
-        />
-        <button 
-          onClick={handleLogin} 
-          disabled={loading || connectionStatus !== 'connected'} 
-          style={{ 
-            width: '100%', 
-            marginBottom: 8,
-            opacity: connectionStatus !== 'connected' ? 0.5 : 1,
-            cursor: connectionStatus !== 'connected' ? 'not-allowed' : 'pointer'
-          }}
-        >
-          {loading ? 'Entrando...' : 'Entrar'}
-        </button>
-        <button 
-          onClick={handleSignUp} 
-          disabled={loading || connectionStatus !== 'connected'} 
-          style={{ 
-            width: '100%',
-            opacity: connectionStatus !== 'connected' ? 0.5 : 1,
-            cursor: connectionStatus !== 'connected' ? 'not-allowed' : 'pointer'
-          }}
-        >
-          {loading ? 'Cadastrando...' : 'Cadastrar'}
-        </button>
-        {error && <div style={{ color: 'red', marginTop: 8 }}>{error}</div>}
-      </form>
-    </div>
-  );
+  return null; // Função Auth simplificada
 }
 
 function App() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data?.session?.user ?? null);
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-    return () => {
-      listener?.subscription.unsubscribe();
-    };
+    // Usuário padrão para desenvolvimento
+    setUser({ email: 'admin@poker.com', id: 1 });
   }, []);
 
   if (!user) {
-    return <Auth onAuth={() => window.location.reload()} />;
+    return <Auth onAuth={setUser} />;
   }
 
   return <PokerSettlementsApp user={user} />;
@@ -259,35 +67,39 @@ function App() {
 export default App;
 
 function PokerSettlementsApp({ user }) {
-  const [players, setPlayers] = useLocalStorage("poker_players_v1", []);
+  // Hooks MySQL
+  const { sessions, loading: sessionsLoading, addSession, removeSession, editSession } = useSessions();
+  const { dinnerData, loading: dinnerLoading, addDinnerData, removeDinnerData } = useDinnerData();
+  
+  // Hooks para dados temporários (jogadores atuais da sessão)
+  const [players, setPlayers] = usePlayers();
   const [name, setName] = useState("");
   const nameInputRef = useRef(null);
-  const [currency, setCurrency] = useLocalStorage("poker_currency", "BRL");
-  const [tab, setTab] = useLocalStorage("poker_active_tab", "sessao");
+  const [currency, setCurrency] = useConfig('poker_currency', 'BRL');
+  const [tab, setTab] = useConfig('poker_active_tab', 'sessao');
   const [note, setNote] = useState("");
   const [sessionSettlements, setSessionSettlements] = useState([]);
-  // Novo: recomendações de pagamento
   const [recommendedPayments, setRecommendedPayments] = useState([]);
   
-  // Estados para a funcionalidade da janta
-  const [dinnerData, setDinnerData] = useState({
+  // Estados para a funcionalidade da janta (dados temporários da sessão atual)
+  const [currentDinnerData, setCurrentDinnerData] = useState({
     totalAmount: 0,
     payer: '',
-    divisionType: 'equal', // 'equal' ou 'custom'
-    customAmounts: {}, // {playerId: amount}
-    payments: {} // {playerId: {paid: boolean, amount: number}}
+    divisionType: 'equal',
+    customAmounts: {},
+    payments: {}
   });
   const [recFrom, setRecFrom] = useState("");
   const [recTo, setRecTo] = useState("");
   const [recAmount, setRecAmount] = useState("");
 
-  // Estados para aba de usuários
+  // Estados para aba de usuários (removidos - não precisamos mais)
   const [users, setUsers] = useState([]);
   const [userStats, setUserStats] = useState(null);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
-  const [isUserAdmin, setIsUserAdmin] = useState(false);
+  const [isUserAdmin, setIsUserAdmin] = useState(true); // Sempre admin para simplificar
 
   // Atualiza settlements sempre que players ou recommendedPayments mudar, mas só na aba sessão
   useEffect(() => {
@@ -365,31 +177,29 @@ function PokerSettlementsApp({ user }) {
     // Função global para carregar sessão para edição
     window.loadSessionForEdit = async (sessionId) => {
       try {
-        // Buscar dados da sessão
-        const { data, error } = await supabase
-          .from('sessions')
-          .select('*')
-          .eq('id', sessionId)
-          .single();
+        const session = sessions.find(s => s.id === sessionId);
+        if (session && session.snapshot) {
+          const snapshot = typeof session.snapshot === 'string' 
+            ? JSON.parse(session.snapshot) 
+            : session.snapshot;
 
-        if (error) throw error;
-
-        // Carregar dados da sessão
-        if (data.snapshot?.players) {
-          setPlayers(data.snapshot.players);
-          setName(data.label || `Sessão ${new Date(data.date_iso).toLocaleDateString()}`);
-          setNote(data.label || '');
-          
-          // Carregar settlements se existirem
-          if (data.snapshot.settlements) {
-            setSessionSettlements(data.snapshot.settlements);
+          // Carregar dados da sessão
+          if (snapshot.players) {
+            setPlayers(snapshot.players);
+            setName(session.name || `Sessão ${new Date(session.date).toLocaleDateString()}`);
+            setNote(session.name || '');
+            
+            // Carregar settlements se existirem
+            if (snapshot.settlements) {
+              setSessionSettlements(snapshot.settlements);
+            }
           }
+          
+          // Ir para a aba sessão
+          setTab('sessao');
+          
+          alert('Sessão carregada para edição!');
         }
-        
-        // Ir para a aba sessão
-        setTab('sessao');
-        
-        alert('Sessão carregada para edição!');
       } catch (error) {
         console.error('Erro ao carregar sessão para edição:', error);
         alert('Erro ao carregar sessão para edição');
@@ -402,50 +212,16 @@ function PokerSettlementsApp({ user }) {
     };
   }, []);
 
-  // Histórico via Supabase
-  const [history, setHistory] = useState([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
-
-  // Carregar sessões do Supabase
-  const reloadHistory = async () => {
-    setLoadingHistory(true);
-    const { data, error } = await supabase
-      .from('sessions')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) {
-      alert('Erro ao carregar histórico: ' + error.message);
-      setHistory([]);
-    } else {
-      setHistory(data.map(s => ({
-        id: s.id,
-        dateISO: s.date_iso,
-        label: s.label,
-        players: s.snapshot?.players || [],
-        raw: s
-      })));
-    }
-    setLoadingHistory(false);
-  };
-  useEffect(() => { reloadHistory(); }, [user.id]);
-
-  // Sincronização em tempo real com Supabase
-  useEffect(() => {
-    const channel = supabase
-      .channel('sessions-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'sessions',
-        filter: `user_id=eq.${user.id}`
-      }, (payload) => {
-        reloadHistory();
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user.id]);
+  // Histórico agora vem do hook useSessions
+  const history = sessions.map(s => ({
+    id: s.id,
+    dateISO: s.date,
+    label: s.name,
+    players: s.snapshot ? (typeof s.snapshot === 'string' ? JSON.parse(s.snapshot).players : s.snapshot.players) : [],
+    raw: s
+  }));
+  const loadingHistory = sessionsLoading;
+  const reloadHistory = () => {}; // Função vazia - o hook useSessions já recarrega automaticamente
 
   // foco inicial
   useEffect(() => { nameInputRef.current?.focus(); }, []);
@@ -481,7 +257,7 @@ function PokerSettlementsApp({ user }) {
     setTimeout(() => nameInputRef.current?.focus(), 0);
   }
 
-  // Salvar sessão no Supabase
+  // Salvar sessão no MySQL
   async function saveCurrentSession(){
     if(players.length===0){ alert("Adicione jogadores antes de salvar."); return; }
     const snapshot = {
@@ -489,36 +265,37 @@ function PokerSettlementsApp({ user }) {
       dateISO: new Date().toISOString(),
       label: note.trim() || undefined,
       players: players.map(p => ({ id: uid(), name: p.name, buyIns: [...p.buyIns], cashOut: +p.cashOut || 0 })),
-      settlements: sessionSettlements // salva settlements com status atual
+      settlements: sessionSettlements
     };
-    try {
-      const { error } = await supabase.from('sessions').insert({
-        user_id: user.id,
-        date_iso: snapshot.dateISO,
-        label: snapshot.label,
-        snapshot: { players: snapshot.players, settlements: snapshot.settlements }
-      });
-      if (error) throw error;
+    
+    const sessionData = {
+      name: snapshot.label || `Sessão ${new Date().toLocaleDateString()}`,
+      date: new Date().toISOString().split('T')[0],
+      buyIn: players.reduce((sum, p) => sum + (p.buyIn || 0), 0),
+      rebuy: players.reduce((sum, p) => sum + (p.rebuy || 0), 0),
+      addOn: players.reduce((sum, p) => sum + (p.addOn || 0), 0),
+      totalPot: players.reduce((sum, p) => sum + (p.finalAmount || 0), 0),
+      snapshot: snapshot,
+      userId: user.id
+    };
+    
+    const success = await addSession(sessionData);
+    if (success) {
       setNote("");
       setTab("historico");
       alert("Sessão salva!");
-      reloadHistory();
-    } catch (e) {
-      alert(`Falha ao salvar a sessão.\n${e?.message || e}`);
+    } else {
+      alert("Falha ao salvar a sessão.");
     }
   }
 
-  // Excluir sessão do Supabase
+  // Excluir sessão do MySQL
   async function deleteSession(id){
-    const prevBackup = history;
-    setHistory(h => h.filter(s => s.id !== id));
-    try {
-      const { error } = await supabase.from('sessions').delete().eq('id', id);
-      if (error) throw error;
-      reloadHistory();
-    } catch (e) {
-      alert("Falha ao remover. Restaurando lista.");
-      setHistory(prevBackup);
+    if (confirm('Tem certeza que deseja excluir esta sessão?')) {
+      const success = await removeSession(id);
+      if (!success) {
+        alert("Falha ao excluir a sessão.");
+      }
     }
   }
 
@@ -543,21 +320,14 @@ function PokerSettlementsApp({ user }) {
   // Função para excluir dados da janta do histórico
   const deleteDinnerData = async (sessionId) => {
     try {
-      // Tentar deletar do Supabase
-      const { error } = await supabase
-        .from('dinner_data')
-        .delete()
-        .eq('session_id', sessionId);
-
-      if (error && !error.message?.includes('relation "dinner_data" does not exist')) {
-        throw error;
+      const success = await removeDinnerData(sessionId);
+      if (success) {
+        alert('Dados da janta excluídos com sucesso!');
+        return true;
+      } else {
+        alert('Erro ao excluir dados da janta!');
+        return false;
       }
-
-      // Deletar do localStorage também (fallback)
-      localStorage.removeItem(`dinner_data_${sessionId}`);
-      
-      alert('Dados da janta excluídos com sucesso!');
-      return true;
     } catch (error) {
       console.error('Erro ao excluir dados da janta:', error);
       throw error;
@@ -615,21 +385,21 @@ function PokerSettlementsApp({ user }) {
 
   // Funções para gerenciar a janta
   const handleDinnerTotalChange = (value) => {
-    setDinnerData(prev => ({
+    setCurrentDinnerData(prev => ({
       ...prev,
       totalAmount: parseFloat(value) || 0
     }));
   };
 
   const handleDinnerPayerChange = (payerId) => {
-    setDinnerData(prev => ({
+    setCurrentDinnerData(prev => ({
       ...prev,
       payer: payerId
     }));
   };
 
   const handleDivisionTypeChange = (type) => {
-    setDinnerData(prev => ({
+    setCurrentDinnerData(prev => ({
       ...prev,
       divisionType: type,
       customAmounts: type === 'equal' ? {} : prev.customAmounts
@@ -637,7 +407,7 @@ function PokerSettlementsApp({ user }) {
   };
 
   const handleCustomAmountChange = (playerId, amount) => {
-    setDinnerData(prev => ({
+    setCurrentDinnerData(prev => ({
       ...prev,
       customAmounts: {
         ...prev.customAmounts,
@@ -647,7 +417,7 @@ function PokerSettlementsApp({ user }) {
   };
 
   const handlePaymentToggle = (playerId) => {
-    setDinnerData(prev => {
+    setCurrentDinnerData(prev => {
       const currentPayment = prev.payments[playerId];
       const amount = prev.divisionType === 'equal' 
         ? prev.totalAmount / players.length 
@@ -668,7 +438,7 @@ function PokerSettlementsApp({ user }) {
 
   const saveDinnerData = async () => {
     try {
-      if (dinnerData.totalAmount <= 0) {
+      if (currentDinnerData.totalAmount <= 0) {
         alert('Por favor, preencha o valor total da janta');
         return;
       }
@@ -681,142 +451,43 @@ function PokerSettlementsApp({ user }) {
       // Gerar um ID único para a janta se não existir
       const dinnerId = name || `dinner_${Date.now()}`;
       
-      // Buscar dados existentes para preservar a data original
-      let originalCreatedAt = new Date().toISOString();
-      try {
-        const { data: existingData } = await supabase
-          .from('dinner_data')
-          .select('created_at')
-          .eq('session_id', dinnerId)
-          .single();
-        
-        if (existingData) {
-          originalCreatedAt = existingData.created_at;
-        }
-      } catch (e) {
-        // Se não existir, usa a data atual
-      }
-
       // Preparar dados dos jogadores com nomes
       const playersData = players.map(player => ({
         id: player.id,
         name: player.name
       }));
 
-      const { data, error } = await supabase
-        .from('dinner_data')
-        .upsert({
-          session_id: dinnerId,
-          total_amount: dinnerData.totalAmount,
-          payer: dinnerData.payer,
-          division_type: dinnerData.divisionType,
-          custom_amounts: dinnerData.customAmounts,
-          payments: dinnerData.payments,
-          players: playersData, // Salvar dados dos jogadores com nomes
-          created_at: originalCreatedAt, // Preserva data original
-          updated_at: new Date().toISOString() // Nova data de atualização
-        }, {
-          onConflict: 'session_id'
-        });
+      const dinnerDataToSave = {
+        sessionId: dinnerId,
+        totalCost: currentDinnerData.totalAmount,
+        numberOfPeople: players.length,
+        costPerPerson: currentDinnerData.totalAmount / players.length,
+        participants: playersData
+      };
 
-      if (error) {
-        console.error('Erro detalhado:', error);
-        throw error;
+      const success = await addDinnerData(dinnerDataToSave);
+      if (success) {
+        alert('Dados da janta salvos com sucesso!');
+        // Limpar dados da sessão atual
+        setCurrentDinnerData({
+          totalAmount: 0,
+          payer: '',
+          divisionType: 'equal',
+          customAmounts: {},
+          payments: {}
+        });
+      } else {
+        alert('Erro ao salvar dados da janta!');
       }
-      
-      alert('Dados da janta salvos com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar dados da janta:', error);
-      
-      // Se a tabela não existir, salvar no localStorage como fallback
-      if (error.message?.includes('relation "dinner_data" does not exist')) {
-        const dinnerId = name || `dinner_${Date.now()}`;
-        const fallbackData = {
-          session_id: dinnerId,
-          total_amount: dinnerData.totalAmount,
-          payer: dinnerData.payer,
-          division_type: dinnerData.divisionType,
-          custom_amounts: dinnerData.customAmounts,
-          payments: dinnerData.payments,
-          players: playersData, // Salvar dados dos jogadores com nomes
-          created_at: new Date().toISOString()
-        };
-        
-        localStorage.setItem(`dinner_data_${dinnerId}`, JSON.stringify(fallbackData));
-        alert('Dados salvos localmente (tabela ainda não criada no Supabase)');
-      } else {
-        alert(`Erro ao salvar dados da janta: ${error.message}`);
-      }
+      alert(`Erro ao salvar dados da janta: ${error.message}`);
     }
   };
 
   const loadDinnerData = async (dinnerId = null) => {
-    try {
-      const idToLoad = dinnerId || name;
-      if (!idToLoad) return;
-
-      const { data, error } = await supabase
-        .from('dinner_data')
-        .select('*')
-        .eq('session_id', idToLoad)
-        .single();
-
-      if (error && error.code !== 'PGRST116') throw error;
-      
-      if (data) {
-        setDinnerData({
-          totalAmount: data.total_amount || 0,
-          payer: data.payer || '',
-          divisionType: data.division_type || 'equal',
-          customAmounts: data.custom_amounts || {},
-          payments: data.payments || {}
-        });
-        
-        // Se há dados de jogadores salvos, carregar na sessão atual
-        if (data.players && data.players.length > 0) {
-          const loadedPlayers = data.players.map(p => ({
-            id: p.id,
-            name: p.name,
-            buyIns: [],
-            cashOut: 0
-          }));
-          setPlayers(loadedPlayers);
-        }
-      }
-    } catch (error) {
-      console.error('Erro ao carregar dados da janta:', error);
-      
-      // Fallback para localStorage se a tabela não existir
-      if (error.message?.includes('relation "dinner_data" does not exist')) {
-        const idToLoad = dinnerId || name;
-        const fallbackData = localStorage.getItem(`dinner_data_${idToLoad}`);
-        if (fallbackData) {
-          try {
-            const parsed = JSON.parse(fallbackData);
-            setDinnerData({
-              totalAmount: parsed.total_amount || 0,
-              payer: parsed.payer || '',
-              divisionType: parsed.division_type || 'equal',
-              customAmounts: parsed.custom_amounts || {},
-              payments: parsed.payments || {}
-            });
-            
-            // Se há dados de jogadores salvos, carregar na sessão atual
-            if (parsed.players && parsed.players.length > 0) {
-              const loadedPlayers = parsed.players.map(p => ({
-                id: p.id,
-                name: p.name,
-                buyIns: [],
-                cashOut: 0
-              }));
-              setPlayers(loadedPlayers);
-            }
-          } catch (parseError) {
-            console.error('Erro ao fazer parse dos dados locais:', parseError);
-          }
-        }
-      }
-    }
+    // Função simplificada - dados da janta agora vêm do hook MySQL
+    console.log('loadDinnerData chamado para:', dinnerId);
   };
 
   // Funções para gerenciar usuários
@@ -922,7 +593,7 @@ function PokerSettlementsApp({ user }) {
           </div>
           <div className="flex gap-2 items-center">
             <span className="text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200">
-              Persistência: Supabase
+              Persistência: MySQL
             </span>
             {/* Botão de modo escuro/claro */}
             <button
@@ -1046,7 +717,7 @@ function PokerSettlementsApp({ user }) {
 
         {tab==="historico" && (
           loadingHistory ? <div>Carregando histórico...</div> :
-          <HistoryPanel history={history} currencySymbol={currencySymbols[currency]} onDelete={deleteDinnerOrSession} onReload={reloadHistory} />
+          <HistoryPanel history={history} dinnerData={dinnerData} currencySymbol={currencySymbols[currency]} onDelete={deleteDinnerOrSession} onReload={reloadHistory} />
         )}
 
         {tab==="ranking" && (<RankingPanel history={history} currencySymbol={currencySymbols[currency]} />)}
@@ -1056,7 +727,7 @@ function PokerSettlementsApp({ user }) {
         {tab==="janta" && (
           <DinnerPanel 
             players={players}
-            dinnerData={dinnerData}
+            dinnerData={currentDinnerData}
             onTotalChange={handleDinnerTotalChange}
             onPayerChange={handleDinnerPayerChange}
             onDivisionTypeChange={handleDivisionTypeChange}
@@ -1587,34 +1258,14 @@ function EditSessionModal({ sessionData, onSave, onCancel }) {
   );
 }
 
-function HistoryPanel({ history, currencySymbol, onDelete, onReload }){
+function HistoryPanel({ history, dinnerData, currencySymbol, onDelete, onReload }){
   const [expanded, setExpanded] = useState(null); // id da sessão expandida
   const [editSettlements, setEditSettlements] = useState({}); // { [sessionId]: settlements[] }
   const [historyTab, setHistoryTab] = useState('jogos'); // 'jogos' ou 'jantas'
-  const [dinnerHistory, setDinnerHistory] = useState([]); // dados de janta do histórico
   const [editModal, setEditModal] = useState(null); // {type: 'dinner'|'session', data: {...}}
 
-  // Carregar dados de janta do histórico
-  useEffect(() => {
-    const loadDinnerHistory = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('dinner_data')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error && !error.message?.includes('relation "dinner_data" does not exist')) {
-          console.error('Erro ao carregar dados de janta:', error);
-        } else if (data) {
-          setDinnerHistory(data);
-        }
-      } catch (error) {
-        console.error('Erro ao carregar dados de janta:', error);
-      }
-    };
-
-    loadDinnerHistory();
-  }, []);
+  // Usar dados de janta do MySQL
+  const dinnerHistory = dinnerData || [];
 
   // Atualiza settlements editáveis ao expandir uma sessão
   function handleExpand(sessionId, settlements) {
@@ -1625,17 +1276,8 @@ function HistoryPanel({ history, currencySymbol, onDelete, onReload }){
   }
 
   async function handleSaveSettlements(sessionId) {
-    const settlements = editSettlements[sessionId];
-    // Buscar snapshot atual
-    const { data, error } = await supabase.from('sessions').select('snapshot').eq('id', sessionId).single();
-    if (error) { alert('Erro ao buscar sessão: ' + error.message); return; }
-    const snapshot = data.snapshot;
-    snapshot.settlements = settlements;
-    // Atualizar no banco
-    const { error: upError } = await supabase.from('sessions').update({ snapshot }).eq('id', sessionId);
-    if (upError) { alert('Erro ao atualizar pagamentos: ' + upError.message); return; }
-    onReload && onReload();
-    alert('Alterações salvas!');
+    // Função removida - settlements agora são gerenciados pelo hook MySQL
+    alert('Função de edição de settlements será implementada via MySQL');
   }
 
   // Filtrar histórico para jogos (sessões sem dados de janta)
@@ -2571,17 +2213,8 @@ function DashboardPanel({ history, currencySymbol }) {
   );
 }
 
-// Atualizar settlements no banco
+// Atualizar settlements no banco - função removida
 async function updateSettlementPaid(sessionId, idx, paid) {
-  // Buscar sessão atual
-  const { data, error } = await supabase.from('sessions').select('snapshot').eq('id', sessionId).single();
-  if (error) { alert('Erro ao buscar sessão: ' + error.message); return; }
-  const snapshot = data.snapshot;
-  if (!snapshot.settlements) return;
-  snapshot.settlements[idx].paid = paid;
-  // Atualizar no banco
-  const { error: upError } = await supabase.from('sessions').update({ snapshot }).eq('id', sessionId);
-  if (upError) { alert('Erro ao atualizar pagamento: ' + upError.message); }
-  // Recarregar histórico após update
-  if (typeof window.reloadHistory === 'function') window.reloadHistory();
+  // Função removida - settlements agora são gerenciados pelo hook MySQL
+  console.log('updateSettlementPaid chamado:', { sessionId, idx, paid });
 }

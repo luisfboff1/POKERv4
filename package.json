@@ -14,7 +14,6 @@
     "dist:portable": "electron-builder --win portable"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.57.2",
     "chart.js": "^4.5.0",
     "express": "^4.18.2",
     "mysql2": "^3.15.0",
