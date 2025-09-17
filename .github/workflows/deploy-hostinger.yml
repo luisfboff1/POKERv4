@@ -37,7 +37,7 @@ jobs:
         username: ${{ secrets.HOSTINGER_FTP_USER }}
         password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
         local-dir: ./dist/
-        server-dir: /public_html/poker/
+        server-dir: /poker/
         exclude: |
           **/.git*
           **/.git*/**
