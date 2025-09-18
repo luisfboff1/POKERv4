@@ -72,10 +72,10 @@ try {
                 exit;
             }
             
-            $stmt = $pdo->prepare("
-                INSERT INTO dinner_data (session_id, total_amount, payer, division_type, custom_amount, user_id, created_at, updated_at) 
-                VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
-            ");
+            $sql = "INSERT INTO dinner_data (session_id, total_amount, payer, division_type, custom_amount, user_id, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())";
+            error_log("SQL a ser executado: " . $sql);
+            $stmt = $pdo->prepare($sql);
             
             try {
                 // Log da conexão
@@ -86,11 +86,24 @@ try {
                 
                 // Log da estrutura da tabela
                 try {
+                    $describeStmt = $pdo->query("SHOW CREATE TABLE dinner_data");
+                    $tableInfo = $describeStmt->fetch(PDO::FETCH_ASSOC);
+                    error_log("CREATE TABLE dinner_data: " . $tableInfo['Create Table']);
+                    
                     $describeStmt = $pdo->query("DESCRIBE dinner_data");
                     $columns = $describeStmt->fetchAll(PDO::FETCH_ASSOC);
-                    error_log("Estrutura da tabela dinner_data: " . json_encode($columns));
+                    error_log("Colunas da tabela dinner_data: " . json_encode($columns));
+                    
+                    // Tentar uma query simples para ver se a tabela existe
+                    $testStmt = $pdo->query("SELECT COUNT(*) FROM dinner_data");
+                    $count = $testStmt->fetchColumn();
+                    error_log("Número de registros na tabela: " . $count);
+                    
                 } catch (PDOException $e) {
                     error_log("Erro ao verificar estrutura da tabela: " . $e->getMessage());
+                    error_log("SQL State: " . $e->errorInfo[0]);
+                    error_log("Error Code: " . $e->errorInfo[1]);
+                    error_log("Error Message: " . $e->errorInfo[2]);
                 }
 
                 // Log da query que será executada
