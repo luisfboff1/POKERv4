@@ -114,7 +114,7 @@ function PokerSettlementsApp({ user }) {
       
       // Junta recomendações (fixas) + otimizadas
       setSessionSettlements([
-        ...validRecs.map(r => ({ 
+        ...(validRecs || []).map(r => ({ 
           from: r.from, 
           to: r.to, 
           amount: Number(r.amount), 
@@ -264,7 +264,7 @@ function PokerSettlementsApp({ user }) {
       id: uid(),
       dateISO: new Date().toISOString(),
       label: note.trim() || undefined,
-      players: players.map(p => ({ id: uid(), name: p.name, buyIns: [...p.buyIns], cashOut: +p.cashOut || 0 })),
+      players: (players || []).map(p => ({ id: uid(), name: p.name, buyIns: [...p.buyIns], cashOut: +p.cashOut || 0 })),
       settlements: sessionSettlements
     };
     
@@ -370,7 +370,7 @@ function PokerSettlementsApp({ user }) {
     
     // Atualiza settlements
     const newSettlements = [
-      ...validRecs.map(r => ({ 
+      ...(validRecs || []).map(r => ({ 
         from: r.from, 
         to: r.to, 
         amount: Number(r.amount), 
@@ -453,7 +453,7 @@ function PokerSettlementsApp({ user }) {
       const dinnerId = name || `dinner_${Date.now()}`;
       
       // Preparar dados dos jogadores com nomes
-      const playersData = players.map(player => ({
+      const playersData = (players || []).map(player => ({
         id: player.id,
         name: player.name
       }));
@@ -645,14 +645,14 @@ function PokerSettlementsApp({ user }) {
                   <label className="block text-xs mb-1">Quem paga</label>
                   <select value={recFrom} onChange={e=>setRecFrom(e.target.value)} className="rounded-xl border px-3 py-2 min-w-[120px]">
                     <option value="">Selecione</option>
-                    {players.map(p=>(<option key={p.name} value={p.name}>{p.name}</option>))}
+                    {(players || []).map(p=>(<option key={p.name} value={p.name}>{p.name}</option>))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs mb-1">Quem recebe</label>
                   <select value={recTo} onChange={e=>setRecTo(e.target.value)} className="rounded-xl border px-3 py-2 min-w-[120px]">
                     <option value="">Selecione</option>
-                    {players.map(p=>(<option key={p.name} value={p.name}>{p.name}</option>))}
+                    {(players || []).map(p=>(<option key={p.name} value={p.name}>{p.name}</option>))}
                   </select>
                 </div>
                 <div>
@@ -674,7 +674,7 @@ function PokerSettlementsApp({ user }) {
                     💡 Estas recomendações serão incluídas em todos os pagamentos. Use "Atualizar Otimização" para recalcular o restante.
                   </div>
                   <ul className="space-y-1">
-                    {recommendedPayments.map((r,i)=>(
+                    {(recommendedPayments || []).map((r,i)=>(
                       <li key={i} className="flex items-center justify-between bg-white rounded-lg p-2 border-l-4 border-emerald-400">
                         <span className="font-medium">{r.from} → {r.to}: {formatMoney(Number(r.amount), currencySymbols[currency])}</span>
                         <button 
@@ -902,7 +902,7 @@ function PlayersEditor({
             {players.length === 0 && (
               <div className="text-center py-6 text-slate-500">Adicione jogadores para começar</div>
             )}
-            {players.map(p => {
+            {(players || []).map(p => {
               const totalBuy = p.buyIns.reduce((a, b) => a + b, 0);
               const net = (p.cashOut || 0) - totalBuy;
               return (
@@ -942,7 +942,7 @@ function PlayersEditor({
               </thead>
               <tbody>
                 {players.length === 0 && (<tr><td colSpan={6} className="text-center py-6 text-slate-500">Adicione jogadores para começar</td></tr>)}
-                {players.map(p => {
+                {(players || []).map(p => {
                   const totalBuy = p.buyIns.reduce((a, b) => a + b, 0); const net = (p.cashOut || 0) - totalBuy;
                   return (
                     <tr key={p.id} className="border-t last:border-b align-top">
@@ -1045,7 +1045,7 @@ function OptimizerPanel({ settlements, currencySymbol, sessionId, onTogglePaid, 
             )}
           </div>
           <ul className="space-y-2">
-            {settlements.map((t,i)=>(
+            {(settlements || []).map((t,i)=>(
               <li key={i} className={`rounded-xl px-3 py-2 flex items-center gap-2 ${
                 t.recommended 
                   ? 'bg-emerald-50 border-2 border-emerald-400' 
@@ -1271,7 +1271,7 @@ function HistoryPanel({ history, dinnerData, currencySymbol, onDelete, onReload 
   // Atualiza settlements editáveis ao expandir uma sessão
   function handleExpand(sessionId, settlements) {
     if (expanded !== sessionId && settlements) {
-      setEditSettlements(prev => ({ ...prev, [sessionId]: settlements.map(t => ({ ...t })) }));
+      setEditSettlements(prev => ({ ...prev, [sessionId]: (settlements || []).map(t => ({ ...t })) }));
     }
     setExpanded(expanded === sessionId ? null : sessionId);
   }
@@ -1379,7 +1379,7 @@ function HistoryPanel({ history, dinnerData, currencySymbol, onDelete, onReload 
               <p className="text-sm text-slate-400 mt-2">As sessões de jogo são aquelas sem dados de janta associados.</p>
             </div>
           ) : (
-            gamesHistory.map(s=>{
+            (gamesHistory || []).map(s=>{
               const totals=summarize(s.players); const date=new Date(s.dateISO); const label=s.label?` — ${s.label}`:"";
               const settlements = s.raw.snapshot?.settlements || [];
               const isOpen = expanded === s.id;
@@ -1406,7 +1406,7 @@ function HistoryPanel({ history, dinnerData, currencySymbol, onDelete, onReload 
                       <table className="w-full text-sm">
                         <thead className="text-left text-slate-600"><tr><th className="py-1">Jogador</th><th>Buy-ins</th><th>Total Buy-in</th><th>Cash-out</th><th>Net</th></tr></thead>
                         <tbody>
-                          {s.players.map(p=>{ const tb=p.buyIns.reduce((a,b)=>a+b,0); const net=(p.cashOut||0)-tb; return (
+                          {s.(players || []).map(p=>{ const tb=p.buyIns.reduce((a,b)=>a+b,0); const net=(p.cashOut||0)-tb; return (
                             <tr key={p.id} className="border-t">
                               <td className="py-1">{p.name}</td>
                               <td className="py-1">{p.buyIns.map((b,i)=>(<span key={i} className="mr-1">{formatMoney(b, currencySymbol)}</span>))}</td>
@@ -1507,7 +1507,7 @@ function HistoryPanel({ history, dinnerData, currencySymbol, onDelete, onReload 
                           <h4 className="font-semibold text-orange-800">Participantes da Janta</h4>
                           {s.players.length > 0 ? (
                             <div className="space-y-2">
-                              {s.players.map(p => (
+                              {s.(players || []).map(p => (
                                 <div key={p.id} className="flex items-center justify-between p-2 bg-orange-50 rounded-lg">
                                   <div className="flex items-center gap-3">
                                     <span className="font-medium">{p.name}</span>
@@ -1548,7 +1548,7 @@ function HistoryPanel({ history, dinnerData, currencySymbol, onDelete, onReload 
                           <table className="w-full text-sm">
                             <thead className="text-left text-slate-600"><tr><th className="py-1">Jogador</th><th>Buy-ins</th><th>Total Buy-in</th><th>Cash-out</th><th>Net</th></tr></thead>
                             <tbody>
-                              {s.players.map(p=>{ const tb=p.buyIns.reduce((a,b)=>a+b,0); const net=(p.cashOut||0)-tb; return (
+                              {s.(players || []).map(p=>{ const tb=p.buyIns.reduce((a,b)=>a+b,0); const net=(p.cashOut||0)-tb; return (
                                 <tr key={p.id} className="border-t">
                                   <td className="py-1">{p.name}</td>
                                   <td className="py-1">{p.buyIns.map((b,i)=>(<span key={i} className="mr-1">{formatMoney(b, currencySymbol)}</span>))}</td>
@@ -1940,7 +1940,7 @@ function DinnerPanel({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Selecione quem pagou</option>
-              {players.map(player => (
+              {(players || []).map(player => (
                 <option key={player.id} value={player.id}>
                   {player.name}
                 </option>
@@ -1981,7 +1981,7 @@ function DinnerPanel({
           {dinnerData.divisionType === 'custom' && (
             <div className="mb-4">
               <h4 className="text-md font-medium text-gray-700 mb-2">Valores por Pessoa</h4>
-              {players.map(player => (
+              {(players || []).map(player => (
                 <div key={player.id} className="flex items-center gap-2 mb-2">
                   <span className="w-24 text-sm">{player.name}:</span>
                   <input
@@ -2020,7 +2020,7 @@ function DinnerPanel({
             </p>
           ) : (
             <div className="space-y-3">
-              {players.map(player => {
+              {(players || []).map(player => {
                 const payment = dinnerData.payments[player.id];
                 const amount = dinnerData.divisionType === 'equal' 
                   ? amountPerPerson 
@@ -2087,7 +2087,7 @@ function optimizeTransfers(players, recommendations = []){
   console.log('📝 Recomendações:', recommendations);
   
   // Calcular saldos líquidos iniciais
-  const nets = players.map(p => ({ 
+  const nets = (players || []).map(p => ({ 
     name: p.name, 
     net: (+p.cashOut || 0) - p.buyIns.reduce((a, b) => a + b, 0) 
   }));
