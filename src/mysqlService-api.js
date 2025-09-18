@@ -12,6 +12,20 @@ export async function getSessions(userId = null) {
     }
     
     const data = await response.json();
+    console.log('Dados recebidos da API:', data);
+    if (data.data) {
+      console.log('Sessions da API:', data.data);
+      data.data = data.data.map(session => {
+        if (session.snapshot) {
+          try {
+            session.snapshot = JSON.parse(session.snapshot);
+          } catch (e) {
+            console.error('Erro ao fazer parse do snapshot:', e);
+          }
+        }
+        return session;
+      });
+    }
     return { data, error: null };
   } catch (error) {
     console.error('Erro ao buscar sessões:', error);

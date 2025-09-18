@@ -215,16 +215,28 @@ function PokerSettlementsApp({ user }) {
   // Histórico agora vem do hook useSessions
   const history = (() => {
     try {
+      console.log('Sessions recebidas:', sessions);
       if (!sessions || !Array.isArray(sessions)) {
+        console.log('Sessions inválidas ou não é array');
         return [];
       }
-      return sessions.map(s => ({
-        id: s.id,
-        dateISO: s.date,
-        label: s.name,
-        players: s.snapshot ? (typeof s.snapshot === 'string' ? JSON.parse(s.snapshot).players : s.snapshot.players) : [],
-        raw: s
-      }));
+      return sessions.map(s => {
+        console.log('Processando sessão:', s);
+        try {
+          const processedSession = {
+            id: s.id,
+            dateISO: s.date,
+            label: s.name,
+            players: s.snapshot ? (typeof s.snapshot === 'string' ? JSON.parse(s.snapshot).players : s.snapshot.players) : [],
+            raw: s
+          };
+          console.log('Sessão processada:', processedSession);
+          return processedSession;
+        } catch (sessionError) {
+          console.error('Erro ao processar sessão individual:', s, sessionError);
+          return null;
+        }
+      }).filter(Boolean);
     } catch (error) {
       console.error('Erro ao processar histórico:', error);
       return [];
