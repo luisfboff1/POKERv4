@@ -33,19 +33,17 @@ try {
                 $dinner['participants'] = $participants;
                 echo json_encode(['data' => $dinner]);
             } else {
-                // Buscar todos os dados de janta
-                $userId = $_GET['userId'] ?? null;
-                
-                if ($userId) {
-                    $stmt = $pdo->prepare("SELECT * FROM dinner_data WHERE user_id = ? ORDER BY created_at DESC");
-                    $stmt->execute([$userId]);
-                } else {
-                    $stmt = $pdo->prepare("SELECT * FROM dinner_data ORDER BY created_at DESC");
-                    $stmt->execute();
-                }
-                
-                $dinners = $stmt->fetchAll();
-                echo json_encode(['data' => $dinners]);
+                // Verificar estrutura das tabelas
+                $stmt = $pdo->query("SHOW CREATE TABLE dinner_data");
+                $dinner_data_structure = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $stmt = $pdo->query("SHOW CREATE TABLE dinner_participants");
+                $dinner_participants_structure = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                echo json_encode([
+                    'dinner_data' => $dinner_data_structure,
+                    'dinner_participants' => $dinner_participants_structure
+                ]);
             }
             break;
             
@@ -55,6 +53,18 @@ try {
             
             // Debug: Log dos dados recebidos
             error_log("Dados de janta recebidos: " . json_encode($input));
+            
+            // Debug: Log da query SQL
+            $sql = "INSERT INTO dinner_data (session_id, total_amount, payer, division_type, custom_amount, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())";
+            error_log("SQL Query: " . $sql);
+            error_log("SQL Params: " . json_encode([
+                $input['session_id'] ?? null,
+                $input['total_amount'] ?? 0,
+                $input['payer'] ?? '',
+                $input['division_type'] ?? 'equal',
+                $input['custom_amount'] ?? 0,
+                $input['user_id'] ?? 1
+            ]));
             
             if (!$input) {
                 http_response_code(400);
@@ -68,6 +78,11 @@ try {
             ");
             
             try {
+                // Log da estrutura da tabela antes de inserir
+                $describeStmt = $pdo->query("DESCRIBE dinner_data");
+                $columns = $describeStmt->fetchAll(PDO::FETCH_ASSOC);
+                error_log("Estrutura da tabela dinner_data: " . json_encode($columns));
+
                 $stmt->execute([
                     $input['session_id'] ?? null,
                     $input['total_amount'] ?? 0,
@@ -78,6 +93,9 @@ try {
                 ]);
             } catch (PDOException $e) {
                 error_log("Erro ao inserir dados de janta: " . $e->getMessage());
+                error_log("SQL State: " . $e->errorInfo[0]);
+                error_log("Error Code: " . $e->errorInfo[1]);
+                error_log("Error Message: " . $e->errorInfo[2]);
                 http_response_code(500);
                 echo json_encode(['error' => 'Erro ao salvar dados de janta: ' . $e->getMessage()]);
                 exit;
