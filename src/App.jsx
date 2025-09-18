@@ -213,7 +213,7 @@ function PokerSettlementsApp({ user }) {
   }, []);
 
   // Histórico agora vem do hook useSessions
-  const history = sessions.map(s => ({
+  const history = (sessions || []).map(s => ({
     id: s.id,
     dateISO: s.date,
     label: s.name,
