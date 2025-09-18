@@ -786,21 +786,26 @@ function PlayersEditor({
   
   // Extrai nomes únicos do histórico de forma mais robusta
   const getUniquePlayerNames = () => {
-    if (!history || !Array.isArray(history)) {
+    try {
+      if (!history || !Array.isArray(history)) {
+        return [];
+      }
+      
+      const names = new Set();
+      history.forEach(session => {
+        if (session && session.players && Array.isArray(session.players)) {
+          session.players.forEach(player => {
+            if (player && player.name && typeof player.name === 'string') {
+              names.add(player.name);
+            }
+          });
+        }
+      });
+      return Array.from(names).sort();
+    } catch (error) {
+      console.error('Erro ao extrair nomes únicos:', error);
       return [];
     }
-    
-    const names = new Set();
-    history.forEach(session => {
-      if (session && session.players && Array.isArray(session.players)) {
-        session.players.forEach(player => {
-          if (player && player.name) {
-            names.add(player.name);
-          }
-        });
-      }
-    });
-    return Array.from(names).sort();
   };
 
   const uniqueNames = getUniquePlayerNames();
@@ -815,9 +820,9 @@ function PlayersEditor({
   }, [history, uniqueNames, name]);
 
   // Filtra sugestões baseado no que está sendo digitado
-  const filteredSuggestions = uniqueNames.filter(n => 
-    n.toLowerCase().includes(name.toLowerCase()) && 
-    !players.some(p => p.name === n)
+  const filteredSuggestions = (uniqueNames || []).filter(n => 
+    n && typeof n === 'string' && n.toLowerCase().includes(name.toLowerCase()) && 
+    !(players || []).some(p => p.name === n)
   );
 
   const handleInputChange = (e) => {
@@ -875,7 +880,7 @@ function PlayersEditor({
               {/* Lista de sugestões */}
               {showSuggestions && filteredSuggestions.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-pink-100 dark:bg-pink-700 border rounded-xl shadow-lg z-10 max-h-48 overflow-y-auto">
-                  {filteredSuggestions.map((suggestion, index) => (
+                  {(filteredSuggestions || []).map((suggestion, index) => (
                     <div
                       key={suggestion}
                       className={`px-3 py-2 cursor-pointer hover:bg-pink-200 dark:hover:bg-pink-600 ${
