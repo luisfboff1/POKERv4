@@ -67,7 +67,7 @@ try {
             }
             
             $stmt = $pdo->prepare("
-                INSERT INTO sessions (name, date, buy_in, rebuy, addon, total_pot, user_id, created_at, updated_at) 
+                INSERT INTO sessions (name, date, buy_in, rebuy, add_on, total_pot, created_by, created_at, updated_at) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
             ");
             
@@ -87,7 +87,7 @@ try {
             if (isset($input['participants']) && is_array($input['participants'])) {
                 foreach ($input['participants'] as $participant) {
                     $stmt = $pdo->prepare("
-                        INSERT INTO participants (session_id, name, buy_in, rebuy, addon, total_invested, final_amount, profit_loss) 
+                        INSERT INTO participants (session_id, name, buy_in, rebuy, add_on, total_invested, final_amount, profit_loss) 
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     ");
                     $stmt->execute([
