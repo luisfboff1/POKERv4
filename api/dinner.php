@@ -72,6 +72,7 @@ try {
                 exit;
             }
             
+            // Não precisamos incluir created_at e updated_at pois eles têm valores default
             $sql = "INSERT INTO dinner_data (session_id, total_amount, payer, division_type, custom_amount, user_id) 
                 VALUES (?, ?, ?, ?, ?, ?)";
             error_log("SQL a ser executado: " . $sql);
