@@ -281,11 +281,20 @@ function PokerSettlementsApp({ user }) {
     const sessionData = {
       name: snapshot.label || `Sessão ${new Date().toLocaleDateString()}`,
       date: new Date().toISOString().split('T')[0],
-      buyIn: players.reduce((sum, p) => sum + (p.buyIn || 0), 0),
+      buyIn: players.reduce((sum, p) => sum + (p.buyIns?.reduce((a,b)=>a+b,0) || 0), 0),
       rebuy: players.reduce((sum, p) => sum + (p.rebuy || 0), 0),
       addOn: players.reduce((sum, p) => sum + (p.addOn || 0), 0),
-      totalPot: players.reduce((sum, p) => sum + (p.finalAmount || 0), 0),
+      totalPot: players.reduce((sum, p) => sum + (p.cashOut || 0), 0),
       snapshot: snapshot,
+      participants: (players || []).map(p => ({
+        name: p.name,
+        buyIn: p.buyIns?.reduce((a,b)=>a+b,0) || 0,
+        rebuy: p.rebuy || 0,
+        addOn: p.addOn || 0,
+        totalInvested: p.buyIns?.reduce((a,b)=>a+b,0) || 0,
+        finalAmount: p.cashOut || 0,
+        profitLoss: (p.cashOut || 0) - (p.buyIns?.reduce((a,b)=>a+b,0) || 0)
+      })),
       userId: user.id
     };
     

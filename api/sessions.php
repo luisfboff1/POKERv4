@@ -60,6 +60,9 @@ try {
             // Criar nova sessão
             $input = json_decode(file_get_contents('php://input'), true);
             
+            // Debug: Log dos dados recebidos
+            error_log("Dados recebidos na API: " . json_encode($input));
+            
             if (!$input) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Dados inválidos']);
@@ -76,7 +79,7 @@ try {
                 $input['date'] ?? date('Y-m-d'),
                 $input['buyIn'] ?? 0,
                 $input['rebuy'] ?? 0,
-                $input['addon'] ?? 0,
+                $input['addOn'] ?? 0,
                 $input['totalPot'] ?? 0,
                 json_encode($input['snapshot'] ?? null),
                 $input['userId'] ?? 1
