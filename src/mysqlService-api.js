@@ -1,4 +1,4 @@
-// Serviço que faz chamadas HTTP para o backend Node.js
+// Serviço que faz chamadas HTTP para a API PHP
 const API_BASE = window.location.origin;
 
 // ===== SESSÕES =====
@@ -61,18 +61,14 @@ export async function deleteSession(sessionId) {
 // ===== DADOS DE JANTA =====
 export async function getDinnerData(sessionId = null) {
   try {
-    if (!sessionId) {
-      return { data: [], error: null };
-    }
-    
-    const response = await fetch(API_BASE + `/api/sessions/${sessionId}/dinner`);
+    const response = await fetch(API_BASE + '/api/dinner');
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    const data = await response.json();
-    return { data: data ? [data] : [], error: null };
+    const result = await response.json();
+    return { data: result.data || [], error: null };
   } catch (error) {
     console.error('Erro ao buscar dados de janta:', error);
     return { data: null, error: error.message };
@@ -81,7 +77,7 @@ export async function getDinnerData(sessionId = null) {
 
 export async function saveDinnerData(dinnerData) {
   try {
-    const response = await fetch(API_BASE + `/api/sessions/${dinnerData.sessionId}/dinner`, {
+    const response = await fetch(API_BASE + '/api/dinner', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -93,17 +89,17 @@ export async function saveDinnerData(dinnerData) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    const data = await response.json();
-    return { data, error: null };
+    const result = await response.json();
+    return { data: result.data, error: null };
   } catch (error) {
     console.error('Erro ao salvar dados de janta:', error);
     return { data: null, error: error.message };
   }
 }
 
-export async function deleteDinnerData(sessionId) {
+export async function deleteDinnerData(dinnerId) {
   try {
-    const response = await fetch(API_BASE + `/api/sessions/${sessionId}/dinner`, {
+    const response = await fetch(API_BASE + `/api/dinner/${dinnerId}`, {
       method: 'DELETE'
     });
     
@@ -121,14 +117,14 @@ export async function deleteDinnerData(sessionId) {
 // ===== USUÁRIOS =====
 export async function getUsers() {
   try {
-    const response = await fetch(API_BASE + '/api/users');
+    const response = await fetch(API_BASE + '/api/players');
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    const data = await response.json();
-    return { data, error: null };
+    const result = await response.json();
+    return { data: result.data || [], error: null };
   } catch (error) {
     console.error('Erro ao buscar usuários:', error);
     return { data: null, error: error.message };
@@ -137,7 +133,7 @@ export async function getUsers() {
 
 export async function saveUser(userData) {
   try {
-    const response = await fetch(API_BASE + '/api/users', {
+    const response = await fetch(API_BASE + '/api/players', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -149,8 +145,8 @@ export async function saveUser(userData) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    const data = await response.json();
-    return { data, error: null };
+    const result = await response.json();
+    return { data: result.data, error: null };
   } catch (error) {
     console.error('Erro ao salvar usuário:', error);
     return { data: null, error: error.message };
