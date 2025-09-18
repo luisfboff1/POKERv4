@@ -30,7 +30,7 @@ export function useSessions() {
       if (error) {
         setError(error);
       } else {
-        setSessions(data || []);
+        setSessions(data.data || []);
       }
     } catch (err) {
       setError(err.message);

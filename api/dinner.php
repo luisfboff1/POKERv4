@@ -53,6 +53,9 @@ try {
             // Criar novos dados de janta
             $input = json_decode(file_get_contents('php://input'), true);
             
+            // Debug: Log dos dados recebidos
+            error_log("Dados de janta recebidos: " . json_encode($input));
+            
             if (!$input) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Dados inválidos']);
@@ -64,14 +67,21 @@ try {
                 VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
             ");
             
-            $stmt->execute([
-                $input['sessionId'] ?? null,
-                $input['totalAmount'] ?? 0,
-                $input['payer'] ?? '',
-                $input['divisionType'] ?? 'equal',
-                $input['customAmount'] ?? 0,
-                $input['userId'] ?? 1
-            ]);
+            try {
+                $stmt->execute([
+                    $input['session_id'] ?? null,
+                    $input['total_amount'] ?? 0,
+                    $input['payer'] ?? '',
+                    $input['division_type'] ?? 'equal',
+                    $input['custom_amount'] ?? 0,
+                    $input['user_id'] ?? 1
+                ]);
+            } catch (PDOException $e) {
+                error_log("Erro ao inserir dados de janta: " . $e->getMessage());
+                http_response_code(500);
+                echo json_encode(['error' => 'Erro ao salvar dados de janta: ' . $e->getMessage()]);
+                exit;
+            }
             
             $dinnerId = $pdo->lastInsertId();
             

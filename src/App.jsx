@@ -216,20 +216,36 @@ function PokerSettlementsApp({ user }) {
   const history = (() => {
     try {
       console.log('Sessions recebidas:', sessions);
-      if (!sessions || !Array.isArray(sessions)) {
-        console.log('Sessions inválidas ou não é array');
+      if (!Array.isArray(sessions)) {
+        console.log('Sessions não é um array:', typeof sessions);
         return [];
       }
-      return sessions.map(s => {
+      const processedSessions = sessions.map(s => {
         console.log('Processando sessão:', s);
         try {
+          if (!s) {
+            console.log('Sessão inválida:', s);
+            return null;
+          }
           const processedSession = {
             id: s.id,
             dateISO: s.date,
             label: s.name,
-            players: s.snapshot ? (typeof s.snapshot === 'string' ? JSON.parse(s.snapshot).players : s.snapshot.players) : [],
+            players: [],  // Inicializa vazio
             raw: s
           };
+          
+          // Processa o snapshot com mais segurança
+          if (s.snapshot) {
+            try {
+              const snapshotData = typeof s.snapshot === 'string' ? JSON.parse(s.snapshot) : s.snapshot;
+              processedSession.players = snapshotData.players || [];
+              console.log('Players processados:', processedSession.players);
+            } catch (snapshotError) {
+              console.error('Erro ao processar snapshot:', snapshotError);
+            }
+          }
+          
           console.log('Sessão processada:', processedSession);
           return processedSession;
         } catch (sessionError) {
@@ -237,6 +253,9 @@ function PokerSettlementsApp({ user }) {
           return null;
         }
       }).filter(Boolean);
+      
+      console.log('Histórico processado:', processedSessions);
+      return processedSessions;
     } catch (error) {
       console.error('Erro ao processar histórico:', error);
       return [];
@@ -490,11 +509,17 @@ function PokerSettlementsApp({ user }) {
       }));
 
       const dinnerDataToSave = {
-        sessionId: dinnerId,
-        totalCost: currentDinnerData.totalAmount,
-        numberOfPeople: players.length,
-        costPerPerson: currentDinnerData.totalAmount / players.length,
-        participants: playersData
+        session_id: dinnerId,
+        total_amount: currentDinnerData.totalAmount,
+        payer: currentDinnerData.payer || '',
+        division_type: currentDinnerData.divisionType || 'equal',
+        custom_amount: currentDinnerData.customAmount || 0,
+        user_id: user?.id || 1,
+        participants: (players || []).map(p => ({
+          name: p.name,
+          amount: currentDinnerData.customAmounts?.[p.id] || (currentDinnerData.totalAmount / players.length),
+          paid: currentDinnerData.payments?.[p.id] || false
+        }))
       };
 
       const success = await addDinnerData(dinnerDataToSave);
