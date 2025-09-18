@@ -1,6 +1,6 @@
 <?php
 // Configuração do banco de dados MySQL
-$host = 'localhost';
+$host = 'srv1437.hstgr.io';
 $dbname = 'u903000160_poker';
 $username = 'u903000160_poker';
 $password = 'Poker2025!';
