@@ -78,26 +78,49 @@ try {
             ");
             
             try {
-                // Log da estrutura da tabela antes de inserir
-                $describeStmt = $pdo->query("DESCRIBE dinner_data");
-                $columns = $describeStmt->fetchAll(PDO::FETCH_ASSOC);
-                error_log("Estrutura da tabela dinner_data: " . json_encode($columns));
+                // Log da conexão
+                error_log("Tentando conectar ao MySQL em: " . $host);
+                
+                // Log dos dados recebidos
+                error_log("Dados recebidos para inserção: " . json_encode($input));
+                
+                // Log da estrutura da tabela
+                try {
+                    $describeStmt = $pdo->query("DESCRIBE dinner_data");
+                    $columns = $describeStmt->fetchAll(PDO::FETCH_ASSOC);
+                    error_log("Estrutura da tabela dinner_data: " . json_encode($columns));
+                } catch (PDOException $e) {
+                    error_log("Erro ao verificar estrutura da tabela: " . $e->getMessage());
+                }
 
-                $stmt->execute([
+                // Log da query que será executada
+                $queryParams = [
                     $input['session_id'] ?? null,
                     $input['total_amount'] ?? 0,
                     $input['payer'] ?? '',
                     $input['division_type'] ?? 'equal',
                     $input['custom_amount'] ?? 0,
                     $input['user_id'] ?? 1
-                ]);
+                ];
+                error_log("Query params: " . json_encode($queryParams));
+
+                $stmt->execute($queryParams);
+                
             } catch (PDOException $e) {
-                error_log("Erro ao inserir dados de janta: " . $e->getMessage());
+                error_log("=== ERRO DETALHADO ===");
+                error_log("Mensagem: " . $e->getMessage());
+                error_log("Código: " . $e->getCode());
                 error_log("SQL State: " . $e->errorInfo[0]);
                 error_log("Error Code: " . $e->errorInfo[1]);
                 error_log("Error Message: " . $e->errorInfo[2]);
+                error_log("=== FIM DO ERRO ===");
+                
                 http_response_code(500);
-                echo json_encode(['error' => 'Erro ao salvar dados de janta: ' . $e->getMessage()]);
+                echo json_encode([
+                    'error' => 'Erro ao salvar dados de janta',
+                    'details' => $e->getMessage(),
+                    'code' => $e->getCode()
+                ]);
                 exit;
             }
             
