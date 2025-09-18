@@ -30,7 +30,7 @@ jobs:
         echo "Build completed. Checking dist folder..."
         ls -la dist/
       
-    - name: Deploy to Hostinger via FTP
+    - name: Deploy Frontend to Hostinger via FTP
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
       with:
         server: ${{ secrets.HOSTINGER_FTP_HOST }}
@@ -54,5 +54,19 @@ jobs:
           **/electron/**
           **/mysql_setup.sql
           **/HOSTINGER_SETUP.md
+        log-level: minimal
+        dry-run: false
+        
+    - name: Deploy API PHP to Hostinger via FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ${{ secrets.HOSTINGER_FTP_HOST }}
+        username: ${{ secrets.HOSTINGER_FTP_USER }}
+        password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+        local-dir: ./api/
+        server-dir: /poker/api/
+        exclude: |
+          **/.git*
+          **/.git*/**
         log-level: minimal
         dry-run: false
