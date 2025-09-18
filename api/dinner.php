@@ -72,8 +72,8 @@ try {
                 exit;
             }
             
-            $sql = "INSERT INTO dinner_data (session_id, total_amount, payer, division_type, custom_amount, user_id, created_at, updated_at) 
-                VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())";
+            $sql = "INSERT INTO dinner_data (session_id, total_amount, payer, division_type, custom_amount, user_id) 
+                VALUES (?, ?, ?, ?, ?, ?)";
             error_log("SQL a ser executado: " . $sql);
             $stmt = $pdo->prepare($sql);
             
