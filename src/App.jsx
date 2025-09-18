@@ -1663,7 +1663,7 @@ function HistoryPanel({ history, dinnerData, currencySymbol, onDelete, onReload 
 function RankingPanel({ history, currencySymbol }){
   const stats = buildRanking(history);
   const totalSessions = history.length || 1;
-  const rows = Object.values(stats).sort((a,b)=>b.net-a.net);
+  const rows = (Object.values(stats) || []).sort((a,b)=>b.net-a.net);
   const [expand, setExpand] = useState(false);
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
   return (
@@ -1685,7 +1685,7 @@ function RankingPanel({ history, currencySymbol }){
             </tr>
           </thead>
           <tbody>
-            {rows.map(r=>(
+            {(rows || []).map(r=>(
               <tr key={r.name} className="border-t dark:border-slate-700">
                 <td className="py-2 font-medium">{r.name}</td>
                 <td className="py-2">{r.participations}</td>
@@ -2166,32 +2166,49 @@ function optimizeTransfers(players, recommendations = []){
   return result;
 }
 function buildRanking(history){
-  const map = {};
-  for(const s of history){
-    const present=new Set();
-    for(const p of s.players){
-      if(!map[p.name]) map[p.name]={ name:p.name, participations:0, totalBuyIns:0, totalCashOut:0, net:0 };
-      const buy=p.buyIns.reduce((a,b)=>a+b,0); const cash=+p.cashOut||0; const net=cash-buy;
-      map[p.name].totalBuyIns+=buy; map[p.name].totalCashOut+=cash; map[p.name].net+=net;
-      present.add(p.name);
+  try {
+    if (!history || !Array.isArray(history)) {
+      return {};
     }
-    present.forEach(nm=>{ map[nm].participations += 1; });
+    
+    const map = {};
+    for(const s of history){
+      if (!s || !s.players || !Array.isArray(s.players)) {
+        continue;
+      }
+      
+      const present=new Set();
+      for(const p of s.players){
+        if (!p || !p.name) {
+          continue;
+        }
+        
+        if(!map[p.name]) map[p.name]={ name:p.name, participations:0, totalBuyIns:0, totalCashOut:0, net:0 };
+        const buy=p.buyIns.reduce((a,b)=>a+b,0); const cash=+p.cashOut||0; const net=cash-buy;
+        map[p.name].totalBuyIns+=buy; map[p.name].totalCashOut+=cash; map[p.name].net+=net;
+        present.add(p.name);
+      }
+      present.forEach(nm=>{ map[nm].participations += 1; });
+    }
+    return map;
+  } catch (error) {
+    console.error('Erro ao construir ranking:', error);
+    return {};
   }
-  return map;
 }
 
 // DashboardPanel: novo componente para o gráfico
 function DashboardPanel({ history, currencySymbol }) {
   // Ranking já existe, vamos usar buildRanking
   const stats = buildRanking(history);
-  const rows = Object.values(stats).sort((a,b)=>b.net-a.net);
+  const rows = (Object.values(stats) || []).sort((a,b)=>b.net-a.net);
   const data = {
-    labels: rows.map(r => r.name),
+    labels: (rows || []).map(r => r.name),
     datasets: [
       {
         label: 'Lucro Líquido',
-        data: rows.map(r => r.net),
-        backgroundColor: rows.map(r => r.net >= 0 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(239, 68, 68, 0.7)'),
+        data: (rows || []).map(r => r.net),
+        backgroundColor: (rows || []).map(r => r.net >= 0 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(239, 68, 68, 0.7)'),
       },
     ],
   };
