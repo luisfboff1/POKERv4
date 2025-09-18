@@ -1406,7 +1406,7 @@ function HistoryPanel({ history, dinnerData, currencySymbol, onDelete, onReload 
                       <table className="w-full text-sm">
                         <thead className="text-left text-slate-600"><tr><th className="py-1">Jogador</th><th>Buy-ins</th><th>Total Buy-in</th><th>Cash-out</th><th>Net</th></tr></thead>
                         <tbody>
-                          {s.(players || []).map(p=>{ const tb=p.buyIns.reduce((a,b)=>a+b,0); const net=(p.cashOut||0)-tb; return (
+                          {(s.players || []).map(p=>{ const tb=p.buyIns.reduce((a,b)=>a+b,0); const net=(p.cashOut||0)-tb; return (
                             <tr key={p.id} className="border-t">
                               <td className="py-1">{p.name}</td>
                               <td className="py-1">{p.buyIns.map((b,i)=>(<span key={i} className="mr-1">{formatMoney(b, currencySymbol)}</span>))}</td>
@@ -1507,7 +1507,7 @@ function HistoryPanel({ history, dinnerData, currencySymbol, onDelete, onReload 
                           <h4 className="font-semibold text-orange-800">Participantes da Janta</h4>
                           {s.players.length > 0 ? (
                             <div className="space-y-2">
-                              {s.(players || []).map(p => (
+                              {(s.players || []).map(p => (
                                 <div key={p.id} className="flex items-center justify-between p-2 bg-orange-50 rounded-lg">
                                   <div className="flex items-center gap-3">
                                     <span className="font-medium">{p.name}</span>
@@ -1548,7 +1548,7 @@ function HistoryPanel({ history, dinnerData, currencySymbol, onDelete, onReload 
                           <table className="w-full text-sm">
                             <thead className="text-left text-slate-600"><tr><th className="py-1">Jogador</th><th>Buy-ins</th><th>Total Buy-in</th><th>Cash-out</th><th>Net</th></tr></thead>
                             <tbody>
-                              {s.(players || []).map(p=>{ const tb=p.buyIns.reduce((a,b)=>a+b,0); const net=(p.cashOut||0)-tb; return (
+                              {(s.players || []).map(p=>{ const tb=p.buyIns.reduce((a,b)=>a+b,0); const net=(p.cashOut||0)-tb; return (
                                 <tr key={p.id} className="border-t">
                                   <td className="py-1">{p.name}</td>
                                   <td className="py-1">{p.buyIns.map((b,i)=>(<span key={i} className="mr-1">{formatMoney(b, currencySymbol)}</span>))}</td>
