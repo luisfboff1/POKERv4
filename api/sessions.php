@@ -67,8 +67,8 @@ try {
             }
             
             $stmt = $pdo->prepare("
-                INSERT INTO sessions (name, date, buy_in, rebuy, add_on, total_pot, created_by, created_at, updated_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                INSERT INTO sessions (name, date, buy_in, rebuy, add_on, total_pot, snapshot, created_by, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
             ");
             
             $stmt->execute([
@@ -78,6 +78,7 @@ try {
                 $input['rebuy'] ?? 0,
                 $input['addon'] ?? 0,
                 $input['totalPot'] ?? 0,
+                json_encode($input['snapshot'] ?? null),
                 $input['userId'] ?? 1
             ]);
             
