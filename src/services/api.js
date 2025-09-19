@@ -20,7 +20,7 @@ export const sessionApi = {
       },
       body: JSON.stringify({
         date: sessionData.date,
-        players_data: sessionData.players, // Enviando como players_data
+        players_data: sessionData.players,
         recommendations: sessionData.recommendations || []
       })
     });
@@ -39,7 +39,7 @@ export const sessionApi = {
       },
       body: JSON.stringify({
         date: sessionData.date,
-        players_data: sessionData.players, // Enviando como players_data
+        players_data: sessionData.players,
         recommendations: sessionData.recommendations || []
       })
     });
@@ -56,6 +56,15 @@ export const sessionApi = {
     });
     if (!response.ok) {
       throw new Error('Erro ao excluir sessão');
+    }
+    return response.json();
+  },
+
+  // Buscar jogadores únicos
+  getPlayers: async () => {
+    const response = await fetch(`${API_BASE}/players.php`);
+    if (!response.ok) {
+      throw new Error('Erro ao buscar jogadores');
     }
     return response.json();
   }
