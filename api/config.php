@@ -1,4 +1,19 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Headers CORS - funcionam tanto em dev quanto em produção
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+header('Content-Type: application/json');
+
+// Tratar preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
 // Configuração do banco de dados MySQL
 $host = 'srv1437.hstgr.io';
 $dbname = 'u903000160_poker';
@@ -12,18 +27,6 @@ try {
 } catch(PDOException $e) {
     http_response_code(500);
     echo json_encode(['error' => 'Erro de conexão com o banco: ' . $e->getMessage()]);
-    exit;
-}
-
-// Headers para CORS
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-
-// Handle preflight requests
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
     exit;
 }
 ?>

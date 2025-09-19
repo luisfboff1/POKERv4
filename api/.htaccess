@@ -1,22 +1,9 @@
-RewriteEngine On
+# Permitir CORS e métodos HTTP necessários
+Header set Access-Control-Allow-Origin "*"
+Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+Header set Access-Control-Allow-Headers "Content-Type"
 
-# Permitir CORS
-Header always set Access-Control-Allow-Origin "*"
-Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-Header always set Access-Control-Allow-Headers "Content-Type"
-
-# Redirecionar todas as requisições para o arquivo correto
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-
-# API de sessões
-RewriteRule ^sessions/?$ sessions.php [L]
-RewriteRule ^sessions/([0-9]+)/?$ sessions.php [L]
-
-# API de janta
-RewriteRule ^dinner/?$ dinner.php [L]
-RewriteRule ^dinner/([0-9]+)/?$ dinner.php [L]
-
-# API de jogadores
-RewriteRule ^players/?$ players.php [L]
-RewriteRule ^players/([0-9]+)/?$ players.php [L]
+# Forçar todas as requisições a serem tratadas como PHP
+<FilesMatch "^[^.]+$">
+    SetHandler application/x-httpd-php
+</FilesMatch>

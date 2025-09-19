@@ -1,3 +1,17 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  @apply bg-slate-900 text-white;
+}
+
+input[type="number"],
+input[type="text"],
+select {
+  @apply bg-slate-700 border-slate-600 text-white;
+}
+
+input[type="checkbox"] {
+  @apply bg-slate-700 border-slate-600 text-blue-500;
+}

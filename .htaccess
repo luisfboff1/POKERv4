@@ -1,0 +1,19 @@
+# Habilitar rewrite engine
+RewriteEngine On
+RewriteBase /
+
+# Permitir CORS
+Header set Access-Control-Allow-Origin "*"
+Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+Header set Access-Control-Allow-Credentials "true"
+
+# Redirecionar todas as requisições para /api/* para a pasta api/
+RewriteRule ^api/(.*)$ api/$1 [QSA,L]
+
+# Se a requisição não é para um arquivo ou diretório existente
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/api/
+# Redirecionar para index.html para suportar rotas do React
+RewriteRule . /index.html [L]
