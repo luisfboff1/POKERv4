@@ -1,98 +1,92 @@
-import React, { useMemo } from 'react';
-import { optimizeTransfers } from '../../utils/optimizeTransfers';
+import React from 'react';
 
-export function TransferList({ players, recommendations, onUpdateOptimization }) {
-  // Calcular transferências otimizadas usando useMemo para melhor performance
-  const transfers = useMemo(() => {
-    // Filtrar apenas jogadores com saldo não zero
-    const activePlayers = players.filter(player => {
-      const totalBuyIn = player.buyIns.reduce((sum, buyIn) => sum + buyIn, 0);
-      const balance = player.cashOut - totalBuyIn;
-      return balance !== 0;
-    });
-
-    return optimizeTransfers(activePlayers, recommendations);
-  }, [players, recommendations]);
-
-  const totalTransfers = transfers.length;
-  const totalVolume = transfers.reduce((sum, t) => sum + t.amount, 0);
-  const recommendedCount = transfers.filter(t => t.recommended).length;
-  const optimizedCount = transfers.filter(t => !t.recommended).length;
-
-  if (players.length === 0) {
+export function TransferList({ players = [], recommendations = [] }) {
+  if (!players || players.length === 0) {
     return (
-      <div className="bg-slate-800 p-6 rounded-lg">
-        <h3 className="text-lg font-medium mb-2">Otimização de Transferências</h3>
-        <div className="text-slate-400">Adicione jogadores para começar</div>
+      <div className="card">
+        <h2 className="text-xl font-semibold mb-4">Otimização de Transferências</h2>
+        <p className="text-slate-400">
+          Adicione jogadores para ver as recomendações de transferências
+        </p>
       </div>
     );
   }
 
+  // Calcular balanço de cada jogador
+  const balances = players.map(player => {
+    const buyIn = player.buyIns?.reduce((sum, value) => sum + value, 0) || 0;
+    const cashOut = player.cashOut || 0;
+    return {
+      name: player.name,
+      balance: cashOut - buyIn
+    };
+  });
+
+  // Separar pagadores e recebedores
+  const payers = balances.filter(b => b.balance < 0)
+    .sort((a, b) => a.balance - b.balance);
+  const receivers = balances.filter(b => b.balance > 0)
+    .sort((a, b) => b.balance - a.balance);
+
+  // Formatar valor em reais
+  const formatMoney = (value) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
   return (
-    <div className="bg-slate-800 p-6 rounded-lg">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium">Otimização de Transferências</h3>
-        {recommendations.length > 0 && (
-          <button 
-            onClick={onUpdateOptimization}
-            className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            title="Recalcular otimização considerando recomendações"
-          >
-            🔄 Atualizar
-          </button>
-        )}
+    <div className="card space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Otimização de Transferências</h2>
+        
+        {/* Balanços */}
+        <div className="space-y-2">
+          {balances.map((balance, index) => (
+            <div 
+              key={index}
+              className={`flex justify-between items-center p-2 rounded ${
+                balance.balance > 0 
+                  ? 'bg-green-500/10 text-green-400'
+                  : balance.balance < 0 
+                    ? 'bg-red-500/10 text-red-400'
+                    : 'bg-slate-700'
+              }`}
+            >
+              <span>{balance.name}</span>
+              <span>{formatMoney(balance.balance)}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {totalTransfers === 0 ? (
-        <div className="text-slate-400">Nada a liquidar.</div>
-      ) : (
-        <>
-          <div className="text-sm text-slate-400 mb-4">
-            Sugestão com número mínimo de transferências (≤ N-1):
-            {recommendedCount > 0 && (
-              <div className="mt-1 text-xs text-emerald-500">
-                📝 {recommendedCount} recomendação(ões) fixa(s) + {optimizedCount} transferência(s) otimizada(s)
-              </div>
-            )}
-          </div>
-
+      {/* Recomendações */}
+      {(payers.length > 0 || receivers.length > 0) && (
+        <div>
+          <h3 className="font-medium mb-2">Recomendações</h3>
           <div className="space-y-2">
-            {transfers.map((transfer, index) => (
-              <div
-                key={index}
-                className={`rounded-lg p-3 flex items-center justify-between ${
-                  transfer.recommended 
-                    ? 'bg-emerald-900/20 border border-emerald-800' 
-                    : 'bg-slate-700'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{transfer.from}</span>
-                  <span className="text-slate-400">→</span>
-                  <span className="font-medium">{transfer.to}</span>
-                  <span className="text-slate-400">
-                    R$ {transfer.amount.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {transfer.recommended ? (
-                    <span className="text-xs bg-emerald-900 text-emerald-300 px-2 py-1 rounded-full">
-                      📝 Fixo
-                    </span>
-                  ) : (
-                    <span className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded-full">
-                      🔄 Otimizado
-                    </span>
-                  )}
-                </div>
-              </div>
+            {payers.map(payer => (
+              receivers.map(receiver => {
+                const amount = Math.min(Math.abs(payer.balance), receiver.balance);
+                if (amount > 0) {
+                  return (
+                    <div 
+                      key={`${payer.name}-${receiver.name}`}
+                      className="bg-slate-700 p-2 rounded text-sm"
+                    >
+                      <div className="flex justify-between items-center">
+                        <span>{payer.name} → {receiver.name}</span>
+                        <span>{formatMoney(amount)}</span>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              }).filter(Boolean)
             ))}
           </div>
-
-          <div className="mt-4 text-sm text-slate-400">
-            {totalTransfers} transferência(s), volume total R$ {totalVolume.toFixed(2)}
-          </div>
-        </>
+        </div>
       )}
     </div>
   );
