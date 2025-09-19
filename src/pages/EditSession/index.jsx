@@ -27,6 +27,8 @@ export function EditSession() {
         throw new Error('Sessão não encontrada');
       }
 
+      console.log('Dados carregados:', session); // Debug
+
       setSessionData({
         date: session.date,
         players: session.players_data || [],
@@ -41,6 +43,7 @@ export function EditSession() {
   };
 
   const handleSessionDataChange = (newData) => {
+    console.log('Dados atualizados:', newData); // Debug
     setSessionData(newData);
   };
 
@@ -48,7 +51,14 @@ export function EditSession() {
     try {
       setIsSaving(true);
       setError(null);
-      const result = await sessionApi.update(id, data);
+
+      console.log('Salvando dados:', data); // Debug
+
+      const result = await sessionApi.update(id, {
+        date: data.date,
+        players: data.players,
+        recommendations: data.recommendations || []
+      });
       
       if (result.error) {
         throw new Error(result.error);

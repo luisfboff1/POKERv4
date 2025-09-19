@@ -34,13 +34,54 @@ export function History() {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
-    }).format(value);
+    }).format(value || 0);
   };
 
   const calculatePlayerBalance = (player) => {
     const buyIn = player.buyIns?.reduce((sum, value) => sum + value, 0) || 0;
     const cashOut = player.cashOut || 0;
     return cashOut - buyIn;
+  };
+
+  const handlePaymentToggle = async (sessionId, playerIndex, type) => {
+    try {
+      const session = sessions.find(s => s.id === sessionId);
+      if (!session) return;
+
+      const updatedSession = { ...session };
+      const updatedPlayers = [...session.players_data];
+      
+      if (type === 'dinner') {
+        updatedPlayers[playerIndex] = {
+          ...updatedPlayers[playerIndex],
+          dinner: {
+            ...updatedPlayers[playerIndex].dinner,
+            paid: !updatedPlayers[playerIndex].dinner?.paid
+          }
+        };
+      } else if (type === 'transfer') {
+        updatedPlayers[playerIndex] = {
+          ...updatedPlayers[playerIndex],
+          transferPaid: !updatedPlayers[playerIndex].transferPaid
+        };
+      }
+
+      updatedSession.players_data = updatedPlayers;
+      
+      await sessionApi.update(sessionId, {
+        date: session.date,
+        players: updatedPlayers,
+        recommendations: session.recommendations || []
+      });
+
+      // Atualiza o estado local
+      setSessions(sessions.map(s => 
+        s.id === sessionId ? { ...s, players_data: updatedPlayers } : s
+      ));
+    } catch (error) {
+      console.error('Erro ao atualizar pagamento:', error);
+      alert('Erro ao atualizar pagamento: ' + error.message);
+    }
   };
 
   if (loading) {
@@ -87,7 +128,7 @@ export function History() {
                   </div>
                 </div>
                 <Link 
-                  to={`/session/${session.id}`} 
+                  to={`/edit/${session.id}`} 
                   className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
                 >
                   Editar
@@ -104,7 +145,7 @@ export function History() {
                       className="flex justify-between items-center py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded"
                     >
                       <span className="font-medium">{player.name}</span>
-                      <div className="text-right">
+                      <div className="text-right space-y-1">
                         <div className="text-sm text-gray-600 dark:text-gray-300">
                           Buy-in: {formatMoney(player.buyIns?.reduce((sum, value) => sum + value, 0) || 0)}
                         </div>
@@ -119,9 +160,35 @@ export function History() {
                           Balanço: {formatMoney(calculatePlayerBalance(player))}
                         </div>
                         {player.dinner?.amount > 0 && (
-                          <div className="text-sm text-gray-600 dark:text-gray-300">
-                            Janta: {formatMoney(player.dinner.amount)}
-                            {player.dinner.paid && ' ✓'}
+                          <div className="flex items-center justify-end gap-2">
+                            <span className="text-sm text-gray-600 dark:text-gray-300">
+                              Janta: {formatMoney(player.dinner.amount)}
+                            </span>
+                            <label className="inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={player.dinner?.paid || false}
+                                onChange={() => handlePaymentToggle(session.id, index, 'dinner')}
+                                className="form-checkbox h-4 w-4 text-blue-600"
+                              />
+                              <span className="ml-2 text-sm text-gray-600 dark:text-gray-300">Pago</span>
+                            </label>
+                          </div>
+                        )}
+                        {calculatePlayerBalance(player) !== 0 && (
+                          <div className="flex items-center justify-end gap-2">
+                            <span className="text-sm text-gray-600 dark:text-gray-300">
+                              Transferência
+                            </span>
+                            <label className="inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={player.transferPaid || false}
+                                onChange={() => handlePaymentToggle(session.id, index, 'transfer')}
+                                className="form-checkbox h-4 w-4 text-blue-600"
+                              />
+                              <span className="ml-2 text-sm text-gray-600 dark:text-gray-300">Pago</span>
+                            </label>
                           </div>
                         )}
                       </div>

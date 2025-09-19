@@ -9,14 +9,14 @@ import { History } from './pages/History';
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
+      <Layout>
+        <Routes>
           <Route index element={<Home />} />
           <Route path="new" element={<NewSession />} />
-          <Route path="session/:id" element={<EditSession />} />
+          <Route path="edit/:id" element={<EditSession />} />
           <Route path="history" element={<History />} />
-        </Route>
-      </Routes>
+        </Routes>
+      </Layout>
     </BrowserRouter>
   );
 }
