@@ -10,6 +10,22 @@ export default defineConfig({
         changeOrigin: true,
         secure: false
       }
+    },
+    // Força o recarregamento completo em desenvolvimento
+    hmr: {
+      overlay: false
+    }
+  },
+  // Limpa o cache em desenvolvimento
+  cacheDir: '.vite',
+  clearScreen: false,
+  build: {
+    // Garante que os arquivos não sejam cacheados
+    manifest: true,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined
+      }
     }
   }
 });
