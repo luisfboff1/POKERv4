@@ -1,18 +1,9 @@
-// Hook personalizado para usar MySQL ao invés de localStorage
+// Hook personalizado para usar MySQL via API HTTP
 import { useState, useEffect } from 'react';
 
-// Detectar ambiente: desenvolvimento = mock, produção = API HTTP
-const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
-
-// Função para obter o serviço correto
+// Função para obter o serviço da API
 async function getService() {
-  if (isDevelopment) {
-    // Desenvolvimento: usar mock
-    return await import('./mysqlService-mock.js');
-  } else {
-    // Produção: usar API HTTP
-    return await import('./mysqlService-api.js');
-  }
+  return await import('./mysqlService-api.js');
 }
 
 // Hook para sessões
@@ -125,7 +116,7 @@ export function useDinnerData() {
       if (error) {
         setError(error);
       } else {
-        setDinnerData(data || []);
+        setDinnerData(data.data || []);
       }
     } catch (err) {
       setError(err.message);

@@ -54,95 +54,39 @@ try {
             // Debug: Log dos dados recebidos
             error_log("Dados de janta recebidos: " . json_encode($input));
             
-            // Debug: Log da query SQL
-            $sql = "INSERT INTO dinner_data (session_id, total_amount, payer, division_type, custom_amount, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())";
-            error_log("SQL Query: " . $sql);
-            error_log("SQL Params: " . json_encode([
-                $input['session_id'] ?? null,
-                $input['total_amount'] ?? 0,
-                $input['payer'] ?? '',
-                $input['division_type'] ?? 'equal',
-                $input['custom_amount'] ?? 0,
-                $input['user_id'] ?? 1
-            ]));
-            
             if (!$input) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Dados inválidos']);
                 exit;
             }
             
-            // Não precisamos incluir created_at e updated_at pois eles têm valores default
+            // Preparar a query
             $sql = "INSERT INTO dinner_data (session_id, total_amount, payer, division_type, custom_amount, user_id) 
                 VALUES (?, ?, ?, ?, ?, ?)";
-            error_log("SQL a ser executado: " . $sql);
-            $stmt = $pdo->prepare($sql);
+            
+            // Montar array de parâmetros
+            $queryParams = [
+                $input['session_id'] ?? null,
+                $input['total_amount'] ?? 0,
+                $input['payer'] ?? '',
+                $input['division_type'] ?? 'equal',
+                $input['custom_amount'] ?? 0,
+                $input['user_id'] ?? 1
+            ];
             
             try {
-                // Log da conexão e dados
-                error_log("=== INÍCIO DO LOG ===");
-                error_log("Host MySQL: " . $host);
-                error_log("Database: " . $dbname);
-                error_log("Dados recebidos: " . json_encode($input, JSON_PRETTY_PRINT));
-                
-                // Verificar se a tabela existe
-                try {
-                    $stmt = $pdo->query("SHOW TABLES LIKE 'dinner_data'");
-                    $tableExists = $stmt->rowCount() > 0;
-                    error_log("Tabela dinner_data existe? " . ($tableExists ? "SIM" : "NÃO"));
-                    
-                    if ($tableExists) {
-                        // Mostrar estrutura da tabela
-                        $stmt = $pdo->query("DESCRIBE dinner_data");
-                        $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                        error_log("Estrutura da tabela dinner_data:");
-                        error_log(json_encode($columns, JSON_PRETTY_PRINT));
-                        
-                        // Mostrar alguns registros existentes
-                        $stmt = $pdo->query("SELECT * FROM dinner_data LIMIT 1");
-                        $sample = $stmt->fetch(PDO::FETCH_ASSOC);
-                        error_log("Exemplo de registro existente:");
-                        error_log(json_encode($sample, JSON_PRETTY_PRINT));
-                    }
-                } catch (PDOException $e) {
-                    error_log("Erro ao verificar tabela: " . $e->getMessage());
-                    error_log("SQL State: " . $e->errorInfo[0]);
-                    error_log("Error Code: " . $e->errorInfo[1]);
-                    error_log("Error Message: " . $e->errorInfo[2]);
-                }
-
-                // Log da query que será executada
-                $queryParams = [
-                    $input['session_id'] ?? null,
-                    $input['total_amount'] ?? 0,
-                    $input['payer'] ?? '',
-                    $input['division_type'] ?? 'equal',
-                    $input['custom_amount'] ?? 0,
-                    $input['user_id'] ?? 1
-                ];
-                error_log("Query params: " . json_encode($queryParams));
-
+                $stmt = $pdo->prepare($sql);
                 $stmt->execute($queryParams);
                 
             } catch (PDOException $e) {
-                error_log("=== ERRO DETALHADO ===");
-                error_log("Mensagem: " . $e->getMessage());
-                error_log("Código: " . $e->getCode());
-                error_log("SQL State: " . $e->errorInfo[0]);
-                error_log("Error Code: " . $e->errorInfo[1]);
-                error_log("Error Message: " . $e->errorInfo[2]);
-                error_log("Query que falhou: " . $sql);
-                error_log("Parâmetros da query: " . json_encode($queryParams));
-                error_log("=== FIM DO ERRO ===");
+                error_log("Erro ao salvar dados de janta: " . $e->getMessage());
+                error_log("Query: " . $sql);
+                error_log("Parâmetros: " . json_encode($queryParams));
                 
                 http_response_code(500);
                 echo json_encode([
                     'error' => 'Erro ao salvar dados de janta',
-                    'details' => $e->getMessage(),
-                    'code' => $e->getCode(),
-                    'sql_state' => $e->errorInfo[0],
-                    'error_code' => $e->errorInfo[1],
-                    'error_message' => $e->errorInfo[2]
+                    'details' => $e->getMessage()
                 ]);
                 exit;
             }
