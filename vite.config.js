@@ -15,23 +15,23 @@ export default defineConfig({
     }
   },
   build: {
-    // Limpar a pasta dist antes do build
+    outDir: 'dist',
     emptyOutDir: true,
-    // Gerar source maps para debug
-    sourcemap: true,
-    // Configurações de otimização
-    rollupOptions: {
-      output: {
-        manualChunks: undefined
+    sourcemap: false, // Desabilitar sourcemap em produção
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true // Remover console.logs
       }
     },
-    // Garantir que os assets são copiados
-    assetsDir: 'assets',
-    // Minificar em produção
-    minify: process.env.NODE_ENV === 'production',
-    // Garantir que o index.html é copiado
-    copyPublicDir: true
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+        entryFileNames: 'assets/[name].[hash].js',
+        chunkFileNames: 'assets/[name].[hash].js',
+        assetFileNames: 'assets/[name].[hash].[ext]'
+      }
+    }
   },
-  // Base URL para produção
-  base: '/poker/'
+  base: '/poker/' // Importante: base path correto
 });
