@@ -2,29 +2,8 @@
 RewriteEngine On
 RewriteBase /poker/
 
-# Permitir CORS
-Header set Access-Control-Allow-Origin "*"
-Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-Header set Access-Control-Allow-Headers "Content-Type, Authorization"
-
-# Redirecionar /api para a pasta api
-RewriteRule ^api/(.*)$ api/$1 [QSA,L]
-
-# Se não for arquivo ou diretório existente
+# SPA fallback - redirecionar tudo para index.html exceto arquivos existentes e API
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-# E não for uma requisição para /api
 RewriteCond %{REQUEST_URI} !^/poker/api/
-# Redirecionar para index.html
-RewriteRule ^(.*)$ index.html [L]
-
-# Permitir acesso a arquivos estáticos
-<FilesMatch "\.(js|css|svg|jpg|jpeg|png|gif|ico)$">
-    Order Allow,Deny
-    Allow from all
-</FilesMatch>
-
-# Definir tipos MIME corretos
-AddType application/javascript .js
-AddType text/css .css
-AddType image/svg+xml .svg
+RewriteRule . index.html [L]

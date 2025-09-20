@@ -5,15 +5,7 @@ export default defineConfig({
   plugins: [react()],
   base: '/poker/',
   server: {
-    port: 5173,
-    proxy: {
-      '/api': {
-        target: 'https://poker.luisfboff.com',
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/api/, '/poker/api')
-      }
-    }
+    port: 5173
   },
   build: {
     outDir: 'dist',
