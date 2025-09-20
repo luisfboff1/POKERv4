@@ -29,7 +29,13 @@ jobs:
         NODE_ENV=production npm run build
         echo "Build completed. Checking dist folder..."
         ls -la dist/
-      
+        
+    - name: Copy .htaccess to dist
+      run: |
+        cp .htaccess dist/
+        echo "Copied .htaccess to dist folder"
+        ls -la dist/
+
     - name: Deploy Frontend to Hostinger via FTP
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
       with:
@@ -68,5 +74,7 @@ jobs:
         exclude: |
           **/.git*
           **/.git*/**
+          **/*.sql
+          **/*.md
         log-level: minimal
         dry-run: false

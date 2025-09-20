@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -10,22 +11,22 @@ export default defineConfig({
         changeOrigin: true,
         secure: false
       }
-    },
-    // Força o recarregamento completo em desenvolvimento
-    hmr: {
-      overlay: false
     }
   },
-  // Limpa o cache em desenvolvimento
-  cacheDir: '.vite',
-  clearScreen: false,
   build: {
-    // Garante que os arquivos não sejam cacheados
-    manifest: true,
+    // Gerar source maps para debug
+    sourcemap: true,
+    // Configurações de otimização
     rollupOptions: {
       output: {
         manualChunks: undefined
       }
-    }
-  }
+    },
+    // Garantir que os assets são copiados
+    assetsDir: 'assets',
+    // Não minificar em desenvolvimento
+    minify: process.env.NODE_ENV === 'production'
+  },
+  // Base URL para produção
+  base: '/'
 });
