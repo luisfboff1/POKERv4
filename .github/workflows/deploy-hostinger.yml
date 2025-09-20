@@ -21,20 +21,20 @@ jobs:
         cache: 'npm'
         
     - name: Install dependencies
-      run: npm ci
+      run: npm install
       
     - name: Build project
       run: |
         echo "Building project..."
         CI=false npm run build
-        echo "Build completed. Checking build folder..."
-        ls -la build/
+        echo "Build completed. Checking dist folder..."
+        ls -la dist/
         
-    - name: Copy .htaccess to build
+    - name: Copy .htaccess to dist
       run: |
-        cp .htaccess build/
-        echo "Copied .htaccess to build folder"
-        ls -la build/
+        cp .htaccess dist/
+        echo "Copied .htaccess to dist folder"
+        ls -la dist/
 
     - name: Deploy Frontend to Hostinger via FTP
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
@@ -42,7 +42,7 @@ jobs:
         server: ${{ secrets.HOSTINGER_FTP_HOST }}
         username: ${{ secrets.HOSTINGER_FTP_USER }}
         password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
-        local-dir: ./build/
+        local-dir: ./dist/
         server-dir: /poker/
         exclude: |
           **/.git*
