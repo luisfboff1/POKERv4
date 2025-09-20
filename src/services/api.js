@@ -1,5 +1,5 @@
-// Usar caminho relativo - funciona tanto em dev quanto em produção
-const API_BASE = '/api';
+// API base URL - usar caminho relativo ao base path
+const API_BASE = '/poker/api';
 
 export const sessionApi = {
   // Listar todas as sessões

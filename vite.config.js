@@ -9,7 +9,8 @@ export default defineConfig({
       '/api': {
         target: 'https://poker.luisfboff.com',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '/poker/api')
       }
     }
   },
@@ -32,5 +33,5 @@ export default defineConfig({
     copyPublicDir: true
   },
   // Base URL para produção
-  base: '/'
+  base: '/poker/'
 });
