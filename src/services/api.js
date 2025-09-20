@@ -1,72 +1,62 @@
-// API base URL. Em dev, usamos proxy do Vite para '/api' -> Hostinger '/poker/api'.
-// Em produção, precisamos prefixar com '/poker/api'.
+// API service para comunicação com o backend PHP
 const API_BASE = import.meta.env.DEV ? '/api' : '/poker/api';
 
-export const sessionApi = {
-  // Listar todas as sessões
-  list: async () => {
-    const response = await fetch(`${API_BASE}/session.php`);
-    if (!response.ok) {
-      throw new Error('Erro ao buscar sessões');
-    }
-    return response.json();
-  },
+class ApiService {
+  async request(endpoint, options = {}) {
+    const url = `${API_BASE}${endpoint}`;
+    
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+      },
+      ...options
+    };
 
-  // Criar nova sessão
-  create: async (sessionData) => {
-    const response = await fetch(`${API_BASE}/session.php`, {
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error(`API Error (${endpoint}):`, error);
+      throw error;
+    }
+  }
+
+  // Sessões
+  async getSessions() {
+    return this.request('/session.php');
+  }
+
+  async createSession(sessionData) {
+    return this.request('/session.php', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        date: sessionData.date,
-        players_data: sessionData.players,
-        recommendations: sessionData.recommendations || []
-      })
+      body: JSON.stringify(sessionData)
     });
-    if (!response.ok) {
-      throw new Error('Erro ao criar sessão');
-    }
-    return response.json();
-  },
+  }
 
-  // Atualizar sessão existente
-  update: async (id, sessionData) => {
-    const response = await fetch(`${API_BASE}/session.php?id=${id}`, {
+  async updateSession(id, sessionData) {
+    return this.request(`/session.php?id=${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        date: sessionData.date,
-        players_data: sessionData.players,
-        recommendations: sessionData.recommendations || []
-      })
+      body: JSON.stringify(sessionData)
     });
-    if (!response.ok) {
-      throw new Error('Erro ao atualizar sessão');
-    }
-    return response.json();
-  },
+  }
 
-  // Excluir sessão
-  delete: async (id) => {
-    const response = await fetch(`${API_BASE}/session.php?id=${id}`, {
+  async deleteSession(id) {
+    return this.request(`/session.php?id=${id}`, {
       method: 'DELETE'
     });
-    if (!response.ok) {
-      throw new Error('Erro ao excluir sessão');
-    }
-    return response.json();
-  },
-
-  // Buscar jogadores únicos
-  getPlayers: async () => {
-    const response = await fetch(`${API_BASE}/players.php`);
-    if (!response.ok) {
-      throw new Error('Erro ao buscar jogadores');
-    }
-    return response.json();
   }
-};
+
+  // Jogadores
+  async getPlayers() {
+    return this.request('/players.php');
+  }
+}
+
+export const api = new ApiService();

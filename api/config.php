@@ -1,20 +1,13 @@
 <?php
-/**
- * Configuração do ambiente PHP e banco de dados
- */
-
-// Configuração de erros
+// Configuração do ambiente PHP e banco de dados
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0); // Desabilitar em produção
 
 // Headers CORS
-if (!headers_sent()) {
-    header('Access-Control-Allow-Origin: http://localhost:5173');
-    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type, Authorization');
-    header('Access-Control-Allow-Credentials: true');
-    header('Content-Type: application/json; charset=utf-8');
-}
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Content-Type: application/json; charset=utf-8');
 
 // Tratar preflight requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -40,26 +33,18 @@ try {
     ]);
 } catch(PDOException $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'Erro de conexão com o banco: ' . $e->getMessage()]);
+    echo json_encode(['error' => 'Database connection failed']);
     exit;
 }
 
-/**
- * Funções auxiliares para respostas da API
- */
+// Funções auxiliares
 function respondSuccess($data) {
-    if (!headers_sent()) {
-        header('Content-Type: application/json; charset=utf-8');
-    }
     echo json_encode(['data' => $data], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 function respondError($message, $status = 500) {
-    if (!headers_sent()) {
-        http_response_code($status);
-        header('Content-Type: application/json; charset=utf-8');
-    }
+    http_response_code($status);
     echo json_encode(['error' => $message], JSON_UNESCAPED_UNICODE);
     exit;
 }

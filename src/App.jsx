@@ -3,9 +3,8 @@ import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
 import { NewSession } from './pages/NewSession';
-import { EditSession } from './pages/EditSession';
 import { History } from './pages/History';
-import { ErrorBoundary, ErrorPage } from './components/ErrorBoundary';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 const router = createBrowserRouter(
   [
@@ -14,10 +13,9 @@ const router = createBrowserRouter(
       element: <Layout />,
       errorElement: <ErrorBoundary />,
       children: [
-        { path: '', element: <Home />, errorElement: <ErrorPage /> },
-        { path: 'new', element: <NewSession />, errorElement: <ErrorPage /> },
-        { path: 'edit/:id', element: <EditSession />, errorElement: <ErrorPage /> },
-        { path: 'history', element: <History />, errorElement: <ErrorPage /> }
+        { path: '', element: <Home /> },
+        { path: 'new', element: <NewSession /> },
+        { path: 'history', element: <History /> }
       ]
     }
   ],
@@ -26,8 +24,6 @@ const router = createBrowserRouter(
   }
 );
 
-function App() {
+export default function App() {
   return <RouterProvider router={router} />;
 }
-
-export default App;

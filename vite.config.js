@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
@@ -13,33 +12,19 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, '/poker/api')
-      },
-      '/poker/api': {
-        target: 'https://poker.luisfboff.com',
-        changeOrigin: true,
-        secure: false
       }
-    }
-  },
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, './src')
     }
   },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    sourcemap: true,
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': ['@tailwindcss/forms']
+          'react-vendor': ['react', 'react-dom', 'react-router-dom']
         }
       }
     }
-  },
-  optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom', '@tailwindcss/forms']
   }
 });
