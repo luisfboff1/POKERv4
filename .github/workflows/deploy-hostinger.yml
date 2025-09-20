@@ -13,8 +13,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 2  # Para poder comparar com o commit anterior
       
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -23,52 +21,28 @@ jobs:
         cache: 'npm'
         
     - name: Install dependencies
-      run: npm install
+      run: npm ci
       
     - name: Build project
       run: |
         echo "Building project..."
-        NODE_ENV=production npm run build
-        echo "Build completed. Checking dist folder..."
-        ls -la dist/
+        CI=false npm run build
+        echo "Build completed. Checking build folder..."
+        ls -la build/
         
-    - name: Copy .htaccess to dist
+    - name: Copy .htaccess to build
       run: |
-        cp .htaccess dist/
-        echo "Copied .htaccess to dist folder"
-        ls -la dist/
+        cp .htaccess build/
+        echo "Copied .htaccess to build folder"
+        ls -la build/
 
-    # Verificar se houve mudanças nos arquivos do frontend
-    - name: Check frontend changes
-      id: check_frontend
-      run: |
-        CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
-        if echo "$CHANGED_FILES" | grep -qE "^(src/|public/|index.html|vite.config.js|package.json)"; then
-          echo "::set-output name=has_changes::true"
-        else
-          echo "::set-output name=has_changes::false"
-        fi
-
-    # Verificar se houve mudanças nos arquivos da API
-    - name: Check API changes
-      id: check_api
-      run: |
-        CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
-        if echo "$CHANGED_FILES" | grep -qE "^api/"; then
-          echo "::set-output name=has_changes::true"
-        else
-          echo "::set-output name=has_changes::false"
-        fi
-
-    # Deploy do frontend apenas se houver mudanças
     - name: Deploy Frontend to Hostinger via FTP
-      if: steps.check_frontend.outputs.has_changes == 'true'
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
       with:
         server: ${{ secrets.HOSTINGER_FTP_HOST }}
         username: ${{ secrets.HOSTINGER_FTP_USER }}
         password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
-        local-dir: ./dist/
+        local-dir: ./build/
         server-dir: /poker/
         exclude: |
           **/.git*
@@ -76,11 +50,9 @@ jobs:
           **/node_modules/**
           **/.env
           **/.env.*
-        log-level: standard
+        log-level: verbose
         
-    # Deploy da API apenas se houver mudanças
     - name: Deploy API PHP to Hostinger via FTP
-      if: steps.check_api.outputs.has_changes == 'true'
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
       with:
         server: ${{ secrets.HOSTINGER_FTP_HOST }}
@@ -93,4 +65,4 @@ jobs:
           **/.git*/**
           **/*.sql
           **/*.md
-        log-level: standard
+        log-level: verbose
