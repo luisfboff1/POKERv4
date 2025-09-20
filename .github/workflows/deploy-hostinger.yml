@@ -35,7 +35,7 @@ jobs:
         cp .htaccess dist/
         echo "Copied .htaccess to dist folder"
         ls -la dist/
-
+        
     - name: Deploy Frontend to Hostinger via FTP
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
       with:
@@ -65,17 +65,4 @@ jobs:
           **/.git*/**
           **/*.sql
           **/*.md
-        log-level: verbose
-        
-    - name: Deploy root redirect .htaccess
-      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-      with:
-        server: ${{ secrets.HOSTINGER_FTP_HOST }}
-        username: ${{ secrets.HOSTINGER_FTP_USER }}
-        password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
-        local-dir: ./root_redirect/
-        server-dir: /
-        exclude: |
-          **/.git*
-          **/.git*/**
         log-level: verbose
