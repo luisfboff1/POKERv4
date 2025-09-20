@@ -60,6 +60,13 @@ jobs:
         password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
         local-dir: ./api/
         server-dir: /poker/api/
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/*.sql
+          **/*.md
+        log-level: verbose
+        
     - name: Deploy root redirect .htaccess
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
       with:
@@ -71,10 +78,4 @@ jobs:
         exclude: |
           **/.git*
           **/.git*/**
-        log-level: verbose
-        exclude: |
-          **/.git*
-          **/.git*/**
-          **/*.sql
-          **/*.md
         log-level: verbose
