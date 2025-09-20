@@ -44,24 +44,14 @@ jobs:
         password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
         local-dir: ./dist/
         server-dir: /poker/
+        dangerous-clean-slate: true # Limpa a pasta antes do deploy
         exclude: |
           **/.git*
           **/.git*/**
           **/node_modules/**
           **/.env
           **/.env.*
-          **/README.md
-          **/package*.json
-          **/vite.config.js
-          **/tailwind.config.js
-          **/postcss.config.js
-          **/server.js
-          **/src/**
-          **/electron/**
-          **/mysql_setup.sql
-          **/HOSTINGER_SETUP.md
-        log-level: minimal
-        dry-run: false
+        log-level: verbose # Aumentado o nível de log para debug
         
     - name: Deploy API PHP to Hostinger via FTP
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
@@ -71,10 +61,10 @@ jobs:
         password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
         local-dir: ./api/
         server-dir: /poker/api/
+        dangerous-clean-slate: true # Limpa a pasta antes do deploy
         exclude: |
           **/.git*
           **/.git*/**
           **/*.sql
           **/*.md
-        log-level: minimal
-        dry-run: false
+        log-level: verbose # Aumentado o nível de log para debug

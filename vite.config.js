@@ -14,6 +14,8 @@ export default defineConfig({
     }
   },
   build: {
+    // Limpar a pasta dist antes do build
+    emptyOutDir: true,
     // Gerar source maps para debug
     sourcemap: true,
     // Configurações de otimização
@@ -24,8 +26,10 @@ export default defineConfig({
     },
     // Garantir que os assets são copiados
     assetsDir: 'assets',
-    // Não minificar em desenvolvimento
-    minify: process.env.NODE_ENV === 'production'
+    // Minificar em produção
+    minify: process.env.NODE_ENV === 'production',
+    // Garantir que o index.html é copiado
+    copyPublicDir: true
   },
   // Base URL para produção
   base: '/'
