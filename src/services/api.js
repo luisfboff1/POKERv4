@@ -1,5 +1,6 @@
-// API base URL - usar caminho relativo ao base path
-const API_BASE = '/poker/api';
+// API base URL. Em dev, usamos proxy do Vite para '/api' -> Hostinger '/poker/api'.
+// Em produção, precisamos prefixar com '/poker/api'.
+const API_BASE = import.meta.env.DEV ? '/api' : '/poker/api';
 
 export const sessionApi = {
   // Listar todas as sessões

@@ -1,8 +1,9 @@
 import React from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 
-export function Layout() {
+export function Layout({ children }) {
   const location = useLocation();
+  const navigate = useNavigate();
   
   return (
     <div className="min-h-screen bg-slate-900 text-white">
@@ -23,8 +24,8 @@ export function Layout() {
               <Link 
                 to="/new" 
                 className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  location.pathname === '/new'
-                    ? 'bg-slate-700 text-white'
+                  location.pathname === '/poker/new' || location.pathname === '/new'
+                    ? 'bg-blue-600 text-white'
                     : 'text-slate-300 hover:bg-slate-700'
                 }`}
               >
@@ -33,8 +34,8 @@ export function Layout() {
               <Link 
                 to="/history" 
                 className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  location.pathname === '/history'
-                    ? 'bg-slate-700 text-white'
+                  location.pathname === '/poker/history' || location.pathname === '/history'
+                    ? 'bg-blue-600 text-white'
                     : 'text-slate-300 hover:bg-slate-700'
                 }`}
               >
@@ -47,8 +48,15 @@ export function Layout() {
 
       {/* Conteúdo Principal */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Outlet />
+        {children || <Outlet />}
       </main>
+
+      {/* Footer */}
+      <footer className="bg-slate-800 border-t border-slate-700 py-4 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-slate-400">
+          <p>Poker Settlements &copy; {new Date().getFullYear()}</p>
+        </div>
+      </footer>
     </div>
   );
 }

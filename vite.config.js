@@ -1,32 +1,45 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  base: '/poker/',
   server: {
+    port: 5173,
     proxy: {
       '/api': {
         target: 'https://poker.luisfboff.com',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, '/poker/api')
+      },
+      '/poker/api': {
+        target: 'https://poker.luisfboff.com',
+        changeOrigin: true,
+        secure: false
       }
+    }
+  },
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './src')
     }
   },
   build: {
     outDir: 'dist',
-    emptyOutDir: true,
-    sourcemap: false,
-    minify: 'terser',
+    assetsDir: 'assets',
+    sourcemap: true,
     rollupOptions: {
       output: {
-        // Nomes mais simples para os arquivos
-        entryFileNames: 'js/[name].js',
-        chunkFileNames: 'js/[name].js',
-        assetFileNames: 'assets/[name].[ext]'
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['@tailwindcss/forms']
+        }
       }
     }
   },
-  base: '/poker/'
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', '@tailwindcss/forms']
+  }
 });

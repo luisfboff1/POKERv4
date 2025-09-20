@@ -1,7 +1,5 @@
-// API Base
-const API_BASE = process.env.NODE_ENV === 'development' 
-  ? 'http://localhost'  // Local development
-  : 'https://poker.luisfboff.com';  // Production
+// API Base: em dev usamos proxy Vite '/api' -> Hostinger '/poker/api'; em prod usamos '/poker/api'
+const API_BASE = import.meta.env.DEV ? '/api' : '/poker/api';
 
 // Função genérica para fazer requisições
 async function fetchApi(endpoint, method = 'GET', data = null) {
@@ -34,17 +32,17 @@ async function fetchApi(endpoint, method = 'GET', data = null) {
 // API de Sessões
 export const sessionService = {
   // Listar todas as sessões
-  list: () => fetchApi('/api/session'),
+  list: () => fetchApi('/session.php'),
   
   // Buscar uma sessão específica
-  get: (id) => fetchApi(`/api/session/${id}`),
+  get: (id) => fetchApi(`/session.php?id=${id}`),
   
   // Criar nova sessão
-  create: (data) => fetchApi('/api/session', 'POST', data),
+  create: (data) => fetchApi('/session.php', 'POST', data),
   
   // Atualizar sessão existente
-  update: (id, data) => fetchApi(`/api/session/${id}`, 'PUT', data),
+  update: (id, data) => fetchApi(`/session.php?id=${id}`, 'PUT', data),
   
   // Deletar sessão
-  delete: (id) => fetchApi(`/api/session/${id}`, 'DELETE')
+  delete: (id) => fetchApi(`/session.php?id=${id}`, 'DELETE')
 };
