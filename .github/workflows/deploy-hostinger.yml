@@ -1,68 +1,69 @@
-name: Deploy to Hostinger
+# ⚠️  ATENÇÃO: NÃO MODIFICAR ESTE ARQUIVO SEM APROVAÇÃO DO LUIS
+# Este deploy está funcionando perfeitamente. Mudanças podem quebrar o sistema.
+# Se precisar alterar algo, SEMPRE consultar Luis primeiro!
+# Deploy atual: React build + FTP para Hostinger - FUNCIONAL ✅
+
+name: 🚀 Deploy para Hostinger
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master, main ]
   pull_request:
-    branches: [ main ]
+    branches: [ master, main ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
+    - name: 📥 Checkout código
       uses: actions/checkout@v4
       
-    - name: Setup Node.js
+    - name: 🔧 Configurar Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
         cache: 'npm'
         
-    - name: Install dependencies
-      run: npm install
-      
-    - name: Build project
+    - name: 📦 Instalar dependências
       run: |
-        echo "Building project..."
-        CI=false npm run build
-        echo "Build completed. Checking dist folder..."
-        ls -la dist/
+        echo "📦 Instalando dependências..."
+        npm install
         
-    - name: Copy .htaccess to dist
+    - name: 🏗️ Build do projeto
       run: |
+        echo "🏗️ Buildando projeto React..."
+        npm run build
+        echo "📄 Copiando .htaccess..."
         cp .htaccess dist/
-        echo "Copied .htaccess to dist folder"
+        echo "✅ Build concluído!"
         ls -la dist/
         
-    - name: Deploy Frontend to Hostinger via FTP
+    - name: 🚀 Deploy Frontend via FTP
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
       with:
-        server: ${{ secrets.HOSTINGER_FTP_HOST }}
-        username: ${{ secrets.HOSTINGER_FTP_USER }}
-        password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        port: 21
+        protocol: ftp
         local-dir: ./dist/
-        server-dir: /domains/poker.luisfboff.com/public_html/
-        exclude: |
-          **/.git*
-          **/.git*/**
-          **/node_modules/**
-          **/.env
-          **/.env.*
-        log-level: verbose
+        server-dir: /poker/
         
-    - name: Deploy API PHP to Hostinger via FTP
+    - name: 🔧 Deploy API via FTP
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
       with:
-        server: ${{ secrets.HOSTINGER_FTP_HOST }}
-        username: ${{ secrets.HOSTINGER_FTP_USER }}
-        password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        port: 21
+        protocol: ftp
         local-dir: ./api/
-        server-dir: /domains/poker.luisfboff.com/public_html/api/
-        exclude: |
-          **/.git*
-          **/.git*/**
-          **/*.sql
-          **/*.md
-        log-level: verbose
+        server-dir: /poker/api/
+        
+    - name: ✅ Deploy concluído
+      run: |
+        echo "🎉 Deploy realizado com sucesso!"
+        echo "🌐 Site disponível em: https://luisfboff.com"
+        echo "📧 Contato: luis@luisfboff.com"
+        echo "👨‍💻 Desenvolvedor: Luis Fernando Boff"
