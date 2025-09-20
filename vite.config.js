@@ -17,21 +17,16 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    sourcemap: false, // Desabilitar sourcemap em produção
+    sourcemap: false,
     minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true // Remover console.logs
-      }
-    },
     rollupOptions: {
       output: {
-        manualChunks: undefined,
-        entryFileNames: 'assets/[name].[hash].js',
-        chunkFileNames: 'assets/[name].[hash].js',
-        assetFileNames: 'assets/[name].[hash].[ext]'
+        // Nomes mais simples para os arquivos
+        entryFileNames: 'js/[name].js',
+        chunkFileNames: 'js/[name].js',
+        assetFileNames: 'assets/[name].[ext]'
       }
     }
   },
-  base: '/poker/' // Importante: base path correto
+  base: '/poker/'
 });
