@@ -33,6 +33,7 @@ jobs:
     - name: Copy .htaccess to dist
       run: |
         cp .htaccess dist/
+        cp -r public/* dist/ 2>/dev/null || true
         echo "Copied .htaccess to dist folder"
         ls -la dist/
 
