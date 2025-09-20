@@ -2,37 +2,26 @@
 require_once 'config.php';
 
 try {
-    // Buscar jogadores únicos de todas as sessões
-    $stmt = $pdo->query("
-        SELECT DISTINCT JSON_EXTRACT(players_data, '$[*].name') as names 
-        FROM sessions 
-        WHERE players_data IS NOT NULL
-    ");
+    // Buscar todos os jogadores únicos
+    $stmt = $pdo->query("SELECT players_data FROM sessions WHERE players_data IS NOT NULL");
+    $sessions = $stmt->fetchAll();
     
-    $results = $stmt->fetchAll();
     $players = [];
-    
-    foreach ($results as $result) {
-        if ($result['names']) {
-            $names = json_decode($result['names'], true);
-            if (is_array($names)) {
-                foreach ($names as $name) {
-                    if ($name && !in_array($name, $players)) {
-                        $players[] = $name;
-                    }
+    foreach ($sessions as $session) {
+        $data = json_decode($session['players_data'], true);
+        if (is_array($data)) {
+            foreach ($data as $player) {
+                if (isset($player['name']) && !in_array($player['name'], $players)) {
+                    $players[] = $player['name'];
                 }
             }
         }
     }
     
     sort($players);
-    respondSuccess($players);
+    success($players);
     
-} catch (PDOException $e) {
-    error_log("Database Error: " . $e->getMessage());
-    respondError('Database error');
 } catch (Exception $e) {
-    error_log("Error: " . $e->getMessage());
-    respondError('Internal server error');
+    error('Server error');
 }
 ?>

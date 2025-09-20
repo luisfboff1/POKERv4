@@ -1,51 +1,53 @@
 <?php
-// Configuração do ambiente PHP e banco de dados
-error_reporting(E_ALL);
-ini_set('display_errors', 0); // Desabilitar em produção
+// Configuração simplificada - SEM INFORMAÇÕES SENSÍVEIS
+error_reporting(0);
+ini_set('display_errors', 0);
+
+// Carregar .env se existir
+if (file_exists(__DIR__ . '/.env')) {
+    $env = parse_ini_file(__DIR__ . '/.env');
+    foreach ($env as $key => $value) {
+        $_ENV[$key] = $value;
+    }
+}
 
 // Headers CORS
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-header('Content-Type: application/json; charset=utf-8');
+header('Access-Control-Allow-Headers: Content-Type');
+header('Content-Type: application/json');
 
-// Tratar preflight requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
 
-// Configuração do banco de dados
-$DB_CONFIG = [
-    'host' => 'srv1437.hstgr.io',
-    'dbname' => 'u903000160_poker',
-    'username' => 'u903000160_poker',
-    'password' => 'Poker2025!',
-    'charset' => 'utf8mb4'
-];
-
+// Conexão com banco (usando .env)
 try {
-    $dsn = "mysql:host={$DB_CONFIG['host']};dbname={$DB_CONFIG['dbname']};charset={$DB_CONFIG['charset']}";
-    $pdo = new PDO($dsn, $DB_CONFIG['username'], $DB_CONFIG['password'], [
+    $host = $_ENV['DB_HOST'] ?? 'localhost';
+    $dbname = $_ENV['DB_NAME'] ?? 'test';
+    $username = $_ENV['DB_USER'] ?? 'root';
+    $password = $_ENV['DB_PASSWORD'] ?? '';
+    
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES => false
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
     ]);
 } catch(PDOException $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'Database connection failed']);
+    echo json_encode(['error' => 'Database error']);
     exit;
 }
 
-// Funções auxiliares
-function respondSuccess($data) {
-    echo json_encode(['data' => $data], JSON_UNESCAPED_UNICODE);
+// Funções simples
+function success($data) {
+    echo json_encode(['data' => $data]);
     exit;
 }
 
-function respondError($message, $status = 500) {
-    http_response_code($status);
-    echo json_encode(['error' => $message], JSON_UNESCAPED_UNICODE);
+function error($msg, $code = 500) {
+    http_response_code($code);
+    echo json_encode(['error' => $msg]);
     exit;
 }
 ?>
