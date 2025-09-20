@@ -2,7 +2,7 @@
   "name": "Poker Settlements",
   "short_name": "Poker",
   "description": "Gerenciador de sessões de poker",
-  "start_url": "/poker/",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",

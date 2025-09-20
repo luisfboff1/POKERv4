@@ -1,5 +1,5 @@
 // API service para comunicação com o backend PHP
-const API_BASE = import.meta.env.DEV ? '/api' : '/poker/api';
+const API_BASE = '/api';
 
 class ApiService {
   async request(endpoint, options = {}) {

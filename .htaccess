@@ -1,9 +1,4 @@
-# Habilitar rewrite engine
 RewriteEngine On
-RewriteBase /poker/
-
-# SPA fallback - redirecionar tudo para index.html exceto arquivos existentes e API
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_URI} !^/poker/api/
 RewriteRule . index.html [L]

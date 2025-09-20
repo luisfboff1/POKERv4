@@ -43,7 +43,7 @@ jobs:
         username: ${{ secrets.HOSTINGER_FTP_USER }}
         password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
         local-dir: ./dist/
-        server-dir: /poker/
+        server-dir: /domains/poker.luisfboff.com/public_html/
         exclude: |
           **/.git*
           **/.git*/**
@@ -59,7 +59,7 @@ jobs:
         username: ${{ secrets.HOSTINGER_FTP_USER }}
         password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
         local-dir: ./api/
-        server-dir: /poker/api/
+        server-dir: /domains/poker.luisfboff.com/public_html/api/
         exclude: |
           **/.git*
           **/.git*/**
