@@ -33,7 +33,6 @@ jobs:
     - name: Copy .htaccess to dist
       run: |
         cp .htaccess dist/
-        cp -r public/* dist/ 2>/dev/null || true
         echo "Copied .htaccess to dist folder"
         ls -la dist/
 
@@ -61,6 +60,18 @@ jobs:
         password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
         local-dir: ./api/
         server-dir: /poker/api/
+    - name: Deploy root redirect .htaccess
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ${{ secrets.HOSTINGER_FTP_HOST }}
+        username: ${{ secrets.HOSTINGER_FTP_USER }}
+        password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+        local-dir: ./root_redirect/
+        server-dir: /
+        exclude: |
+          **/.git*
+          **/.git*/**
+        log-level: verbose
         exclude: |
           **/.git*
           **/.git*/**

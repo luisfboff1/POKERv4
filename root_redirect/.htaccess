@@ -1,0 +1,7 @@
+# Redirect root domain to /poker/
+RewriteEngine On
+
+# Avoid redirect loops and allow direct access to /poker/*
+RewriteCond %{REQUEST_URI} !^/poker/
+RewriteRule ^$ /poker/ [L,R=301]
+RewriteRule ^index\.html$ /poker/ [L,R=301]
