@@ -70,6 +70,21 @@ export function History() {
     }
   };
 
+  const handleQuickSave = async (session) => {
+    try {
+      await api.updateSession(session.id, {
+        date: session.date,
+        players_data: session.players_data,
+        recommendations: session.recommendations
+      });
+      alert('Status de pagamento salvo com sucesso!');
+      loadSessions(); // Recarregar lista para garantir sincronização
+    } catch (error) {
+      console.error('Erro ao salvar status:', error);
+      alert('Erro ao salvar status de pagamento');
+    }
+  };
+
   if (loading) {
     return <div className="text-center">Carregando sessões...</div>;
   }
@@ -131,6 +146,13 @@ export function History() {
                     className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
                   >
                     ✏️ Editar
+                  </button>
+                  <button
+                    onClick={() => handleQuickSave(session)}
+                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
+                    title="Salvar alterações dos checkboxes pendentes"
+                  >
+                    💾 Salvar
                   </button>
                   <button
                     onClick={() => handleDeleteSession(session.id)}

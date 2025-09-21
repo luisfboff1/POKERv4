@@ -16,7 +16,6 @@
   }
 
   input[type="number"],
-  input[type="text"],
   input[type="date"],
   select {
     @apply bg-slate-700 border-slate-600 text-white rounded-md focus:ring-blue-500 focus:border-blue-500;
