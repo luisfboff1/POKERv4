@@ -12,6 +12,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Invites from './pages/Invites';
 import SuperAdmin from './pages/SuperAdmin';
+import AcceptInvite from './pages/AcceptInvite';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 const router = createBrowserRouter(
@@ -26,15 +27,24 @@ const router = createBrowserRouter(
       ),
       errorElement: <ErrorBoundary />
     },
-    {
-      path: '/register',
-      element: (
-        <ProtectedRoute requireAuth={false}>
-          <Register />
-        </ProtectedRoute>
-      ),
-      errorElement: <ErrorBoundary />
-    },
+      {
+        path: '/register',
+        element: (
+          <ProtectedRoute requireAuth={false}>
+            <Register />
+          </ProtectedRoute>
+        ),
+        errorElement: <ErrorBoundary />
+      },
+      {
+        path: '/accept-invite',
+        element: (
+          <ProtectedRoute requireAuth={false}>
+            <AcceptInvite />
+          </ProtectedRoute>
+        ),
+        errorElement: <ErrorBoundary />
+      },
     
     // Rotas protegidas (dashboard)
     {

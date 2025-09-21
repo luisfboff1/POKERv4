@@ -8,17 +8,34 @@ require_once 'config.php';
 
 $token = $_GET['token'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
+$action = $_GET['action'] ?? '';
 
 if (empty($token)) {
-    showError('Token de convite inválido');
+    if ($action === 'validate') {
+        http_response_code(400);
+        echo json_encode(['error' => 'Token de convite inválido']);
+        exit;
+    } else {
+        showError('Token de convite inválido');
+    }
 }
 
 if ($method === 'GET') {
-    // Mostrar formulário de cadastro
-    showInviteForm($token);
+    if ($action === 'validate') {
+        // Validar convite via JSON (para React)
+        validateInviteJSON($token);
+    } else {
+        // Mostrar formulário de cadastro (HTML)
+        showInviteForm($token);
+    }
 } elseif ($method === 'POST') {
-    // Processar cadastro
-    processInvite($token);
+    if ($action === 'accept') {
+        // Processar cadastro via JSON (para React)
+        processInviteJSON($token);
+    } else {
+        // Processar cadastro via HTML (fallback)
+        processInvite($token);
+    }
 } else {
     showError('Método não permitido');
 }
@@ -482,6 +499,140 @@ function logAuditAction($tenant_id, $user_id, $action, $table_name, $record_id, 
         ]);
     } catch (Exception $e) {
         error_log("Erro ao registrar auditoria: " . $e->getMessage());
+    }
+}
+
+/**
+ * VALIDAR CONVITE VIA JSON (para React)
+ */
+function validateInviteJSON($token) {
+    global $pdo;
+    
+    try {
+        // Buscar convite válido
+        $stmt = $pdo->prepare("
+            SELECT ui.*, t.name as tenant_name, u.name as invited_by_name
+            FROM user_invites ui
+            JOIN tenants t ON ui.tenant_id = t.id
+            JOIN users u ON ui.invited_by_user_id = u.id
+            WHERE ui.invite_token = ? 
+            AND ui.status = 'pending'
+            AND ui.expires_at > NOW()
+        ");
+        $stmt->execute([$token]);
+        $invite = $stmt->fetch();
+        
+        if (!$invite) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Convite não encontrado ou expirado']);
+            exit;
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'data' => [
+                'email' => $invite['email'],
+                'name' => $invite['name'],
+                'role' => $invite['role'],
+                'tenant_name' => $invite['tenant_name'],
+                'invited_by_name' => $invite['invited_by_name'],
+                'expires_at' => $invite['expires_at']
+            ]
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Erro ao validar convite']);
+    }
+}
+
+/**
+ * PROCESSAR CONVITE VIA JSON (para React)
+ */
+function processInviteJSON($token) {
+    global $pdo;
+    
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        $name = trim($input['name'] ?? '');
+        $password = $input['password'] ?? '';
+        
+        if (empty($name) || empty($password)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Nome e senha são obrigatórios']);
+            exit;
+        }
+        
+        if (strlen($password) < 6) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Senha deve ter pelo menos 6 caracteres']);
+            exit;
+        }
+        
+        // Buscar convite válido
+        $stmt = $pdo->prepare("
+            SELECT * FROM user_invites 
+            WHERE invite_token = ? 
+            AND status = 'pending'
+            AND expires_at > NOW()
+        ");
+        $stmt->execute([$token]);
+        $invite = $stmt->fetch();
+        
+        if (!$invite) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Convite não encontrado ou expirado']);
+            exit;
+        }
+        
+        // Verificar se email já existe
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->execute([$invite['email']]);
+        
+        if ($stmt->fetch()) {
+            http_response_code(409);
+            echo json_encode(['error' => 'Usuário já cadastrado com este email']);
+            exit;
+        }
+        
+        // Criar usuário
+        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+        
+        $stmt = $pdo->prepare("
+            INSERT INTO users (tenant_id, name, email, role, password_hash, created_at, updated_at) 
+            VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+        ");
+        
+        $stmt->execute([
+            $invite['tenant_id'],
+            $name,
+            $invite['email'],
+            $invite['role'],
+            $passwordHash
+        ]);
+        
+        $userId = $pdo->lastInsertId();
+        
+        // Marcar convite como aceito
+        $stmt = $pdo->prepare("
+            UPDATE user_invites 
+            SET status = 'accepted', accepted_at = NOW() 
+            WHERE invite_token = ?
+        ");
+        $stmt->execute([$token]);
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Convite aceito com sucesso!',
+            'user_id' => $userId,
+            'email' => $invite['email'],
+            'tenant_id' => $invite['tenant_id']
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Erro ao processar convite: ' . $e->getMessage()]);
     }
 }
 ?>
