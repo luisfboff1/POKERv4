@@ -21,17 +21,19 @@ const SuperAdmin = () => {
   });
 
   useEffect(() => {
-    loadDashboardData();
+    // Temporariamente desabilitado até APIs funcionarem
+    // loadDashboardData();
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'tenants') {
-      loadTenants();
-    } else if (activeTab === 'activity') {
-      loadRecentActivity();
-    } else if (activeTab === 'revenue') {
-      loadRevenueData();
-    }
+    // Temporariamente desabilitado até APIs funcionarem
+    // if (activeTab === 'tenants') {
+    //   loadTenants();
+    // } else if (activeTab === 'activity') {
+    //   loadRecentActivity();
+    // } else if (activeTab === 'revenue') {
+    //   loadRevenueData();
+    // }
   }, [activeTab, tenantFilters]);
 
   const loadDashboardData = async () => {
@@ -159,6 +161,40 @@ const SuperAdmin = () => {
           {error}
         </div>
       )}
+
+      {/* Debug temporário */}
+      <div className="mb-6 p-4 bg-yellow-900/50 border border-yellow-500 rounded-lg">
+        <h3 className="text-white font-semibold mb-2">🧪 Modo Debug - APIs</h3>
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={loadDashboardData}
+            className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+          >
+            Testar Stats
+          </button>
+          <button
+            onClick={loadTenants}
+            className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+          >
+            Testar Tenants
+          </button>
+          <button
+            onClick={loadRecentActivity}
+            className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700"
+          >
+            Testar Activity
+          </button>
+          <button
+            onClick={loadRevenueData}
+            className="bg-orange-600 text-white px-3 py-1 rounded text-sm hover:bg-orange-700"
+          >
+            Testar Revenue
+          </button>
+        </div>
+        <p className="text-yellow-200 text-xs mt-2">
+          Clique nos botões para testar cada API individualmente
+        </p>
+      </div>
 
       {/* Tabs */}
       <div className="mb-8">
