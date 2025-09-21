@@ -21,8 +21,7 @@ const SuperAdmin = () => {
   });
 
   useEffect(() => {
-    // Temporariamente desabilitado até APIs funcionarem
-    // loadDashboardData();
+    loadDashboardData();
   }, []);
 
   useEffect(() => {

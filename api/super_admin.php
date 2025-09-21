@@ -7,7 +7,8 @@
 require_once 'config.php';
 require_once 'middleware/auth_middleware.php';
 
-// Verificar se é SUPER ADMIN
+// Primeiro autenticar, depois verificar se é super admin
+$current_user = AuthMiddleware::requireAuth($pdo);
 AuthMiddleware::requireGlobalAccess();
 
 $method = $_SERVER['REQUEST_METHOD'];
