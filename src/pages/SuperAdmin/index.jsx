@@ -20,6 +20,13 @@ const SuperAdmin = () => {
     offset: 0
   });
 
+  // Estado para gerenciamento de usuários
+  const [allUsers, setAllUsers] = useState([]);
+  const [userFilters, setUserFilters] = useState({
+    tenant: 'all',
+    role: 'all'
+  });
+
   useEffect(() => {
     loadDashboardData();
   }, []);
@@ -27,12 +34,14 @@ const SuperAdmin = () => {
   useEffect(() => {
     if (activeTab === 'tenants') {
       loadTenants();
+    } else if (activeTab === 'users') {
+      loadAllUsers();
     } else if (activeTab === 'activity') {
       loadRecentActivity();
     } else if (activeTab === 'revenue') {
       loadRevenueData();
     }
-  }, [activeTab, tenantFilters]);
+  }, [activeTab, tenantFilters, userFilters]);
 
   const loadDashboardData = async () => {
     try {
@@ -91,6 +100,45 @@ const SuperAdmin = () => {
       setRevenueData(response.data);
     } catch (error) {
       setError('Erro ao carregar dados de receita: ' + error.message);
+    }
+  };
+
+  const loadAllUsers = async () => {
+    try {
+      const response = await api.getAllUsers(userFilters);
+      setAllUsers(response.data || []);
+    } catch (error) {
+      console.error('Erro ao carregar usuários:', error);
+      setError('Erro ao carregar usuários');
+    }
+  };
+
+  const handleDeleteUser = async (userId, userName) => {
+    if (window.confirm(`Tem certeza que deseja remover o usuário "${userName}"? Esta ação não pode ser desfeita.`)) {
+      try {
+        await api.deleteUser(userId);
+        alert('Usuário removido com sucesso!');
+        loadAllUsers(); // Recarregar lista
+      } catch (error) {
+        console.error('Erro ao remover usuário:', error);
+        alert('Erro ao remover usuário: ' + error.message);
+      }
+    }
+  };
+
+  const handleResetUserPassword = async (userId, userName) => {
+    const newPassword = prompt(`Digite a nova senha para "${userName}" (mínimo 6 caracteres):`);
+    
+    if (newPassword && newPassword.length >= 6) {
+      try {
+        await api.resetUserPassword(userId, newPassword);
+        alert(`Senha de "${userName}" alterada com sucesso!`);
+      } catch (error) {
+        console.error('Erro ao alterar senha:', error);
+        alert('Erro ao alterar senha: ' + error.message);
+      }
+    } else if (newPassword) {
+      alert('Senha deve ter pelo menos 6 caracteres');
     }
   };
 
@@ -189,6 +237,7 @@ const SuperAdmin = () => {
             {[
               { id: 'overview', label: '📊 Visão Geral', icon: '📊' },
               { id: 'tenants', label: '🏢 Tenants', icon: '🏢' },
+              { id: 'users', label: '👥 Usuários', icon: '👥' },
               { id: 'activity', label: '📈 Atividade', icon: '📈' },
               { id: 'revenue', label: '💰 Receita', icon: '💰' }
             ].map((tab) => (
@@ -463,6 +512,140 @@ const SuperAdmin = () => {
       )}
 
       {/* Revenue Tab */}
+      {/* Aba Usuários */}
+      {activeTab === 'users' && (
+        <div className="space-y-6">
+          {/* Filtros de Usuários */}
+          <div className="bg-slate-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold text-white mb-4">👥 Gerenciamento de Usuários</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Filtrar por Tenant:</label>
+                <select
+                  value={userFilters.tenant}
+                  onChange={(e) => setUserFilters(prev => ({ ...prev, tenant: e.target.value }))}
+                  className="w-full bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2"
+                >
+                  <option value="all">Todos os Tenants</option>
+                  {tenants.map(tenant => (
+                    <option key={tenant.id} value={tenant.id}>
+                      {tenant.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Filtrar por Role:</label>
+                <select
+                  value={userFilters.role}
+                  onChange={(e) => setUserFilters(prev => ({ ...prev, role: e.target.value }))}
+                  className="w-full bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2"
+                >
+                  <option value="all">Todos os Roles</option>
+                  <option value="super_admin">Super Admin</option>
+                  <option value="admin">Admin</option>
+                  <option value="user">Usuário</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Lista de Usuários */}
+          <div className="bg-slate-800 rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-700">
+                <thead className="bg-slate-700">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                      Usuário
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                      Tenant
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                      Role
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                      Último Login
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-slate-800 divide-y divide-slate-700">
+                  {allUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-slate-700">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
+                              {user.name?.charAt(0)?.toUpperCase()}
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-white">{user.name}</div>
+                            <div className="text-sm text-slate-400">{user.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-white">{user.tenant_name}</div>
+                        <div className="text-sm text-slate-400">ID: {user.tenant_id}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          user.role === 'super_admin' ? 'bg-purple-100 text-purple-800' :
+                          user.role === 'admin' ? 'bg-blue-100 text-blue-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {user.role === 'super_admin' ? 'Super Admin' :
+                           user.role === 'admin' ? 'Admin' : 'Usuário'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                        {user.last_login ? new Date(user.last_login).toLocaleDateString('pt-BR') : 'Nunca'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleResetUserPassword(user.id, user.name)}
+                            className="text-yellow-400 hover:text-yellow-300 bg-yellow-900/20 hover:bg-yellow-900/40 px-3 py-1 rounded text-xs"
+                            title="Redefinir senha"
+                          >
+                            🔑 Senha
+                          </button>
+                          {user.role !== 'super_admin' && (
+                            <button
+                              onClick={() => handleDeleteUser(user.id, user.name)}
+                              className="text-red-400 hover:text-red-300 bg-red-900/20 hover:bg-red-900/40 px-3 py-1 rounded text-xs"
+                              title="Remover usuário"
+                            >
+                              🗑️ Remover
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              {allUsers.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="text-slate-400">
+                    <div className="text-4xl mb-4">👥</div>
+                    <p>Nenhum usuário encontrado</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {activeTab === 'revenue' && revenueData && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

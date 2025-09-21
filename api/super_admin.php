@@ -26,6 +26,8 @@ switch ($method) {
             handleRecentActivity();
         } elseif ($action === 'revenue') {
             handleRevenueReport();
+        } elseif ($action === 'users') {
+            handleListUsers();
         } else {
             error('Ação não encontrada', 404);
         }
@@ -38,6 +40,10 @@ switch ($method) {
             handleActivateTenant();
         } elseif ($action === 'change_plan') {
             handleChangePlan();
+        } elseif ($action === 'delete_user') {
+            handleDeleteUser();
+        } elseif ($action === 'reset_password') {
+            handleResetUserPassword();
         } else {
             error('Ação não encontrada', 404);
         }
@@ -416,6 +422,135 @@ function handleChangePlan() {
         
     } catch (Exception $e) {
         error_log("Erro ao alterar plano: " . $e->getMessage());
+        error('Erro interno do servidor', 500);
+    }
+}
+
+/**
+ * LISTAR TODOS OS USUÁRIOS
+ */
+function handleListUsers() {
+    global $pdo;
+    
+    try {
+        $tenant_filter = $_GET['tenant'] ?? 'all';
+        $role_filter = $_GET['role'] ?? 'all';
+        
+        $sql = "
+            SELECT u.*, t.name as tenant_name, t.plan as tenant_plan
+            FROM users u
+            LEFT JOIN tenants t ON u.tenant_id = t.id
+            WHERE 1=1
+        ";
+        
+        $params = [];
+        
+        if ($tenant_filter !== 'all') {
+            $sql .= " AND u.tenant_id = ?";
+            $params[] = $tenant_filter;
+        }
+        
+        if ($role_filter !== 'all') {
+            $sql .= " AND u.role = ?";
+            $params[] = $role_filter;
+        }
+        
+        $sql .= " ORDER BY u.created_at DESC";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $users = $stmt->fetchAll();
+        
+        success(['users' => $users, 'total' => count($users)]);
+        
+    } catch (Exception $e) {
+        error_log("Erro ao listar usuários: " . $e->getMessage());
+        error('Erro interno do servidor', 500);
+    }
+}
+
+/**
+ * DELETAR USUÁRIO
+ */
+function handleDeleteUser() {
+    global $pdo;
+    
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $user_id = $input['user_id'] ?? null;
+        
+        if (!$user_id) {
+            error('ID do usuário é obrigatório', 400);
+        }
+        
+        // Verificar se usuário existe e não é super_admin
+        $stmt = $pdo->prepare("SELECT role, name FROM users WHERE id = ?");
+        $stmt->execute([$user_id]);
+        $user = $stmt->fetch();
+        
+        if (!$user) {
+            error('Usuário não encontrado', 404);
+        }
+        
+        if ($user['role'] === 'super_admin') {
+            error('Não é possível remover super administradores', 403);
+        }
+        
+        // Deletar usuário
+        $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+        $stmt->execute([$user_id]);
+        
+        // Log da ação
+        AuthMiddleware::logAction($pdo, 'delete_user', 'users', $user_id, $user, null);
+        
+        success(['message' => 'Usuário removido com sucesso']);
+        
+    } catch (Exception $e) {
+        error_log("Erro ao deletar usuário: " . $e->getMessage());
+        error('Erro interno do servidor', 500);
+    }
+}
+
+/**
+ * RESETAR SENHA DO USUÁRIO
+ */
+function handleResetUserPassword() {
+    global $pdo;
+    
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $user_id = $input['user_id'] ?? null;
+        $new_password = $input['new_password'] ?? '';
+        
+        if (!$user_id || !$new_password) {
+            error('ID do usuário e nova senha são obrigatórios', 400);
+        }
+        
+        if (strlen($new_password) < 6) {
+            error('Senha deve ter pelo menos 6 caracteres', 400);
+        }
+        
+        // Verificar se usuário existe
+        $stmt = $pdo->prepare("SELECT name FROM users WHERE id = ?");
+        $stmt->execute([$user_id]);
+        $user = $stmt->fetch();
+        
+        if (!$user) {
+            error('Usuário não encontrado', 404);
+        }
+        
+        // Atualizar senha
+        $password_hash = password_hash($new_password, PASSWORD_DEFAULT);
+        $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+        $stmt->execute([$password_hash, $user_id]);
+        
+        // Log da ação
+        AuthMiddleware::logAction($pdo, 'reset_password', 'users', $user_id, null, ['password_reset' => true]);
+        
+        success(['message' => 'Senha alterada com sucesso']);
+        
+    } catch (Exception $e) {
+        error_log("Erro ao resetar senha: " . $e->getMessage());
         error('Erro interno do servidor', 500);
     }
 }

@@ -6,9 +6,11 @@ const Invites = () => {
   const { user, getTenantInfo } = useAuth();
   const [invites, setInvites] = useState([]);
   const [pendingInvites, setPendingInvites] = useState([]);
+  const [groupMembers, setGroupMembers] = useState([]); // NOVO: Membros do grupo
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showInviteForm, setShowInviteForm] = useState(false);
+  const [activeSection, setActiveSection] = useState('members'); // NOVO: Seção ativa
   const [inviteForm, setInviteForm] = useState({
     email: '',
     name: '',
@@ -20,6 +22,7 @@ const Invites = () => {
 
   useEffect(() => {
     loadInvites();
+    loadGroupMembers();
   }, []);
 
   const loadInvites = async () => {
@@ -36,6 +39,45 @@ const Invites = () => {
       setError('Erro ao carregar convites: ' + error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadGroupMembers = async () => {
+    try {
+      const response = await api.getGroupMembers();
+      setGroupMembers(response.data || []);
+    } catch (error) {
+      console.error('Erro ao carregar membros:', error);
+      setError('Erro ao carregar membros do grupo');
+    }
+  };
+
+  const handleRemoveMember = async (userId, userName) => {
+    if (window.confirm(`Tem certeza que deseja remover "${userName}" do grupo? Esta ação não pode ser desfeita.`)) {
+      try {
+        await api.removeMemberFromGroup(userId);
+        alert('Membro removido com sucesso!');
+        loadGroupMembers(); // Recarregar lista
+      } catch (error) {
+        console.error('Erro ao remover membro:', error);
+        alert('Erro ao remover membro: ' + error.message);
+      }
+    }
+  };
+
+  const handleResetMemberPassword = async (userId, userName) => {
+    const newPassword = prompt(`Digite a nova senha para "${userName}" (mínimo 6 caracteres):`);
+    
+    if (newPassword && newPassword.length >= 6) {
+      try {
+        await api.resetMemberPassword(userId, newPassword);
+        alert(`Senha de "${userName}" alterada com sucesso!`);
+      } catch (error) {
+        console.error('Erro ao alterar senha:', error);
+        alert('Erro ao alterar senha: ' + error.message);
+      }
+    } else if (newPassword) {
+      alert('Senha deve ter pelo menos 6 caracteres');
     }
   };
 
@@ -123,10 +165,10 @@ const Invites = () => {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">
-            👥 Gerenciar Convites
+            👥 Convidados
           </h1>
           <p className="text-slate-400">
-            Convide novos membros para {tenantInfo?.name}
+            Gerencie membros e convites para {tenantInfo?.name}
           </p>
         </div>
         
@@ -134,8 +176,32 @@ const Invites = () => {
           onClick={() => setShowInviteForm(true)}
           className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
         >
-          ➕ Novo Convite
+          📧 Enviar Convite
         </button>
+      </div>
+
+      {/* Abas */}
+      <div className="mb-8">
+        <div className="border-b border-slate-700">
+          <nav className="-mb-px flex space-x-8">
+            {[
+              { id: 'members', label: '👥 Membros do Grupo', icon: '👥' },
+              { id: 'invites', label: '📧 Convites Pendentes', icon: '📧' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveSection(tab.id)}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeSection === tab.id
+                    ? 'border-blue-500 text-blue-400'
+                    : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-300'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
       </div>
 
       {error && (
@@ -143,6 +209,107 @@ const Invites = () => {
           {error}
         </div>
       )}
+
+      {/* Aba Membros do Grupo */}
+      {activeSection === 'members' && (
+        <div className="bg-slate-800 rounded-lg overflow-hidden">
+          <div className="p-6 border-b border-slate-700">
+            <h3 className="text-lg font-semibold text-white mb-2">👥 Membros do Grupo</h3>
+            <p className="text-slate-400 text-sm">
+              {groupMembers.length} membro(s) ativo(s) no grupo
+            </p>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-700">
+              <thead className="bg-slate-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                    Membro
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                    Role
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                    Desde
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                    Último Login
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                    Ações
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-slate-800 divide-y divide-slate-700">
+                {groupMembers.map((member) => (
+                  <tr key={member.id} className="hover:bg-slate-700">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
+                            {member.name?.charAt(0)?.toUpperCase()}
+                          </div>
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-white">{member.name}</div>
+                          <div className="text-sm text-slate-400">{member.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        member.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                      }`}>
+                        {member.role === 'admin' ? 'Administrador' : 'Membro'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                      {new Date(member.created_at).toLocaleDateString('pt-BR')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                      {member.last_login ? new Date(member.last_login).toLocaleDateString('pt-BR') : 'Nunca'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleResetMemberPassword(member.id, member.name)}
+                          className="text-yellow-400 hover:text-yellow-300 bg-yellow-900/20 hover:bg-yellow-900/40 px-3 py-1 rounded text-xs"
+                          title="Redefinir senha"
+                        >
+                          🔑 Senha
+                        </button>
+                        {member.role !== 'admin' && member.id !== user?.id && (
+                          <button
+                            onClick={() => handleRemoveMember(member.id, member.name)}
+                            className="text-red-400 hover:text-red-300 bg-red-900/20 hover:bg-red-900/40 px-3 py-1 rounded text-xs"
+                            title="Remover do grupo"
+                          >
+                            🗑️ Remover
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            {groupMembers.length === 0 && (
+              <div className="text-center py-12">
+                <div className="text-slate-400">
+                  <div className="text-4xl mb-4">👥</div>
+                  <p>Nenhum membro no grupo ainda</p>
+                  <p className="text-sm mt-2">Envie convites para adicionar membros</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Aba Convites Pendentes */}
+      {activeSection === 'invites' && (
 
       {/* Modal de novo convite */}
       {showInviteForm && (

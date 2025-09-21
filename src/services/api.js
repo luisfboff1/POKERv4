@@ -258,6 +258,23 @@ class ApiService {
       name: user.tenant_name,
       plan: user.tenant_plan
     } : null;
+  },
+
+  // User Management APIs
+  async getAllUsers(filters = {}) {
+    const params = new URLSearchParams(filters);
+    return this.request(`/super_admin.php?action=users&${params}`);
+  },
+
+  async deleteUser(userId) {
+    return this.request('/super_admin.php?action=delete_user', 'POST', { user_id: userId });
+  },
+
+  async resetUserPassword(userId, newPassword) {
+    return this.request('/super_admin.php?action=reset_password', 'POST', { 
+      user_id: userId, 
+      new_password: newPassword 
+    });
   }
 }
 
