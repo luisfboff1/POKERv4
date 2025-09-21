@@ -34,18 +34,20 @@ jobs:
       run: |
         echo "🏗️ Buildando projeto React..."
         npm run build
-        echo "📄 Copiando .htaccess..."
-        cp .htaccess dist/
-                echo "🔧 Configurando banco de dados..."
-                echo "DB_HOST=${{ secrets.DB_HOST }}" > api/.env
-                echo "DB_NAME=${{ secrets.DB_NAME }}" >> api/.env
-                echo "DB_USER=${{ secrets.DB_USER }}" >> api/.env
-                echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> api/.env
+                echo "📄 Copiando .htaccess..."
+                cp .htaccess dist/
                 echo "🤖 Configurando PokerBot..."
                 # Criar .env para o Vite ler durante o build
                 echo "VITE_GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" > .env
                 echo "📄 Verificando .env criado:"
                 cat .env
+                echo "📄 Copiando .env para dist..."
+                cp .env dist/
+                echo "🔧 Configurando banco de dados..."
+                echo "DB_HOST=${{ secrets.DB_HOST }}" > api/.env
+                echo "DB_NAME=${{ secrets.DB_NAME }}" >> api/.env
+                echo "DB_USER=${{ secrets.DB_USER }}" >> api/.env
+                echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> api/.env
         echo "✅ Build concluído!"
         ls -la dist/
         
