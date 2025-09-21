@@ -258,33 +258,33 @@ class ApiService {
       name: user.tenant_name,
       plan: user.tenant_plan
     } : null;
-  },
+  }
 
   // User Management APIs
   getAllUsers(filters = {}) {
     const params = new URLSearchParams(filters);
     return this.request(`/super_admin.php?action=users&${params}`);
-  },
+  }
 
   deleteUser(userId) {
     return this.request('/super_admin.php?action=delete_user', 'POST', { user_id: userId });
-  },
+  }
 
   resetUserPassword(userId, newPassword) {
     return this.request('/super_admin.php?action=reset_password', 'POST', { 
       user_id: userId, 
       new_password: newPassword 
     });
-  },
+  }
 
   // Group Member Management APIs (for tenant admins)
   getGroupMembers() {
     return this.request('/invite.php?action=members');
-  },
+  }
 
   removeMemberFromGroup(userId) {
     return this.request('/invite.php?action=remove_member', 'POST', { user_id: userId });
-  },
+  }
 
   resetMemberPassword(userId, newPassword) {
     return this.request('/invite.php?action=reset_member_password', 'POST', { 
