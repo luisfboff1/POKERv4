@@ -102,7 +102,7 @@ const AcceptInvite = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800 flex items-center justify-center public-page">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -116,7 +116,7 @@ const AcceptInvite = () => {
 
   if (error && !inviteData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-600 via-purple-600 to-red-800 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-red-600 via-purple-600 to-red-800 flex items-center justify-center public-page">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
           <div className="text-center">
             <div className="text-6xl mb-4">❌</div>
@@ -135,7 +135,7 @@ const AcceptInvite = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-600 via-blue-600 to-purple-800">
+    <div className="min-h-screen bg-gradient-to-br from-green-600 via-blue-600 to-purple-800 public-page">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 p-6">
         <div className="max-w-6xl mx-auto text-center">

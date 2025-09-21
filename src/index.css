@@ -25,6 +25,21 @@
     @apply bg-slate-700 border-slate-600 text-white rounded-md focus:ring-blue-500 focus:border-blue-500;
   }
 
+  /* Estilos específicos para páginas públicas (login, register, accept-invite) */
+  .public-page input[type="email"],
+  .public-page input[type="password"],
+  .public-page input[type="text"],
+  .public-page select {
+    @apply bg-white border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500;
+  }
+
+  .public-page input[type="email"]:focus,
+  .public-page input[type="password"]:focus,
+  .public-page input[type="text"]:focus,
+  .public-page select:focus {
+    @apply ring-2 ring-blue-500 border-transparent;
+  }
+
   input[type="checkbox"] {
     @apply bg-slate-700 border-slate-600 text-blue-500 rounded focus:ring-blue-500;
   }

@@ -45,7 +45,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800">
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800 public-page">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 p-6">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
