@@ -84,18 +84,11 @@ export function SessionManager({ initialData = null, onSave = null }) {
   // Obter sugestões de jogadores baseado no texto digitado
   const getPlayerSuggestions = (text, playerIndex) => {
     if (!text || text.length < 2) {
-      setShowSuggestions(prev => ({ ...prev, [playerIndex]: false }));
       return [];
     }
     const suggestions = availablePlayers.filter(player => 
       player.toLowerCase().includes(text.toLowerCase())
     ).slice(0, 5);
-    
-    if (suggestions.length > 0) {
-      setShowSuggestions(prev => ({ ...prev, [playerIndex]: true }));
-    } else {
-      setShowSuggestions(prev => ({ ...prev, [playerIndex]: false }));
-    }
     
     return suggestions;
   };
@@ -268,9 +261,16 @@ export function SessionManager({ initialData = null, onSave = null }) {
   };
 
   useEffect(() => {
-    if (players.length > 0) {
-      const optimizedTransfers = optimizeTransfers(players, recommendedPayments);
-      setSuggestions(optimizedTransfers);
+    if (players.length > 0 && players.some(p => p.name)) {
+      try {
+        const optimizedTransfers = optimizeTransfers(players, recommendedPayments);
+        setSuggestions(optimizedTransfers);
+      } catch (error) {
+        console.error('Erro ao calcular otimização:', error);
+        setSuggestions([]);
+      }
+    } else {
+      setSuggestions([]);
     }
   }, [players, recommendedPayments]);
 
@@ -330,6 +330,8 @@ export function SessionManager({ initialData = null, onSave = null }) {
           <div className="grid gap-3">
             {players.map((player, index) => {
               const playerSuggestions = getPlayerSuggestions(player.name, index);
+              const shouldShowSuggestions = showSuggestions[index] && playerSuggestions.length > 0;
+              
               return (
                 <div key={index} className="flex items-center gap-3">
                   <span className="text-slate-400 w-8">{index + 1}.</span>
@@ -337,7 +339,15 @@ export function SessionManager({ initialData = null, onSave = null }) {
                     <input
                       type="text"
                       value={player.name}
-                      onChange={(e) => updatePlayer(index, 'name', e.target.value)}
+                      onChange={(e) => {
+                        updatePlayer(index, 'name', e.target.value);
+                        // Atualizar sugestões quando o texto muda
+                        if (e.target.value.length >= 2) {
+                          setShowSuggestions(prev => ({ ...prev, [index]: true }));
+                        } else {
+                          setShowSuggestions(prev => ({ ...prev, [index]: false }));
+                        }
+                      }}
                       onKeyPress={(e) => handlePlayerNameKeyPress(e, index)}
                       onBlur={() => {
                         // Fechar sugestões após um pequeno delay para permitir clique
@@ -356,7 +366,7 @@ export function SessionManager({ initialData = null, onSave = null }) {
                       placeholder="Nome do jogador (pressione Enter para próximo)"
                       autoFocus={index === currentPlayerIndex}
                     />
-                    {showSuggestions[index] && playerSuggestions.length > 0 && (
+                    {shouldShowSuggestions && (
                       <div className="absolute top-full left-0 right-0 bg-slate-700 border border-slate-600 rounded-b mt-1 z-10 shadow-lg">
                         {playerSuggestions.map((suggestion, sugIndex) => (
                           <button
