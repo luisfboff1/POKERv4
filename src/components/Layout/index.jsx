@@ -104,7 +104,7 @@ export function Layout() {
                   </Link>
                 )}
 
-                {isSuperAdmin() && (
+                {(user?.role === 'super_admin' || isSuperAdmin()) && (
                   <Link 
                     to="/admin" 
                     className={`px-3 py-2 rounded-md text-sm font-medium ${
