@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
 import { NewSession } from './pages/NewSession';
 import { History } from './pages/History';
+import { Ranking } from './pages/Ranking';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 const router = createBrowserRouter(
@@ -15,7 +16,8 @@ const router = createBrowserRouter(
       children: [
         { path: '', element: <Home /> },
         { path: 'new', element: <NewSession /> },
-        { path: 'history', element: <History /> }
+        { path: 'history', element: <History /> },
+        { path: 'ranking', element: <Ranking /> }
       ]
     }
   ],

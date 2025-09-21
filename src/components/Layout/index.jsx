@@ -38,6 +38,16 @@ export function Layout() {
               >
                 Histórico
               </Link>
+              <Link 
+                to="/ranking" 
+                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  location.pathname === '/ranking'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                🏆 Ranking
+              </Link>
             </nav>
           </div>
         </div>
