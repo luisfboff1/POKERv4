@@ -121,15 +121,13 @@ function handleListAllTenants() {
             $params[] = $plan;
         }
         
-        $sql .= " ORDER BY created_at DESC LIMIT ? OFFSET ?";
-        $params[] = $limit;
-        $params[] = $offset;
+        $sql .= " ORDER BY created_at DESC LIMIT $limit OFFSET $offset";
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         $tenants = $stmt->fetchAll();
         
-        // Contar total
+        // Contar total (usar tabela direta para simplificar)
         $countSql = "SELECT COUNT(*) as total FROM tenants WHERE 1=1";
         $countParams = [];
         
