@@ -19,7 +19,7 @@ if (file_exists(__DIR__ . '/.env')) {
 }
 
 // Configurações SMTP - Usar variáveis de ambiente por segurança
-define('SMTP_HOST', $_ENV['SMTP_HOST'] ?? 'mail.luisfboff.com');
+define('SMTP_HOST', $_ENV['SMTP_HOST'] ?? 'smtp.hostinger.com'); // Servidor SMTP correto do Hostinger
 define('SMTP_PORT', $_ENV['SMTP_PORT'] ?? 587);
 define('SMTP_USERNAME', $_ENV['SMTP_USERNAME'] ?? 'noreply@luisfboff.com');
 define('SMTP_PASSWORD', $_ENV['SMTP_PASSWORD'] ?? ''); // Vem do GitHub Secrets
