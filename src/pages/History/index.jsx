@@ -165,10 +165,38 @@ export function History() {
               {session.recommendations?.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-slate-700">
                   <h4 className="text-sm font-medium mb-2">Transferências Sugeridas:</h4>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     {session.recommendations.map((transfer, index) => (
-                      <div key={index} className="text-sm text-slate-400">
-                        {transfer.from} → {transfer.to}: {formatMoney(transfer.amount)}
+                      <div key={index} className="flex justify-between items-center bg-slate-700 p-2 rounded text-sm">
+                        <div className="flex items-center gap-3">
+                          <span className="text-slate-300">
+                            {transfer.from} → {transfer.to}
+                          </span>
+                          <span className="font-bold text-green-400">
+                            {formatMoney(transfer.amount)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <label className="flex items-center text-xs">
+                            <input
+                              type="checkbox"
+                              checked={transfer.paid || false}
+                              onChange={(e) => {
+                                // Atualizar status no estado local (será salvo quando editar a sessão)
+                                const updatedSessions = [...sessions];
+                                const sessionIndex = updatedSessions.findIndex(s => s.id === session.id);
+                                if (sessionIndex !== -1) {
+                                  updatedSessions[sessionIndex].recommendations[index].paid = e.target.checked;
+                                  setSessions(updatedSessions);
+                                }
+                              }}
+                              className="mr-1"
+                            />
+                            <span className={transfer.paid ? 'text-green-400' : 'text-slate-400'}>
+                              {transfer.paid ? '✓ Pago' : 'Pendente'}
+                            </span>
+                          </label>
+                        </div>
                       </div>
                     ))}
                   </div>

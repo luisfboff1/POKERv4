@@ -101,8 +101,8 @@ export function SessionManager({ initialData = null, onSave = null }) {
   };
 
   const calculateBalance = (player) => {
-    const totalBuyIn = player.buyIns.reduce((sum, buyIn) => sum + buyIn, 0);
-    return player.cashOut - totalBuyIn;
+    const totalBuyIn = (player.buyIns || []).reduce((sum, buyIn) => sum + buyIn, 0);
+    return (player.cashOut || 0) - totalBuyIn;
   };
 
   const optimizeTransfers = () => {
@@ -126,7 +126,8 @@ export function SessionManager({ initialData = null, onSave = null }) {
         transfers.push({
           from: debtor.name,
           to: creditor.name,
-          amount: amount
+          amount: amount,
+          paid: false // Adicionar status de pagamento
         });
 
         creditor.balance -= amount;
@@ -348,8 +349,25 @@ export function SessionManager({ initialData = null, onSave = null }) {
           <div className="space-y-2">
             {suggestions.map((transfer, index) => (
               <div key={index} className="flex justify-between items-center bg-slate-700 p-3 rounded">
-                <span>{transfer.from} → {transfer.to}</span>
-                <span className="font-bold text-green-400">R$ {transfer.amount.toFixed(2)}</span>
+                <div className="flex items-center gap-3">
+                  <span>{transfer.from} → {transfer.to}</span>
+                  <span className="font-bold text-green-400">R$ {transfer.amount.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center text-sm">
+                    <input
+                      type="checkbox"
+                      checked={transfer.paid || false}
+                      onChange={(e) => {
+                        const updatedSuggestions = [...suggestions];
+                        updatedSuggestions[index].paid = e.target.checked;
+                        setSuggestions(updatedSuggestions);
+                      }}
+                      className="mr-1"
+                    />
+                    Pago
+                  </label>
+                </div>
               </div>
             ))}
           </div>
