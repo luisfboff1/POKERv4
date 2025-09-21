@@ -93,10 +93,11 @@ const AcceptInvite = () => {
         
         try {
           // Fazer login automático com as mesmas credenciais
-          const loginResponse = await fetch('/api/auth.php?action=login', {
+          const loginResponse = await fetch('https://poker.luisfboff.com/api/auth.php?action=login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
+              // NÃO enviar Authorization header aqui!
             },
             body: JSON.stringify({
               email: inviteData.email,

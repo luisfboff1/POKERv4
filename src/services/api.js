@@ -93,17 +93,31 @@ class ApiService {
 
   // === AUTENTICAÇÃO ===
   async login(email, password) {
-    const response = await this.request('/auth.php?action=login', {
+    // Login não deve enviar token de autorização!
+    const url = `${API_BASE}/auth.php?action=login`;
+    
+    const response = await fetch(url, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+        // NÃO enviar Authorization header para login!
+      },
       body: JSON.stringify({ email, password })
     });
     
-    if (response.data.token) {
-      this.setToken(response.data.token);
-      this.setUser(response.data.user);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
     }
     
-    return response;
+    const data = await response.json();
+    
+    if (data.data && data.data.token) {
+      this.setToken(data.data.token);
+      this.setUser(data.data.user);
+    }
+    
+    return data;
   }
 
   async logout() {
