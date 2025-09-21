@@ -81,6 +81,30 @@ export function SessionManager({ initialData = null, onSave = null }) {
     setPlayers(updated);
   };
 
+  // Adicionar rebuy de 50 (padrão)
+  const addRebuy = (playerIndex) => {
+    const updated = [...players];
+    updated[playerIndex].buyIns.push(50);
+    setPlayers(updated);
+  };
+
+  // Adicionar rebuy customizado
+  const addCustomRebuy = (playerIndex, amount) => {
+    if (amount > 0) {
+      const updated = [...players];
+      updated[playerIndex].buyIns.push(Number(amount));
+      setPlayers(updated);
+    }
+  };
+
+  // Remover rebuy específico
+  const removeRebuy = (playerIndex, rebuyIndex) => {
+    if (rebuyIndex === 0) return; // Não pode remover o buy-in inicial
+    const updated = [...players];
+    updated[playerIndex].buyIns.splice(rebuyIndex, 1);
+    setPlayers(updated);
+  };
+
   // Obter sugestões de jogadores baseado no texto digitado
   const getPlayerSuggestions = (text, playerIndex) => {
     if (!text || text.length < 2) {
@@ -416,13 +440,70 @@ export function SessionManager({ initialData = null, onSave = null }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Buy-in</label>
+                  <label className="block text-sm font-medium mb-1">Buy-in Inicial</label>
                   <input
                     type="number"
                     value={player.buyIns[0]}
-                    onChange={(e) => updatePlayer(index, 'buyIns', [Number(e.target.value)])}
+                    onChange={(e) => {
+                      const updated = [...players];
+                      updated[index].buyIns[0] = Number(e.target.value);
+                      setPlayers(updated);
+                    }}
                     className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
                   />
+                </div>
+
+                {/* Sistema de Rebuys */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-sm font-medium">Rebuys</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => addRebuy(index)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                      >
+                        +50 Rebuy
+                      </button>
+                      <input
+                        type="number"
+                        placeholder="Valor"
+                        className="w-20 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            const value = e.target.value;
+                            if (value && Number(value) > 0) {
+                              addCustomRebuy(index, value);
+                              e.target.value = '';
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Lista de Buy-ins */}
+                  <div className="space-y-1">
+                    {player.buyIns.map((buyIn, buyInIndex) => (
+                      <div key={buyInIndex} className="flex justify-between items-center bg-slate-600 px-2 py-1 rounded text-sm">
+                        <span>
+                          {buyInIndex === 0 ? '🎯 Buy-in:' : '🔄 Rebuy:'} R$ {buyIn.toFixed(2)}
+                        </span>
+                        {buyInIndex > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => removeRebuy(index, buyInIndex)}
+                            className="text-red-400 hover:text-red-300 ml-2"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <div className="text-xs text-slate-400 font-semibold">
+                      Total Investido: R$ {(player.buyIns || []).reduce((sum, buyIn) => sum + buyIn, 0).toFixed(2)}
+                    </div>
+                  </div>
                 </div>
 
                 <div>
