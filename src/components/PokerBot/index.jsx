@@ -18,6 +18,8 @@ export function PokerBot() {
   // Carregar sessões quando o bot é inicializado
   useEffect(() => {
     loadSessions();
+    console.log('🤖 PokerBot API Key:', apiKey ? 'Configurada' : 'Não configurada');
+    console.log('🤖 API Key value:', apiKey === 'API_KEY_PLACEHOLDER' ? 'PLACEHOLDER' : 'REAL_KEY');
   }, []);
 
   // Scroll para a última mensagem
@@ -83,8 +85,8 @@ export function PokerBot() {
 
   // Função para usar a API da Groq para perguntas complexas
   const askGroqAI = async (question, context) => {
-    if (apiKey === 'API_KEY_PLACEHOLDER') {
-      return "🤖 Funcionalidade de IA avançada não configurada. Use as perguntas sugeridas!";
+    if (apiKey === 'API_KEY_PLACEHOLDER' || !apiKey) {
+      return "🤖 IA avançada não configurada. Mas posso responder perguntas básicas sobre seus dados!";
     }
 
     try {
@@ -270,15 +272,39 @@ export function PokerBot() {
       return response;
     }
 
-    // Para perguntas complexas, usar IA
-    const context = `
-      DADOS DAS SESSÕES:
-      - Total de sessões: ${sessions.length}
-      - Jogadores: ${playerStats.map(p => `${p.name}: ${formatMoney(p.totalProfit)} (${p.participations} sessões)`).join(', ')}
-      - Últimas sessões: ${sessions.slice(0, 3).map(s => `${s.date}: ${s.players_data?.map(p => `${p.name}: ${formatMoney((p.cashOut || 0) - (p.buyIns?.reduce((sum, buyIn) => sum + buyIn, 0) || 0))}`).join(', ')}`).join(' | ')}
-    `;
-    
-    return await askGroqAI(question, context);
+    // Para perguntas sobre ranking/liderança
+    if (questionLower.includes('ranking') || questionLower.includes('lidera') || questionLower.includes('primeiro') || questionLower.includes('top')) {
+      const topPlayers = playerStats
+        .filter(p => p.totalProfit > 0)
+        .sort((a, b) => b.totalProfit - a.totalProfit)
+        .slice(0, 5);
+      
+      if (topPlayers.length === 0) {
+        return "😅 Nenhum jogador está com lucro no momento para formar um ranking!";
+      }
+      
+      let response = "🏆 **Top 5 Ranking por Lucro:**\n\n";
+      topPlayers.forEach((player, index) => {
+        const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : "🏅";
+        response += `${medal} **${index + 1}. ${player.name}**: ${formatMoney(player.totalProfit)} (${player.participations} sessões)\n`;
+      });
+      return response;
+    }
+
+    // Para perguntas complexas, usar IA se disponível
+    if (apiKey !== 'API_KEY_PLACEHOLDER' && apiKey) {
+      const context = `
+        DADOS DAS SESSÕES:
+        - Total de sessões: ${sessions.length}
+        - Jogadores: ${playerStats.map(p => `${p.name}: ${formatMoney(p.totalProfit)} (${p.participations} sessões)`).join(', ')}
+        - Últimas sessões: ${sessions.slice(0, 3).map(s => `${s.date}: ${s.players_data?.map(p => `${p.name}: ${formatMoney((p.cashOut || 0) - (p.buyIns?.reduce((sum, buyIn) => sum + buyIn, 0) || 0))}`).join(', ')}`).join(' | ')}
+      `;
+      
+      return await askGroqAI(question, context);
+    }
+
+    // Resposta padrão para perguntas não reconhecidas (sem IA)
+    return "🤖 Desculpe, não entendi sua pergunta. Tente perguntar sobre:\n• Quem deve quem?\n• Quem ganhou mais?\n• Estatísticas gerais\n• Ranking de jogadores\n• Transferências pendentes";
   };
 
   const formatMoney = (value) => {
@@ -330,8 +356,8 @@ export function PokerBot() {
   const suggestedQuestions = [
     "Quem deve?",
     "Quem ganhou?",
-    "Estatísticas",
-    "Transferências"
+    "Ranking",
+    "Estatísticas"
   ];
 
   return (
@@ -393,19 +419,17 @@ export function PokerBot() {
           </div>
 
           {/* Suggested Questions - Compactas */}
-          {messages.length === 1 && (
-            <div className="flex flex-wrap gap-1 p-2 bg-slate-700 border-t border-slate-600">
-              {suggestedQuestions.map((question, index) => (
-                <button
-                  key={index}
-                  onClick={() => setInputMessage(question)}
-                  className="text-xs px-2 py-1 bg-slate-600 hover:bg-slate-500 rounded text-slate-300 hover:text-white transition-colors"
-                >
-                  {question}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="flex flex-wrap gap-1 p-2 bg-slate-700 border-t border-slate-600">
+            {suggestedQuestions.map((question, index) => (
+              <button
+                key={index}
+                onClick={() => setInputMessage(question)}
+                className="text-xs px-2 py-1 bg-slate-600 hover:bg-slate-500 rounded text-slate-300 hover:text-white transition-colors"
+              >
+                {question}
+              </button>
+            ))}
+          </div>
 
           {/* Input */}
           <div className="p-3 border-t border-slate-700">
