@@ -261,16 +261,16 @@ class ApiService {
   },
 
   // User Management APIs
-  async getAllUsers(filters = {}) {
+  getAllUsers(filters = {}) {
     const params = new URLSearchParams(filters);
     return this.request(`/super_admin.php?action=users&${params}`);
   },
 
-  async deleteUser(userId) {
+  deleteUser(userId) {
     return this.request('/super_admin.php?action=delete_user', 'POST', { user_id: userId });
   },
 
-  async resetUserPassword(userId, newPassword) {
+  resetUserPassword(userId, newPassword) {
     return this.request('/super_admin.php?action=reset_password', 'POST', { 
       user_id: userId, 
       new_password: newPassword 
@@ -278,15 +278,15 @@ class ApiService {
   },
 
   // Group Member Management APIs (for tenant admins)
-  async getGroupMembers() {
+  getGroupMembers() {
     return this.request('/invite.php?action=members');
   },
 
-  async removeMemberFromGroup(userId) {
+  removeMemberFromGroup(userId) {
     return this.request('/invite.php?action=remove_member', 'POST', { user_id: userId });
   },
 
-  async resetMemberPassword(userId, newPassword) {
+  resetMemberPassword(userId, newPassword) {
     return this.request('/invite.php?action=reset_member_password', 'POST', { 
       user_id: userId, 
       new_password: newPassword 
