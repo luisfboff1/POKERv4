@@ -1,19 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../../services/api';
+import { ChatInterface } from './ChatInterface';
+import { ActionButtons } from './ActionButtons';
+import { AgentStatus } from './AgentStatus';
+import { useAgent } from '../../contexts/AgentContext';
 
 export function PokerBot() {
   const [apiKey] = useState(import.meta.env.VITE_GROQ_API_KEY || 'API_KEY_PLACEHOLDER');
   const [isVisible, setIsVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState('chat'); // 'chat', 'actions', 'status'
   const [messages, setMessages] = useState([
     {
       type: 'ai',
-      content: '🤖 Olá! Sou o PokerBot! Posso te ajudar com informações sobre suas sessões de poker. Pergunte-me sobre estatísticas, quem deve quem, rankings e muito mais!'
+      content: '🤖 Olá! Sou o PokerBot Agente! Agora posso executar ações além de responder perguntas. Experimente comandos como "Criar sessão hoje" ou use os botões de ação rápida!'
     }
   ]);
-  const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [sessions, setSessions] = useState([]);
   const messagesEndRef = useRef(null);
+  const { agentStatus } = useAgent();
 
   // Carregar sessões quando o bot é inicializado
   useEffect(() => {
@@ -314,142 +319,129 @@ export function PokerBot() {
     }).format(value);
   };
 
-  const sendMessage = async () => {
-    if (!inputMessage.trim()) return;
+  const handleSendMessage = async (message, messageType = 'user') => {
+    if (messageType === 'user') {
+      // Adicionar mensagem do usuário
+      setMessages(prev => [...prev, { type: 'user', content: message }]);
+      setIsTyping(true);
 
-    const userMessage = inputMessage.trim();
-    setInputMessage('');
-    
-    // Adicionar mensagem do usuário
-    setMessages(prev => [...prev, { type: 'user', content: userMessage }]);
-    setIsTyping(true);
-
-    try {
-      // Simular delay de digitação
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Analisar pergunta e gerar resposta
-      const response = await analyzeQuestion(userMessage);
-      
-      setIsTyping(false);
-      setMessages(prev => [...prev, { type: 'ai', content: response }]);
-    } catch (error) {
-      setIsTyping(false);
-      setMessages(prev => [...prev, { 
-        type: 'ai', 
-        content: '😅 Desculpe, ocorreu um erro ao processar sua pergunta. Tente novamente!' 
-      }]);
+      try {
+        // Simular delay de digitação
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Analisar pergunta e gerar resposta
+        const response = await analyzeQuestion(message);
+        
+        setIsTyping(false);
+        setMessages(prev => [...prev, { type: 'ai', content: response }]);
+      } catch (error) {
+        setIsTyping(false);
+        setMessages(prev => [...prev, { 
+          type: 'ai', 
+          content: '😅 Desculpe, ocorreu um erro ao processar sua pergunta. Tente novamente!' 
+        }]);
+      }
+    } else {
+      // Mensagem direta do agente (resultado de ação)
+      setMessages(prev => [...prev, { type: messageType, content: message }]);
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+  const handleActionExecuted = (actionResult) => {
+    setMessages(prev => [...prev, { 
+      type: 'action', 
+      content: actionResult.message 
+    }]);
   };
 
   const toggleBot = () => {
     setIsVisible(!isVisible);
   };
 
-  const suggestedQuestions = [
-    "Quem deve?",
-    "Quem ganhou?",
-    "Ranking",
-    "Estatísticas"
+  const tabs = [
+    { id: 'chat', label: 'Chat', icon: '💬' },
+    { id: 'actions', label: 'Ações', icon: '⚡' },
+    { id: 'status', label: 'Status', icon: '📊' }
   ];
 
   return (
     <>
-      {/* Botão do Bot */}
+      {/* Botão do Bot com indicador de status */}
       <button
         onClick={toggleBot}
-        className={`fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg z-50 flex items-center justify-center text-xl transition-all duration-300 ${isVisible ? 'rotate-45' : ''}`}
-        title="PokerBot - Assistente IA"
+        className={`fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg z-50 flex items-center justify-center text-xl transition-all duration-300 ${isVisible ? 'rotate-45' : ''} relative`}
+        title="PokerBot Agente - Assistente IA"
       >
         {isVisible ? '✕' : '🤖'}
+        
+        {/* Status indicator */}
+        <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
+          agentStatus === 'online' ? 'bg-green-400' :
+          agentStatus === 'processing' ? 'bg-yellow-400 animate-pulse' :
+          'bg-red-400'
+        }`}></div>
       </button>
 
-      {/* Chat Widget */}
+      {/* Agent Widget */}
       {isVisible && (
-        <div className="fixed bottom-24 right-6 w-80 h-96 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-40 flex flex-col">
-          {/* Header */}
-          <div className="bg-blue-600 text-white p-3 rounded-t-lg flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🤖</span>
-              <span className="font-semibold">PokerBot</span>
-            </div>
-            <span className="text-xs bg-blue-500 px-2 py-1 rounded">Online</span>
+        <div className="fixed bottom-24 right-6 w-96 h-[32rem] bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-40 flex flex-col">
+          {/* Tabs */}
+          <div className="flex bg-slate-700 rounded-t-lg">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 p-3 text-sm font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-600'
+                }`}
+              >
+                <span className="mr-1">{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-3">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] p-2 rounded-lg text-sm ${
-                    message.type === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-700 text-slate-200'
-                  }`}
-                >
-                  <div className="whitespace-pre-wrap">{message.content}</div>
+          {/* Tab Content */}
+          <div className="flex-1 overflow-hidden">
+            {activeTab === 'chat' && (
+              <ChatInterface
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                isTyping={isTyping}
+              />
+            )}
+            
+            {activeTab === 'actions' && (
+              <div className="p-4 h-full overflow-y-auto">
+                <div className="mb-4">
+                  <h3 className="text-white font-semibold mb-2">⚡ Ações Rápidas</h3>
+                  <p className="text-slate-400 text-sm mb-4">
+                    Execute ações diretamente no sistema
+                  </p>
                 </div>
-              </div>
-            ))}
-
-            {/* Typing Indicator */}
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="bg-slate-700 text-slate-200 p-2 rounded-lg text-sm">
-                  <div className="flex items-center gap-1">
-                    <span>🤖</span>
-                    <span>PokerBot está digitando</span>
-                    <span className="animate-pulse">⋯</span>
-                  </div>
+                
+                <ActionButtons onActionExecuted={handleActionExecuted} />
+                
+                <div className="mt-6">
+                  <AgentStatus />
                 </div>
               </div>
             )}
-
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Suggested Questions - Compactas */}
-          <div className="flex flex-wrap gap-1 p-2 bg-slate-700 border-t border-slate-600">
-            {suggestedQuestions.map((question, index) => (
-              <button
-                key={index}
-                onClick={() => setInputMessage(question)}
-                className="text-xs px-2 py-1 bg-slate-600 hover:bg-slate-500 rounded text-slate-300 hover:text-white transition-colors"
-              >
-                {question}
-              </button>
-            ))}
-          </div>
-
-          {/* Input */}
-          <div className="p-3 border-t border-slate-700">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Pergunte sobre suas sessões..."
-                className="flex-1 bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-              />
-              <button
-                onClick={sendMessage}
-                disabled={!inputMessage.trim()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-3 py-2 rounded text-sm transition-colors"
-              >
-                →
-              </button>
-            </div>
+            
+            {activeTab === 'status' && (
+              <div className="p-4 h-full overflow-y-auto">
+                <div className="mb-4">
+                  <h3 className="text-white font-semibold mb-2">📊 Status do Agente</h3>
+                  <p className="text-slate-400 text-sm mb-4">
+                    Monitore o desempenho e histórico de ações
+                  </p>
+                </div>
+                
+                <AgentStatus />
+              </div>
+            )}
           </div>
         </div>
       )}

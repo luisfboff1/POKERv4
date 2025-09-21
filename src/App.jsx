@@ -1,6 +1,7 @@
 import React from 'react';
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { AgentProvider } from './contexts/AgentContext';
 import { Layout } from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Home } from './pages/Home';
@@ -96,7 +97,9 @@ const router = createBrowserRouter(
 export default function App() {
   return (
     <AuthProvider>
-      <RouterProvider router={router} />
+      <AgentProvider>
+        <RouterProvider router={router} />
+      </AgentProvider>
     </AuthProvider>
   );
 }
