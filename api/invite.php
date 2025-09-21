@@ -20,6 +20,10 @@ switch ($method) {
     case 'POST':
         if ($action === 'send') {
             handleSendInvite();
+        } elseif ($action === 'remove_member') {
+            handleRemoveMember();
+        } elseif ($action === 'reset_member_password') {
+            handleResetMemberPassword();
         } else {
             error('Ação não encontrada', 404);
         }
@@ -32,18 +36,6 @@ switch ($method) {
             handlePendingInvites();
         } elseif ($action === 'members') {
             handleListGroupMembers();
-        } else {
-            error('Ação não encontrada', 404);
-        }
-        break;
-        
-    case 'POST':
-        if ($action === 'send') {
-            handleSendInvite();
-        } elseif ($action === 'remove_member') {
-            handleRemoveMember();
-        } elseif ($action === 'reset_member_password') {
-            handleResetMemberPassword();
         } else {
             error('Ação não encontrada', 404);
         }
