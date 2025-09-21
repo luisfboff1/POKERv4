@@ -275,6 +275,22 @@ class ApiService {
       user_id: userId, 
       new_password: newPassword 
     });
+  },
+
+  // Group Member Management APIs (for tenant admins)
+  async getGroupMembers() {
+    return this.request('/invite.php?action=members');
+  },
+
+  async removeMemberFromGroup(userId) {
+    return this.request('/invite.php?action=remove_member', 'POST', { user_id: userId });
+  },
+
+  async resetMemberPassword(userId, newPassword) {
+    return this.request('/invite.php?action=reset_member_password', 'POST', { 
+      user_id: userId, 
+      new_password: newPassword 
+    });
   }
 }
 

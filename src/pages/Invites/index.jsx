@@ -310,6 +310,47 @@ const Invites = () => {
 
       {/* Aba Convites Pendentes */}
       {activeSection === 'invites' && (
+        <div className="bg-slate-800 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">📧 Convites Pendentes</h3>
+          <p className="text-slate-400 text-sm mb-4">
+            {pendingInvites.length} convite(s) aguardando resposta
+          </p>
+          
+          {pendingInvites.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-slate-400">
+                <div className="text-4xl mb-4">📧</div>
+                <p>Nenhum convite pendente</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {pendingInvites.map((invite) => (
+                <div key={invite.id} className="bg-slate-700 p-4 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="text-white font-medium">{invite.name}</div>
+                      <div className="text-slate-400 text-sm">{invite.email}</div>
+                      <div className="text-slate-500 text-xs">
+                        Enviado em {new Date(invite.created_at).toLocaleDateString('pt-BR')}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-yellow-400 text-sm">⏳ Pendente</span>
+                      <button
+                        onClick={() => handleCancelInvite(invite.id)}
+                        className="text-red-400 hover:text-red-300 text-sm"
+                      >
+                        ✕ Cancelar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modal de novo convite */}
       {showInviteForm && (

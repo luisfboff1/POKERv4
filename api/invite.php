@@ -30,6 +30,20 @@ switch ($method) {
             handleListInvites();
         } elseif ($action === 'pending') {
             handlePendingInvites();
+        } elseif ($action === 'members') {
+            handleListGroupMembers();
+        } else {
+            error('Ação não encontrada', 404);
+        }
+        break;
+        
+    case 'POST':
+        if ($action === 'send') {
+            handleSendInvite();
+        } elseif ($action === 'remove_member') {
+            handleRemoveMember();
+        } elseif ($action === 'reset_member_password') {
+            handleResetMemberPassword();
         } else {
             error('Ação não encontrada', 404);
         }
@@ -326,6 +340,129 @@ function cleanExpiredInvites($pdo) {
     } catch (Exception $e) {
         error_log("Erro ao limpar convites expirados: " . $e->getMessage());
         return 0;
+    }
+}
+
+/**
+ * LISTAR MEMBROS DO GRUPO (para tenant admin)
+ */
+function handleListGroupMembers() {
+    global $pdo, $current_user;
+    
+    try {
+        // Listar usuários do mesmo tenant
+        $stmt = $pdo->prepare("
+            SELECT id, name, email, role, created_at, last_login
+            FROM users 
+            WHERE tenant_id = ?
+            ORDER BY role DESC, name ASC
+        ");
+        $stmt->execute([$current_user['tenant_id']]);
+        $members = $stmt->fetchAll();
+        
+        success($members);
+        
+    } catch (Exception $e) {
+        error_log("Erro ao listar membros: " . $e->getMessage());
+        error('Erro interno do servidor', 500);
+    }
+}
+
+/**
+ * REMOVER MEMBRO DO GRUPO (para tenant admin)
+ */
+function handleRemoveMember() {
+    global $pdo, $current_user;
+    
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $user_id = $input['user_id'] ?? null;
+        
+        if (!$user_id) {
+            error('ID do usuário é obrigatório', 400);
+        }
+        
+        // Verificar se usuário pertence ao mesmo tenant
+        $stmt = $pdo->prepare("SELECT role, name, tenant_id FROM users WHERE id = ?");
+        $stmt->execute([$user_id]);
+        $user = $stmt->fetch();
+        
+        if (!$user) {
+            error('Usuário não encontrado', 404);
+        }
+        
+        if ($user['tenant_id'] != $current_user['tenant_id']) {
+            error('Usuário não pertence ao seu grupo', 403);
+        }
+        
+        if ($user['role'] === 'admin') {
+            error('Não é possível remover administradores', 403);
+        }
+        
+        if ($user_id == $current_user['id']) {
+            error('Você não pode remover a si mesmo', 403);
+        }
+        
+        // Remover usuário
+        $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+        $stmt->execute([$user_id]);
+        
+        // Log da ação
+        AuthMiddleware::logAction($pdo, 'remove_member', 'users', $user_id, $user, null);
+        
+        success(['message' => 'Membro removido com sucesso']);
+        
+    } catch (Exception $e) {
+        error_log("Erro ao remover membro: " . $e->getMessage());
+        error('Erro interno do servidor', 500);
+    }
+}
+
+/**
+ * RESETAR SENHA DE MEMBRO (para tenant admin)
+ */
+function handleResetMemberPassword() {
+    global $pdo, $current_user;
+    
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $user_id = $input['user_id'] ?? null;
+        $new_password = $input['new_password'] ?? '';
+        
+        if (!$user_id || !$new_password) {
+            error('ID do usuário e nova senha são obrigatórios', 400);
+        }
+        
+        if (strlen($new_password) < 6) {
+            error('Senha deve ter pelo menos 6 caracteres', 400);
+        }
+        
+        // Verificar se usuário pertence ao mesmo tenant
+        $stmt = $pdo->prepare("SELECT name, tenant_id FROM users WHERE id = ?");
+        $stmt->execute([$user_id]);
+        $user = $stmt->fetch();
+        
+        if (!$user) {
+            error('Usuário não encontrado', 404);
+        }
+        
+        if ($user['tenant_id'] != $current_user['tenant_id']) {
+            error('Usuário não pertence ao seu grupo', 403);
+        }
+        
+        // Atualizar senha
+        $password_hash = password_hash($new_password, PASSWORD_DEFAULT);
+        $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+        $stmt->execute([$password_hash, $user_id]);
+        
+        // Log da ação
+        AuthMiddleware::logAction($pdo, 'reset_member_password', 'users', $user_id, null, ['password_reset' => true]);
+        
+        success(['message' => 'Senha alterada com sucesso']);
+        
+    } catch (Exception $e) {
+        error_log("Erro ao resetar senha: " . $e->getMessage());
+        error('Erro interno do servidor', 500);
     }
 }
 ?>
