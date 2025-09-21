@@ -72,13 +72,12 @@ const AcceptInvite = () => {
     setError('');
 
     try {
-      const response = await fetch('/api/accept_invite.php?action=accept', {
+      const response = await fetch(`/api/accept_invite.php?action=accept&token=${token}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          token: token,
           name: formData.name,
           password: formData.password
         })
