@@ -104,37 +104,59 @@ const SuperAdmin = () => {
   };
 
   const loadAllUsers = async () => {
+    console.log('👥 [DEBUG] Carregando usuários com filtros:', userFilters);
+    
     try {
+      console.log('👥 [DEBUG] Chamando API getAllUsers...');
       const response = await api.getAllUsers(userFilters);
-      setAllUsers(response.data || []);
+      console.log('👥 [DEBUG] Resposta completa da API:', response);
+      console.log('👥 [DEBUG] Dados dos usuários:', response.data);
+      
+      setAllUsers(response.data?.users || response.data || []);
     } catch (error) {
-      console.error('Erro ao carregar usuários:', error);
-      setError('Erro ao carregar usuários');
+      console.error('❌ [DEBUG] Erro completo ao carregar usuários:', error);
+      console.error('❌ [DEBUG] Error stack:', error.stack);
+      console.error('❌ [DEBUG] Error message:', error.message);
+      setError('Erro ao carregar usuários: ' + error.message);
     }
   };
 
   const handleDeleteUser = async (userId, userName) => {
+    console.log('🗑️ [DEBUG] Tentando remover usuário (SuperAdmin):', { userId, userName });
+    
     if (window.confirm(`Tem certeza que deseja remover o usuário "${userName}"? Esta ação não pode ser desfeita.`)) {
       try {
-        await api.deleteUser(userId);
+        console.log('🗑️ [DEBUG] Chamando API deleteUser...');
+        const response = await api.deleteUser(userId);
+        console.log('🗑️ [DEBUG] Resposta da API:', response);
+        
         alert('Usuário removido com sucesso!');
         loadAllUsers(); // Recarregar lista
       } catch (error) {
-        console.error('Erro ao remover usuário:', error);
+        console.error('❌ [DEBUG] Erro completo ao remover usuário:', error);
+        console.error('❌ [DEBUG] Error stack:', error.stack);
+        console.error('❌ [DEBUG] Error message:', error.message);
         alert('Erro ao remover usuário: ' + error.message);
       }
     }
   };
 
   const handleResetUserPassword = async (userId, userName) => {
+    console.log('🔑 [DEBUG] Tentando alterar senha (SuperAdmin):', { userId, userName });
+    
     const newPassword = prompt(`Digite a nova senha para "${userName}" (mínimo 6 caracteres):`);
     
     if (newPassword && newPassword.length >= 6) {
       try {
-        await api.resetUserPassword(userId, newPassword);
+        console.log('🔑 [DEBUG] Chamando API resetUserPassword...');
+        const response = await api.resetUserPassword(userId, newPassword);
+        console.log('🔑 [DEBUG] Resposta da API:', response);
+        
         alert(`Senha de "${userName}" alterada com sucesso!`);
       } catch (error) {
-        console.error('Erro ao alterar senha:', error);
+        console.error('❌ [DEBUG] Erro completo ao alterar senha:', error);
+        console.error('❌ [DEBUG] Error stack:', error.stack);
+        console.error('❌ [DEBUG] Error message:', error.message);
         alert('Erro ao alterar senha: ' + error.message);
       }
     } else if (newPassword) {

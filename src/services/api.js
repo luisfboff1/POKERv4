@@ -262,34 +262,52 @@ class ApiService {
 
   // User Management APIs
   getAllUsers(filters = {}) {
+    console.log('🔗 [API DEBUG] Chamando getAllUsers:', { filters });
     const params = new URLSearchParams(filters);
     return this.request(`/super_admin.php?action=users&${params}`);
   }
 
   deleteUser(userId) {
-    return this.request('/super_admin.php?action=delete_user', 'POST', { user_id: userId });
+    console.log('🔗 [API DEBUG] Chamando deleteUser:', { userId });
+    return this.request('/super_admin.php?action=delete_user', {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId })
+    });
   }
 
   resetUserPassword(userId, newPassword) {
-    return this.request('/super_admin.php?action=reset_password', 'POST', { 
-      user_id: userId, 
-      new_password: newPassword 
+    console.log('🔗 [API DEBUG] Chamando resetUserPassword:', { userId, passwordLength: newPassword?.length });
+    return this.request('/super_admin.php?action=reset_password', {
+      method: 'POST',
+      body: JSON.stringify({ 
+        user_id: userId, 
+        new_password: newPassword 
+      })
     });
   }
 
   // Group Member Management APIs (for tenant admins)
   getGroupMembers() {
+    console.log('🔗 [API DEBUG] Chamando getGroupMembers');
     return this.request('/invite.php?action=members');
   }
 
   removeMemberFromGroup(userId) {
-    return this.request('/invite.php?action=remove_member', 'POST', { user_id: userId });
+    console.log('🔗 [API DEBUG] Chamando removeMemberFromGroup:', { userId });
+    return this.request('/invite.php?action=remove_member', {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId })
+    });
   }
 
   resetMemberPassword(userId, newPassword) {
-    return this.request('/invite.php?action=reset_member_password', 'POST', { 
-      user_id: userId, 
-      new_password: newPassword 
+    console.log('🔗 [API DEBUG] Chamando resetMemberPassword:', { userId, passwordLength: newPassword?.length });
+    return this.request('/invite.php?action=reset_member_password', {
+      method: 'POST',
+      body: JSON.stringify({ 
+        user_id: userId, 
+        new_password: newPassword 
+      })
     });
   }
 }

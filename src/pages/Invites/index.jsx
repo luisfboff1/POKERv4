@@ -53,27 +53,41 @@ const Invites = () => {
   };
 
   const handleRemoveMember = async (userId, userName) => {
+    console.log('🗑️ [DEBUG] Tentando remover membro:', { userId, userName });
+    
     if (window.confirm(`Tem certeza que deseja remover "${userName}" do grupo? Esta ação não pode ser desfeita.`)) {
       try {
-        await api.removeMemberFromGroup(userId);
+        console.log('🗑️ [DEBUG] Chamando API removeMemberFromGroup...');
+        const response = await api.removeMemberFromGroup(userId);
+        console.log('🗑️ [DEBUG] Resposta da API:', response);
+        
         alert('Membro removido com sucesso!');
         loadGroupMembers(); // Recarregar lista
       } catch (error) {
-        console.error('Erro ao remover membro:', error);
+        console.error('❌ [DEBUG] Erro completo ao remover membro:', error);
+        console.error('❌ [DEBUG] Error stack:', error.stack);
+        console.error('❌ [DEBUG] Error message:', error.message);
         alert('Erro ao remover membro: ' + error.message);
       }
     }
   };
 
   const handleResetMemberPassword = async (userId, userName) => {
+    console.log('🔑 [DEBUG] Tentando alterar senha:', { userId, userName });
+    
     const newPassword = prompt(`Digite a nova senha para "${userName}" (mínimo 6 caracteres):`);
     
     if (newPassword && newPassword.length >= 6) {
       try {
-        await api.resetMemberPassword(userId, newPassword);
+        console.log('🔑 [DEBUG] Chamando API resetMemberPassword...');
+        const response = await api.resetMemberPassword(userId, newPassword);
+        console.log('🔑 [DEBUG] Resposta da API:', response);
+        
         alert(`Senha de "${userName}" alterada com sucesso!`);
       } catch (error) {
-        console.error('Erro ao alterar senha:', error);
+        console.error('❌ [DEBUG] Erro completo ao alterar senha:', error);
+        console.error('❌ [DEBUG] Error stack:', error.stack);
+        console.error('❌ [DEBUG] Error message:', error.message);
         alert('Erro ao alterar senha: ' + error.message);
       }
     } else if (newPassword) {
