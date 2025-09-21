@@ -15,9 +15,13 @@
     @apply h-full;
   }
 
-  input[type="number"],
-  input[type="date"],
-  select {
+  /* Aplicar estilos escuros apenas no dashboard (dentro do Layout) */
+  .dashboard-layout input[type="number"],
+  .dashboard-layout input[type="date"],
+  .dashboard-layout input[type="email"],
+  .dashboard-layout input[type="password"],
+  .dashboard-layout input[type="text"],
+  .dashboard-layout select {
     @apply bg-slate-700 border-slate-600 text-white rounded-md focus:ring-blue-500 focus:border-blue-500;
   }
 

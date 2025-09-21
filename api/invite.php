@@ -6,6 +6,7 @@
 
 require_once 'config.php';
 require_once 'middleware/auth_middleware.php';
+require_once 'email_config.php';
 
 // Autenticação obrigatória
 $current_user = AuthMiddleware::requireAuth($pdo);
@@ -297,90 +298,16 @@ function handleCancelInvite() {
  * ENVIAR EMAIL DE CONVITE
  */
 function sendInviteEmail($tenant, $inviter, $email, $name, $role, $token) {
-    $subject = "🎯 Convite para Poker SaaS - " . $tenant['name'];
-    $accept_url = "https://" . $_SERVER['HTTP_HOST'] . "/api/accept_invite.php?token=" . $token;
+    $subject = "🎯 {$inviter['name']} te convidou para a home game: {$tenant['name']}";
+    $accept_url = BASE_URL . "/accept-invite?token=" . $token;
     
-    $role_text = $role === 'admin' ? 'Administrador' : 'Membro';
+    // Usar o template atualizado do email_config.php
+    $html_body = getInviteEmailTemplate($inviter['name'], $tenant['name'], $accept_url);
     
-    $html_body = "
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset='UTF-8'>
-        <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: #007cba; color: white; padding: 20px; text-align: center; }
-            .content { background: #f9f9f9; padding: 20px; }
-            .info { background: white; padding: 15px; margin: 10px 0; border-left: 4px solid #007cba; }
-            .btn { display: inline-block; padding: 12px 24px; background: #28a745; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; }
-            .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
-        </style>
-    </head>
-    <body>
-        <div class='container'>
-            <div class='header'>
-                <h1>🎯 Você foi convidado!</h1>
-                <p>Poker SaaS - Sistema de Gerenciamento</p>
-            </div>
-            
-            <div class='content'>
-                <h2>Olá" . ($name ? ", $name" : "") . "!</h2>
-                
-                <p><strong>" . $inviter['name'] . "</strong> convidou você para participar do grupo de poker:</p>
-                
-                <div class='info'>
-                    <strong>🏢 Grupo:</strong> " . $tenant['name'] . "<br>
-                    <strong>👤 Seu papel:</strong> $role_text<br>
-                    <strong>💎 Plano:</strong> " . ucfirst($tenant['plan']) . "<br>
-                    <strong>📧 Seu email:</strong> $email
-                </div>
-                
-                <p>Como <strong>$role_text</strong>, você poderá:</p>
-                <ul>";
-    
-    if ($role === 'admin') {
-        $html_body .= "
-                    <li>✅ Criar e gerenciar sessões de poker</li>
-                    <li>✅ Convidar outros membros</li>
-                    <li>✅ Ver relatórios e estatísticas</li>
-                    <li>✅ Gerenciar configurações do grupo</li>";
-    } else {
-        $html_body .= "
-                    <li>✅ Visualizar sessões do grupo</li>
-                    <li>✅ Ver seu histórico de jogos</li>
-                    <li>✅ Acompanhar ranking</li>
-                    <li>✅ Participar das atividades</li>";
-    }
-    
-    $html_body .= "
-                </ul>
-                
-                <div style='text-align: center; margin: 30px 0;'>
-                    <a href='$accept_url' class='btn'>🚀 Aceitar Convite</a>
-                </div>
-                
-                <p><small>⏰ <strong>Importante:</strong> Este convite expira em 7 dias.</small></p>
-                <p><small>Se você não solicitou este convite, pode ignorar este email.</small></p>
-            </div>
-            
-            <div class='footer'>
-                <p>Poker SaaS - Sistema de Gerenciamento de Sessões</p>
-                <p>Convidado por: " . $inviter['name'] . " (" . $inviter['email'] . ")</p>
-            </div>
-        </div>
-    </body>
-    </html>";
-    
-    $headers = [
-        'From: noreply@poker-saas.com',
-        'Reply-To: ' . $inviter['email'],
-        'Content-Type: text/html; charset=UTF-8',
-        'X-Mailer: PHP/' . phpversion()
-    ];
-    
+    // Enviar email real
     try {
-        return mail($email, $subject, $html_body, implode("\r\n", $headers));
+        $result = sendEmail($email, $subject, $html_body, true);
+        return $result['success'];
     } catch (Exception $e) {
         error_log("Erro ao enviar email de convite: " . $e->getMessage());
         return false;

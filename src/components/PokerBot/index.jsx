@@ -369,7 +369,8 @@ export function PokerBot() {
       {/* Botão do Bot com indicador de status */}
       <button
         onClick={toggleBot}
-        className={`fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg z-50 flex items-center justify-center text-xl transition-all duration-300 ${isVisible ? 'rotate-45' : ''} relative`}
+        className={`fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg z-50 flex items-center justify-center text-xl transition-all duration-300 ${isVisible ? 'rotate-45' : ''}`}
+        style={{ position: 'fixed', bottom: '24px', right: '24px' }}
         title="PokerBot Agente - Assistente IA"
       >
         {isVisible ? '✕' : '🤖'}

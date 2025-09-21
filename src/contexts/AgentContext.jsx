@@ -104,10 +104,19 @@ export const AgentProvider = ({ children }) => {
     };
 
     const response = await api.createSession(sessionData);
+    
+    // Redirecionar para página de nova sessão para edição
+    if (response.data?.id) {
+      setTimeout(() => {
+        window.location.href = '/new';
+      }, 1500);
+    }
+    
     return {
-      message: `Sessão criada com sucesso para ${players.length} jogadores`,
+      message: `✅ Sessão criada! Redirecionando para edição...`,
       sessionId: response.data?.id,
-      data: response.data
+      data: response.data,
+      redirect: true
     };
   };
 
@@ -121,15 +130,44 @@ export const AgentProvider = ({ children }) => {
   };
 
   const generatePDF = async (params) => {
-    const { sessionId, type = 'session' } = params;
+    const { sessionId, type = 'session', month, year } = params;
     
-    // Por enquanto, simular geração de PDF
-    // TODO: Implementar geração real de PDF na Fase 4
-    return {
-      message: `PDF ${type} gerado com sucesso`,
-      downloadUrl: `/api/pdf/session_${sessionId}.pdf`,
-      fileName: `poker_${type}_${sessionId}.pdf`
-    };
+    try {
+      // FASE 4: Geração real de PDF implementada
+      const apiUrl = `/api/pdf_generator.php?action=generate&type=${type}`;
+      const fullUrl = sessionId ? `${apiUrl}&session_id=${sessionId}` : 
+                     `${apiUrl}&month=${month || new Date().getMonth() + 1}&year=${year || new Date().getFullYear()}`;
+      
+      const response = await fetch(fullUrl, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erro ao gerar PDF');
+      }
+      
+      const result = await response.json();
+      
+      return {
+        message: `📄 PDF gerado com sucesso!`,
+        downloadUrl: result.data.download_url,
+        fileName: result.data.file_name,
+        sessionId: sessionId,
+        real: true
+      };
+    } catch (error) {
+      // Fallback para simulação se der erro
+      return {
+        message: `📄 PDF simulado (erro na geração real): ${error.message}`,
+        downloadUrl: null,
+        fileName: `poker_${type}_${sessionId || 'report'}.html`,
+        simulated: true,
+        error: error.message
+      };
+    }
   };
 
   const analyzeData = async (params) => {
@@ -179,13 +217,27 @@ export const AgentProvider = ({ children }) => {
     const { email, message } = params;
     
     try {
-      await api.sendInvite({ email, message });
+      // Enviar convite real via API
+      const response = await api.sendInvite({ 
+        email, 
+        message: message || 'Você foi convidado para participar do nosso grupo de poker!' 
+      });
+      
       return {
-        message: `Convite enviado para ${email}`,
-        email: email
+        message: `📧 Convite enviado com sucesso para ${email}`,
+        email: email,
+        sent_at: new Date().toISOString(),
+        from: 'noreply@luisfboff.com',
+        real: true
       };
     } catch (error) {
-      throw new Error(`Erro ao enviar convite: ${error.message}`);
+      // Fallback para simulação se der erro
+      return {
+        message: `📧 Erro ao enviar convite real para ${email}: ${error.message}`,
+        email: email,
+        simulated: true,
+        error: error.message
+      };
     }
   };
 
