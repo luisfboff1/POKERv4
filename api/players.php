@@ -1,9 +1,20 @@
 <?php
+/**
+ * API de Jogadores - Atualizada para SaaS Multi-tenant
+ * Agora com autenticação e filtros por tenant
+ */
+
 require_once 'config.php';
+require_once 'middleware/auth_middleware.php';
+
+// Autenticação obrigatória
+$current_user = AuthMiddleware::requireAuth($pdo);
+$tenant_id = AuthMiddleware::getCurrentTenantId();
 
 try {
-    // Buscar todos os jogadores únicos
-    $stmt = $pdo->query("SELECT players_data FROM sessions WHERE players_data IS NOT NULL");
+    // Buscar jogadores únicos apenas do tenant atual
+    $stmt = $pdo->prepare("SELECT players_data FROM sessions WHERE tenant_id = ? AND players_data IS NOT NULL");
+    $stmt->execute([$tenant_id]);
     $sessions = $stmt->fetchAll();
     
     $players = [];
