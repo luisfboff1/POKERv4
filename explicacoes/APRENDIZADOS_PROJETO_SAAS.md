@@ -130,6 +130,76 @@ SOLUÇÃO: Embedar valores diretamente na query
 
 ---
 
+### **Erro 6: Sintaxe de Classes ES6 vs Objetos Literais**
+```
+PROBLEMA: Métodos de classe com vírgulas causando erro de sintaxe
+CAUSA: Confusão entre sintaxe de classe ES6 e objeto literal
+SOLUÇÃO: Remover vírgulas entre métodos de classe
+```
+
+#### **Como evitar:**
+- ✅ **Classes ES6:** Métodos SEM vírgulas
+- ✅ **Objetos literais:** Propriedades COM vírgulas
+- ✅ **Linting** configurado para detectar esses erros
+
+---
+
+### **Erro 7: Switch Case Duplicado em PHP**
+```
+PROBLEMA: case 'POST': duplicado impedindo execução de novas ações
+CAUSA: Copy-paste sem remover código anterior
+SOLUÇÃO: Consolidar em um único case 'POST'
+```
+
+#### **Como evitar:**
+- ✅ **Code review** antes de commit
+- ✅ **Testes de API** para cada nova ação
+- ✅ **Estrutura clara** do switch/case
+
+---
+
+### **Erro 8: Métodos POST Chamados como GET**
+```
+PROBLEMA: API calls usando GET para ações que requerem POST
+CAUSA: Sintaxe incorreta do método request() no frontend
+SOLUÇÃO: Usar {method: 'POST', body: JSON.stringify(data)}
+```
+
+#### **Como evitar:**
+- ✅ **Documentar** métodos HTTP de cada endpoint
+- ✅ **Testes de API** com ferramentas como Postman
+- ✅ **Debug detalhado** nas chamadas de API
+
+---
+
+### **Erro 9: Login com Token Inválido no Header**
+```
+PROBLEMA: Método login() enviando Authorization header com token inválido
+CAUSA: Método login() usando this.request() que sempre adiciona token
+SOLUÇÃO: Login usar fetch() direto sem Authorization header
+```
+
+#### **Como evitar:**
+- ✅ **Login é público** - não deve enviar token
+- ✅ **Separar** métodos públicos dos protegidos
+- ✅ **Documentar** quais endpoints precisam de autenticação
+
+---
+
+### **Erro 10: Email Incorreto (Erro Humano)**
+```
+PROBLEMA: Tentativas de login com email errado
+CAUSA: Confusão entre emails de teste vs emails reais
+SOLUÇÃO: Verificar dados de entrada antes de debugar código
+```
+
+#### **Como evitar:**
+- ✅ **Validar dados** antes de assumir que é bug de código
+- ✅ **Debug sistemático** - verificar entrada antes da lógica
+- ✅ **Logs detalhados** para rastrear exatamente o que está sendo enviado
+
+---
+
 ## 🏗️ **ARQUITETURA FINAL**
 
 ### **Frontend (React):**
@@ -225,13 +295,80 @@ audit_logs (auditoria)
 
 ---
 
+## 🧹 **ANÁLISE E LIMPEZA DE ARQUIVOS**
+
+### **📁 ARQUIVOS PHP - CLASSIFICAÇÃO:**
+
+#### **🟢 ESSENCIAIS (PRODUÇÃO):**
+- ✅ `config.php` - Configuração do banco
+- ✅ `auth.php` - Sistema de autenticação
+- ✅ `jwt_helper.php` - Geração e validação de tokens
+- ✅ `middleware/auth_middleware.php` - Controle de acesso
+- ✅ `session.php` - Gerenciamento de sessões de poker
+- ✅ `players.php` - API de jogadores
+- ✅ `register.php` - Registro de novos tenants
+- ✅ `approve.php` - Aprovação de tenants
+- ✅ `invite.php` - Sistema de convites
+- ✅ `accept_invite.php` - Aceitar convites
+- ✅ `super_admin.php` - Dashboard super admin
+- ✅ `email_config.php` - Configuração de emails
+- ✅ `pdf_generator.php` - Geração de relatórios
+- ✅ `agent.php` - PokerBot agente
+
+#### **🟡 CONFIGURAÇÃO ÚNICA (EXECUTAR APENAS UMA VEZ):**
+- 🔧 `setup_saas.sql` - Criação inicial do banco
+- 🔧 `migration_existing_data.sql` - Migração de dados antigos
+- 🔧 `update_roles.sql` - Atualização de roles (já executado)
+
+#### **🔴 TEMPORÁRIOS/DEBUG (REMOVER):**
+- ❌ `test_composer.php` - Teste de instalação do Composer
+- ❌ `test_email.php` - Teste de configuração de email
+- ❌ `fix_user_password.php` - Correção pontual de senha
+
+#### **📋 DOCUMENTAÇÃO (MANTER):**
+- 📖 `README_MIGRACAO_SAAS.md` - Instruções de migração
+
+### **📁 ARQUIVOS DE CONFIGURAÇÃO:**
+
+#### **🟢 ESSENCIAIS:**
+- ✅ `composer.json` - Dependências PHP (PHPMailer)
+- ✅ `package.json` - Dependências Node.js
+- ✅ `vite.config.js` - Configuração do build
+- ✅ `tailwind.config.js` - Configuração do CSS
+- ✅ `.htaccess` - Redirecionamento Apache
+- ✅ `public/manifest.json` - PWA manifest
+
+#### **🟡 AMBIENTE (GERADOS AUTOMATICAMENTE):**
+- 🔧 `.env` - Variáveis de ambiente (GitHub Secrets)
+- 🔧 `composer.lock` - Lock das dependências PHP
+- 🔧 `package-lock.json` - Lock das dependências Node
+
+### **📁 ARQUIVOS SQL - STATUS:**
+
+#### **🟢 EXECUTADOS E FUNCIONAIS:**
+- ✅ `setup_saas.sql` - Banco criado ✅
+- ✅ `migration_existing_data.sql` - Dados migrados ✅
+- ✅ `update_roles.sql` - Roles atualizadas ✅
+
+### **🧹 LIMPEZA RECOMENDADA:**
+
+#### **ARQUIVOS PARA REMOVER:**
+1. `api/test_composer.php` - Debug do Composer
+2. `api/test_email.php` - Debug de email
+3. `api/fix_user_password.php` - Correção pontual
+
+#### **ARQUIVOS PARA MANTER:**
+- Todos os arquivos essenciais de produção
+- Documentação e instruções
+- Scripts SQL (para referência futura)
+
 ## 🎯 **PRÓXIMOS PASSOS E MELHORIAS**
 
 ### **Curto Prazo:**
-1. **PokerBot Agente** - Transformar em agente ativo
-2. **Geração de PDFs** - Relatórios automáticos
-3. **Notificações Email** - Sistema de alertas
-4. **Backup Automático** - Segurança de dados
+1. **PokerBot Agente** - ✅ Implementado
+2. **Geração de PDFs** - ✅ Implementado
+3. **Notificações Email** - ✅ Implementado
+4. **Sistema de Convites** - ✅ Implementado
 
 ### **Médio Prazo:**
 1. **Mobile App** - React Native
@@ -272,6 +409,26 @@ audit_logs (auditoria)
 3. **🧪 Testes automatizados** - CI/CD com testes obrigatórios
 4. **📊 Monitoring** - Logs centralizados + alertas
 5. **📖 Documentação viva** - Atualizar durante desenvolvimento
+
+### **🎓 APRENDIZADOS DA SESSÃO DE DEBUG (21/09/2025):**
+
+#### **🔍 Metodologia de Debug Eficaz:**
+1. **Console F12** - Ferramenta essencial para debug frontend
+2. **Testes manuais** - fetch() direto para isolar problemas
+3. **Debug sistemático** - Backend → API → Frontend
+4. **Logs detalhados** - console.log() em cada etapa crítica
+
+#### **🚨 Armadilhas Comuns:**
+1. **Assumir bug complexo** quando pode ser erro simples (email errado)
+2. **Debugar código** antes de verificar dados de entrada
+3. **Cache do navegador** mascarando correções
+4. **Sintaxe ES6** vs objeto literal - vírgulas em lugares errados
+
+#### **✅ Estratégias que Funcionaram:**
+1. **Teste isolado** - Verificar cada componente separadamente
+2. **Comparação** - Testar conta que funciona vs que não funciona
+3. **Debug progressivo** - Do backend para o frontend
+4. **Logs específicos** - Identificar exatamente onde falha
 
 ---
 
