@@ -9,6 +9,16 @@ export function SessionManager({ initialData = null, onSave = null }) {
   const [availablePlayers, setAvailablePlayers] = useState([]);
   const [currentStep, setCurrentStep] = useState(initialData ? 'values' : 'names');
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
+  const [showSuggestions, setShowSuggestions] = useState({});
+  
+  // Estados para sistema de recomendações
+  const [recommendedPayments, setRecommendedPayments] = useState([]);
+  const [showRecommendationForm, setShowRecommendationForm] = useState(false);
+  const [newRecommendation, setNewRecommendation] = useState({
+    from: '',
+    to: '',
+    amount: ''
+  });
 
   // Carregar jogadores disponíveis do histórico
   const loadAvailablePlayers = async () => {
@@ -72,11 +82,22 @@ export function SessionManager({ initialData = null, onSave = null }) {
   };
 
   // Obter sugestões de jogadores baseado no texto digitado
-  const getPlayerSuggestions = (text) => {
-    if (!text || text.length < 2) return [];
-    return availablePlayers.filter(player => 
+  const getPlayerSuggestions = (text, playerIndex) => {
+    if (!text || text.length < 2) {
+      setShowSuggestions(prev => ({ ...prev, [playerIndex]: false }));
+      return [];
+    }
+    const suggestions = availablePlayers.filter(player => 
       player.toLowerCase().includes(text.toLowerCase())
     ).slice(0, 5);
+    
+    if (suggestions.length > 0) {
+      setShowSuggestions(prev => ({ ...prev, [playerIndex]: true }));
+    } else {
+      setShowSuggestions(prev => ({ ...prev, [playerIndex]: false }));
+    }
+    
+    return suggestions;
   };
 
   // Lidar com Enter para próximo jogador
@@ -105,40 +126,121 @@ export function SessionManager({ initialData = null, onSave = null }) {
     return (player.cashOut || 0) - totalBuyIn;
   };
 
-  const optimizeTransfers = () => {
-    const balances = players.map(player => ({
-      name: player.name,
-      balance: calculateBalance(player)
-    }));
-
-    const creditors = balances.filter(p => p.balance > 0).sort((a, b) => b.balance - a.balance);
-    const debtors = balances.filter(p => p.balance < 0).sort((a, b) => a.balance - b.balance);
+  // Calcular transferências otimizadas (algoritmo corrigido)
+  const optimizeTransfers = (playerList = players, recommendations = []) => {
+    console.log('🔍 Iniciando otimização...');
+    console.log('👥 Jogadores:', playerList);
+    console.log('📝 Recomendações:', recommendations);
     
-    const transfers = [];
-    let i = 0, j = 0;
-
-    while (i < creditors.length && j < debtors.length) {
-      const creditor = creditors[i];
-      const debtor = debtors[j];
-      const amount = Math.min(creditor.balance, -debtor.balance);
-
-      if (amount > 0) {
-        transfers.push({
-          from: debtor.name,
-          to: creditor.name,
-          amount: amount,
-          paid: false // Adicionar status de pagamento
-        });
-
-        creditor.balance -= amount;
-        debtor.balance += amount;
+    // 1. Calcular saldos líquidos iniciais
+    const nets = playerList.map(p => ({ 
+      name: p.name, 
+      net: calculateBalance(p)
+    }));
+    
+    console.log('💰 Saldos iniciais:', nets);
+    
+    // 2. Aplicar recomendações como restrições (modificar saldos)
+    const tempNets = [...nets];
+    recommendations.forEach(rec => {
+      const payer = tempNets.find(p => p.name === rec.from);
+      const receiver = tempNets.find(p => p.name === rec.to);
+      if (payer && receiver) {
+        console.log(`📝 Aplicando recomendação: ${rec.from} paga ${rec.amount} para ${rec.to}`);
+        console.log(`   Antes: ${payer.name}=${payer.net}, ${receiver.name}=${receiver.net}`);
+        
+        // Aplicar baseado no tipo de saldo
+        if (payer.net < 0) {
+          payer.net += Number(rec.amount); // Reduz dívida
+        } else {
+          payer.net -= Number(rec.amount); // Reduz crédito
+        }
+        
+        if (receiver.net > 0) {
+          receiver.net -= Number(rec.amount); // Reduz crédito
+        } else {
+          receiver.net += Number(rec.amount); // Reduz dívida
+        }
+        
+        console.log(`   Depois: ${payer.name}=${payer.net}, ${receiver.name}=${receiver.net}`);
       }
+    });
+    
+    console.log('💰 Saldos após recomendações:', tempNets);
+    
+    // 3. Otimizar transferências restantes
+    const creditors = tempNets.filter(n => n.net > 0);
+    const debtors = tempNets.filter(n => n.net < 0).map(n => ({...n, net: Math.abs(n.net)}));
+    
+    console.log('📊 Credores:', creditors);
+    console.log('📊 Devedores:', debtors);
+    
+    // Algoritmo de matching otimizado
+    const transfers = [];
+    while (creditors.length > 0 && debtors.length > 0) {
+      const creditor = creditors[0];
+      const debtor = debtors[0];
+      const amount = Math.min(creditor.net, debtor.net);
+      
+      console.log(`💸 Transferência otimizada: ${debtor.name} → ${creditor.name}: ${amount}`);
+      
+      transfers.push({
+        from: debtor.name,
+        to: creditor.name,
+        amount: amount,
+        paid: false
+      });
+      
+      creditor.net -= amount;
+      debtor.net -= amount;
+      
+      if (creditor.net === 0) creditors.shift();
+      if (debtor.net === 0) debtors.shift();
+    }
+    
+    console.log('✅ Resultado final:', transfers);
+    return transfers;
+  };
 
-      if (creditor.balance === 0) i++;
-      if (debtor.balance === 0) j++;
+  // Adicionar recomendação
+  const addRecommendation = () => {
+    if (!newRecommendation.from || !newRecommendation.to || !newRecommendation.amount) {
+      alert('Preencha todos os campos');
+      return;
     }
 
-    setSuggestions(transfers);
+    if (newRecommendation.from === newRecommendation.to) {
+      alert('Não é possível pagar para si mesmo');
+      return;
+    }
+
+    if (Number(newRecommendation.amount) <= 0) {
+      alert('Valor deve ser positivo');
+      return;
+    }
+
+    const recommendation = {
+      from: newRecommendation.from,
+      to: newRecommendation.to,
+      amount: Number(newRecommendation.amount),
+      paid: false
+    };
+
+    setRecommendedPayments([...recommendedPayments, recommendation]);
+    setNewRecommendation({ from: '', to: '', amount: '' });
+    setShowRecommendationForm(false);
+  };
+
+  // Remover recomendação
+  const removeRecommendation = (index) => {
+    const updated = recommendedPayments.filter((_, i) => i !== index);
+    setRecommendedPayments(updated);
+  };
+
+  // Atualizar otimização com recomendações
+  const updateOptimization = () => {
+    const optimizedTransfers = optimizeTransfers(players, recommendedPayments);
+    setSuggestions(optimizedTransfers);
   };
 
   const handleSave = async () => {
@@ -152,7 +254,7 @@ export function SessionManager({ initialData = null, onSave = null }) {
       const sessionData = {
         date,
         players_data: players.filter(p => p.name),
-        recommendations: suggestions
+        recommendations: [...recommendedPayments, ...suggestions]
       };
 
       await (onSave ? onSave(sessionData) : api.createSession(sessionData));
@@ -223,7 +325,7 @@ export function SessionManager({ initialData = null, onSave = null }) {
           <h3 className="text-lg font-medium mb-4">Adicione os jogadores da sessão</h3>
           <div className="grid gap-3">
             {players.map((player, index) => {
-              const playerSuggestions = getPlayerSuggestions(player.name);
+              const playerSuggestions = getPlayerSuggestions(player.name, index);
               return (
                 <div key={index} className="flex items-center gap-3">
                   <span className="text-slate-400 w-8">{index + 1}.</span>
@@ -233,17 +335,32 @@ export function SessionManager({ initialData = null, onSave = null }) {
                       value={player.name}
                       onChange={(e) => updatePlayer(index, 'name', e.target.value)}
                       onKeyPress={(e) => handlePlayerNameKeyPress(e, index)}
+                      onBlur={() => {
+                        // Fechar sugestões após um pequeno delay para permitir clique
+                        setTimeout(() => {
+                          setShowSuggestions(prev => ({ ...prev, [index]: false }));
+                        }, 200);
+                      }}
+                      onFocus={() => {
+                        // Mostrar sugestões se houver texto
+                        if (player.name && player.name.length >= 2) {
+                          setShowSuggestions(prev => ({ ...prev, [index]: true }));
+                        }
+                      }}
                       data-player-index={index}
                       className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
                       placeholder="Nome do jogador (pressione Enter para próximo)"
                       autoFocus={index === currentPlayerIndex}
                     />
-                    {playerSuggestions.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 bg-slate-700 border border-slate-600 rounded-b mt-1 z-10">
+                    {showSuggestions[index] && playerSuggestions.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 bg-slate-700 border border-slate-600 rounded-b mt-1 z-10 shadow-lg">
                         {playerSuggestions.map((suggestion, sugIndex) => (
                           <button
                             key={sugIndex}
-                            onClick={() => updatePlayer(index, 'name', suggestion)}
+                            onClick={() => {
+                              updatePlayer(index, 'name', suggestion);
+                              setShowSuggestions(prev => ({ ...prev, [index]: false }));
+                            }}
                             className="w-full text-left px-3 py-2 hover:bg-slate-600 text-sm"
                           >
                             {suggestion}
@@ -343,35 +460,171 @@ export function SessionManager({ initialData = null, onSave = null }) {
         </div>
       )}
 
-      {suggestions.length > 0 && (
-        <div className="bg-slate-800 p-4 rounded-lg">
-          <h3 className="text-lg font-medium mb-3">Sugestões de Transferência</h3>
-          <div className="space-y-2">
-            {suggestions.map((transfer, index) => (
-              <div key={index} className="flex justify-between items-center bg-slate-700 p-3 rounded">
-                <div className="flex items-center gap-3">
-                  <span>{transfer.from} → {transfer.to}</span>
-                  <span className="font-bold text-green-400">R$ {transfer.amount.toFixed(2)}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="flex items-center text-sm">
+      {currentStep === 'values' && (
+        <>
+          {/* Sistema de Recomendações */}
+          <div className="bg-slate-800 p-4 rounded-lg">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Sistema de Recomendações</h3>
+              <button
+                onClick={() => setShowRecommendationForm(!showRecommendationForm)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+              >
+                {showRecommendationForm ? 'Cancelar' : '+ Adicionar Recomendação'}
+              </button>
+            </div>
+
+            {/* Formulário de Recomendação */}
+            {showRecommendationForm && (
+              <div className="bg-slate-700 p-4 rounded-lg mb-4">
+                <h4 className="text-md font-medium mb-3">Nova Recomendação</h4>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-sm mb-1">Quem paga</label>
+                    <select
+                      value={newRecommendation.from}
+                      onChange={(e) => setNewRecommendation({...newRecommendation, from: e.target.value})}
+                      className="w-full bg-slate-600 border border-slate-500 rounded px-3 py-2"
+                    >
+                      <option value="">Selecione...</option>
+                      {players.filter(p => p.name).map(player => (
+                        <option key={player.name} value={player.name}>{player.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1">Para quem</label>
+                    <select
+                      value={newRecommendation.to}
+                      onChange={(e) => setNewRecommendation({...newRecommendation, to: e.target.value})}
+                      className="w-full bg-slate-600 border border-slate-500 rounded px-3 py-2"
+                    >
+                      <option value="">Selecione...</option>
+                      {players.filter(p => p.name && p.name !== newRecommendation.from).map(player => (
+                        <option key={player.name} value={player.name}>{player.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1">Valor (R$)</label>
                     <input
-                      type="checkbox"
-                      checked={transfer.paid || false}
-                      onChange={(e) => {
-                        const updatedSuggestions = [...suggestions];
-                        updatedSuggestions[index].paid = e.target.checked;
-                        setSuggestions(updatedSuggestions);
-                      }}
-                      className="mr-1"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={newRecommendation.amount}
+                      onChange={(e) => setNewRecommendation({...newRecommendation, amount: e.target.value})}
+                      className="w-full bg-slate-600 border border-slate-500 rounded px-3 py-2"
+                      placeholder="0.00"
                     />
-                    Pago
-                  </label>
+                  </div>
+                  <div className="flex items-end">
+                    <button
+                      onClick={addRecommendation}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded"
+                    >
+                      Adicionar
+                    </button>
+                  </div>
                 </div>
               </div>
-            ))}
+            )}
+
+            {/* Lista de Recomendações */}
+            {recommendedPayments.length > 0 && (
+              <div className="bg-slate-700 p-4 rounded-lg mb-4">
+                <div className="flex justify-between items-center mb-3">
+                  <h4 className="text-md font-medium">
+                    Recomendações Fixas ({recommendedPayments.length})
+                  </h4>
+                  <button
+                    onClick={updateOptimization}
+                    className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded text-sm"
+                  >
+                    🔄 Atualizar Otimização
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {recommendedPayments.map((rec, index) => (
+                    <div key={index} className="flex justify-between items-center bg-green-800 p-3 rounded">
+                      <div className="flex items-center gap-3">
+                        <span className="bg-green-600 text-white px-2 py-1 rounded text-xs">📝 Fixo</span>
+                        <span>{rec.from} → {rec.to}</span>
+                        <span className="font-bold text-green-300">R$ {rec.amount.toFixed(2)}</span>
+                      </div>
+                      <button
+                        onClick={() => removeRecommendation(index)}
+                        className="text-red-400 hover:text-red-300 p-1"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 text-xs text-slate-400">
+                  💡 Recomendações são transferências fixas que devem ser pagas. O sistema otimiza apenas o restante.
+                </div>
+              </div>
+            )}
+
+            {/* Transferências Otimizadas */}
+            {suggestions.length > 0 && (
+              <div className="bg-slate-700 p-4 rounded-lg">
+                <h4 className="text-md font-medium mb-3">
+                  Transferências Otimizadas ({suggestions.length})
+                </h4>
+                <div className="space-y-2">
+                  {suggestions.map((transfer, index) => (
+                    <div key={index} className="flex justify-between items-center bg-blue-800 p-3 rounded">
+                      <div className="flex items-center gap-3">
+                        <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs">🔄 Otimizado</span>
+                        <span>{transfer.from} → {transfer.to}</span>
+                        <span className="font-bold text-blue-300">R$ {transfer.amount.toFixed(2)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className="flex items-center text-sm">
+                          <input
+                            type="checkbox"
+                            checked={transfer.paid || false}
+                            onChange={(e) => {
+                              const updatedSuggestions = [...suggestions];
+                              updatedSuggestions[index].paid = e.target.checked;
+                              setSuggestions(updatedSuggestions);
+                            }}
+                            className="mr-1"
+                          />
+                          <span className={transfer.paid ? 'text-green-400' : 'text-slate-400'}>
+                            {transfer.paid ? 'Pago' : 'Pendente'}
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 text-xs text-slate-400">
+                  💡 Transferências otimizadas calculadas pelo sistema para minimizar o número de pagamentos.
+                </div>
+              </div>
+            )}
+
+            {/* Resumo */}
+            {recommendedPayments.length > 0 || suggestions.length > 0 ? (
+              <div className="mt-4 p-3 bg-slate-600 rounded-lg text-sm">
+                <div className="flex justify-between">
+                  <span>Total de Transferências:</span>
+                  <span className="font-bold">{recommendedPayments.length + suggestions.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Recomendações Fixas:</span>
+                  <span className="text-green-400">{recommendedPayments.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Otimizadas:</span>
+                  <span className="text-blue-400">{suggestions.length}</span>
+                </div>
+              </div>
+            ) : null}
           </div>
-        </div>
+        </>
       )}
 
       {currentStep === 'values' && (
