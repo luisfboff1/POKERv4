@@ -108,11 +108,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isSuperAdmin = () => {
-    return user && user.role === 'super_admin';
+    // Verificar tanto o estado quanto o localStorage
+    const currentUser = user || api.getUser();
+    return currentUser && currentUser.role === 'super_admin';
   };
 
   const isTenantAdmin = () => {
-    return user && (user.role === 'admin' || user.role === 'super_admin');
+    const currentUser = user || api.getUser();
+    return currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin');
   };
 
   const isRegularUser = () => {
