@@ -145,18 +145,50 @@ export function History() {
                 {session.players_data?.map((player, index) => {
                   const balance = (player.cashOut || 0) - (player.buyIns?.reduce((sum, buyIn) => sum + buyIn, 0) || 0);
                   return (
-                    <div key={index} className="flex justify-between items-center bg-slate-700 p-3 rounded">
-                      <div>
-                        <span className="font-medium">{player.name}</span>
-                        {player.dinner?.amount > 0 && (
-                          <span className="ml-2 text-sm text-slate-400">
-                            (Janta: {formatMoney(player.dinner.amount)})
+                    <div key={index} className="bg-slate-700 p-3 rounded">
+                      <div className="flex justify-between items-center mb-2">
+                        <div>
+                          <span className="font-medium">{player.name}</span>
+                          {player.dinner?.amount > 0 && (
+                            <span className="ml-2 text-sm text-slate-400">
+                              (Janta: {formatMoney(player.dinner.amount)})
+                            </span>
+                          )}
+                        </div>
+                        <div className={`font-bold ${balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {balance >= 0 ? '+' : ''}{formatMoney(balance)}
+                        </div>
+                      </div>
+                      
+                      {/* Seção de Janta com Status de Pagamento */}
+                      {player.dinner?.amount > 0 && (
+                        <div className="flex justify-between items-center bg-slate-600 p-2 rounded text-sm">
+                          <span className="text-slate-300">
+                            🍽️ Janta: {formatMoney(player.dinner.amount)}
                           </span>
-                        )}
-                      </div>
-                      <div className={`font-bold ${balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {balance >= 0 ? '+' : ''}{formatMoney(balance)}
-                      </div>
+                          <div className="flex items-center gap-2">
+                            <label className="flex items-center text-xs">
+                              <input
+                                type="checkbox"
+                                checked={player.dinner.paid || false}
+                                onChange={(e) => {
+                                  // Atualizar status no estado local (será salvo quando editar a sessão)
+                                  const updatedSessions = [...sessions];
+                                  const sessionIndex = updatedSessions.findIndex(s => s.id === session.id);
+                                  if (sessionIndex !== -1) {
+                                    updatedSessions[sessionIndex].players_data[index].dinner.paid = e.target.checked;
+                                    setSessions(updatedSessions);
+                                  }
+                                }}
+                                className="mr-1"
+                              />
+                              <span className={player.dinner.paid ? 'text-green-400' : 'text-slate-400'}>
+                                {player.dinner.paid ? '✓ Pago' : 'Pendente'}
+                              </span>
+                            </label>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
