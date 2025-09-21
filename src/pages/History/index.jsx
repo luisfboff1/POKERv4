@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
+import { SessionManager } from '../../components/SessionManager';
 
 export function History() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingSession, setEditingSession] = useState(null);
 
   useEffect(() => {
     loadSessions();
@@ -39,6 +41,35 @@ export function History() {
     ) || 0;
   };
 
+  const handleEditSession = (session) => {
+    setEditingSession(session);
+  };
+
+  const handleDeleteSession = async (sessionId) => {
+    if (window.confirm('Tem certeza que deseja excluir esta sessão?')) {
+      try {
+        await api.deleteSession(sessionId);
+        loadSessions(); // Recarregar lista
+        alert('Sessão excluída com sucesso!');
+      } catch (error) {
+        console.error('Erro ao excluir sessão:', error);
+        alert('Erro ao excluir sessão');
+      }
+    }
+  };
+
+  const handleSaveSession = async (sessionData) => {
+    try {
+      await api.updateSession(editingSession.id, sessionData);
+      setEditingSession(null);
+      loadSessions(); // Recarregar lista
+      alert('Sessão atualizada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao atualizar sessão:', error);
+      alert('Erro ao atualizar sessão');
+    }
+  };
+
   if (loading) {
     return <div className="text-center">Carregando sessões...</div>;
   }
@@ -54,6 +85,24 @@ export function History() {
           Nova Sessão
         </Link>
       </div>
+
+      {editingSession && (
+        <div className="bg-slate-800 p-6 rounded-lg">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Editando Sessão</h2>
+            <button
+              onClick={() => setEditingSession(null)}
+              className="text-gray-400 hover:text-white"
+            >
+              ✕ Cancelar
+            </button>
+          </div>
+          <SessionManager 
+            initialData={editingSession}
+            onSave={handleSaveSession}
+          />
+        </div>
+      )}
 
       {sessions.length === 0 ? (
         <div className="text-center text-gray-500 py-12">
@@ -75,6 +124,20 @@ export function History() {
                     <p>Total em jogo: {formatMoney(calculateSessionTotal(session))}</p>
                     <p>Jogadores: {session.players_data?.length || 0}</p>
                   </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEditSession(session)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                  >
+                    ✏️ Editar
+                  </button>
+                  <button
+                    onClick={() => handleDeleteSession(session.id)}
+                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+                  >
+                    🗑️ Remover
+                  </button>
                 </div>
               </div>
 
