@@ -195,8 +195,7 @@ class ApiService {
 
   // === SUPER ADMIN ===
   async getGlobalStats() {
-    // Usar endpoint alternativo para evitar problemas de cache
-    return this.request('/endpoints/super_admin_stats.php');
+    return this.request('/super_admin.php?action=stats');
   }
 
   async getAllTenants(filters = {}) {
