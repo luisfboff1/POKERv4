@@ -269,19 +269,23 @@ export function SessionManager({ initialData = null, onSave = null }) {
 
   useEffect(() => {
     if (players.length > 0) {
-      optimizeTransfers();
+      const optimizedTransfers = optimizeTransfers(players, recommendedPayments);
+      setSuggestions(optimizedTransfers);
     }
-  }, [players]);
+  }, [players, recommendedPayments]);
 
   useEffect(() => {
     if (!initialData) {
       loadAvailablePlayers();
-      // Adicionar primeiro jogador automaticamente
-      if (players.length === 0) {
-        setPlayers([{ name: '' }]);
-      }
     }
-  }, []);
+  }, [initialData]);
+
+  // Adicionar primeiro jogador automaticamente
+  useEffect(() => {
+    if (!initialData && players.length === 0) {
+      setPlayers([{ name: '' }]);
+    }
+  }, [initialData]);
 
   return (
     <div className="space-y-6">
