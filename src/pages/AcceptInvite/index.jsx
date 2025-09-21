@@ -85,10 +85,46 @@ const AcceptInvite = () => {
 
       const data = await response.json();
 
-      if (data.success) {
-        // Sucesso - redirecionar para login
-        alert('🎉 Convite aceito com sucesso! Faça login com suas credenciais.');
-        navigate('/login');
+      console.log('🎯 [DEBUG] Resposta do accept_invite:', data);
+      
+      if (data.success || data.message || data.user_id) {
+        // Sucesso - fazer login automático
+        console.log('🔐 [DEBUG] Fazendo login automático...');
+        
+        try {
+          // Fazer login automático com as mesmas credenciais
+          const loginResponse = await fetch('/api/auth.php?action=login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              email: inviteData.email,
+              password: formData.password
+            })
+          });
+
+          const loginData = await loginResponse.json();
+          console.log('🔐 [DEBUG] Resposta do login automático:', loginData);
+
+          if (loginData.data && loginData.data.token) {
+            // Salvar token e usuário
+            localStorage.setItem('auth_token', loginData.data.token);
+            localStorage.setItem('auth_user', JSON.stringify(loginData.data.user));
+            
+            alert('🎉 Convite aceito e login realizado com sucesso!');
+            navigate('/dashboard');
+          } else {
+            // Se login automático falhar, redirecionar para login manual
+            alert('🎉 Convite aceito com sucesso! Faça login com suas credenciais.');
+            navigate('/login');
+          }
+        } catch (loginError) {
+          console.error('❌ [DEBUG] Erro no login automático:', loginError);
+          // Se login automático falhar, redirecionar para login manual
+          alert('🎉 Convite aceito com sucesso! Faça login com suas credenciais.');
+          navigate('/login');
+        }
       } else {
         setError(data.error || 'Erro ao aceitar convite');
       }
