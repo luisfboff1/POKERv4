@@ -2,28 +2,30 @@
 
 import { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
-import { useTheme } from '@/contexts/theme-context';
 import { Button } from '@/components/ui/button';
 
 export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
-  const { theme, toggleTheme } = useTheme();
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
-  // Evitar erro de SSG
+  // Carregar tema salvo
   useEffect(() => {
     setMounted(true);
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light';
+    setTheme(savedTheme);
+    document.documentElement.classList.toggle('dark', savedTheme === 'dark');
   }, []);
 
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+  };
+
+  // Não renderizar durante SSG
   if (!mounted) {
-    return (
-      <Button
-        variant="ghost"
-        size="icon"
-        className="rounded-full"
-      >
-        <Sun className="h-5 w-5" />
-      </Button>
-    );
+    return null;
   }
 
   return (
