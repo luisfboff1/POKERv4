@@ -14,7 +14,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-4xl font-bold">Bem-vindo, {user?.name}!</h1>
-        <p className="text-muted-foreground mt-2">
+        <p className="text-gray-600 dark:text-gray-400 mt-2">
           Gerencie suas sessões de poker e acompanhe os rankings
         </p>
       </div>

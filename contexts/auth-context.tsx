@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { getToken, saveToken, removeToken, getUserFromToken } from '@/lib/auth';
+import { getToken, saveToken, removeToken } from '@/lib/auth';
 import { api } from '@/lib/api';
 import type { User, LoginCredentials } from '@/lib/types';
 
@@ -22,13 +22,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Carregar usuário do token ao montar
+  // Carregar usuário do localStorage ao montar
   useEffect(() => {
-    const loadUser = async () => {
+    const loadUser = () => {
       const token = getToken();
-      if (token) {
-        const userData = await getUserFromToken(token);
-        setUser(userData);
+      const savedUser = localStorage.getItem('user');
+      
+      if (token && savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch (e) {
+          console.error('Erro ao carregar usuário:', e);
+          removeToken();
+          localStorage.removeItem('user');
+        }
       }
       setLoading(false);
     };
@@ -42,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.data) {
         const { token, user } = response.data as { token: string; user: User };
         saveToken(token);
+        localStorage.setItem('user', JSON.stringify(user));
         setUser(user);
         router.push('/dashboard');
       } else {
@@ -55,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     removeToken();
+    localStorage.removeItem('user');
     setUser(null);
     api.auth.logout();
     router.push('/login');

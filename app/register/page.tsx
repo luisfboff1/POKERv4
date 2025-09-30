@@ -79,10 +79,10 @@ export default function RegisterPage() {
 
       <div className="min-h-screen flex items-center justify-center p-8">
         <div className="w-full max-w-md">
-          <Card className="bg-white dark:bg-gray-900">
+          <Card>
             <CardHeader className="text-center">
-              <CardTitle className="text-3xl text-gray-900 dark:text-white">Criar Conta</CardTitle>
-              <CardDescription className="text-gray-600 dark:text-gray-400">
+              <CardTitle className="text-3xl">Criar Conta</CardTitle>
+              <CardDescription>
                 Cadastre-se gratuitamente e comece a gerenciar suas sessões
               </CardDescription>
             </CardHeader>

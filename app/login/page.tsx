@@ -83,10 +83,10 @@ export default function LoginPage() {
         {/* Lado direito - Formulário de login */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
           <div className="w-full max-w-md">
-            <Card className="bg-white dark:bg-gray-900">
+            <Card>
               <CardHeader className="text-center">
-                <CardTitle className="text-3xl text-gray-900 dark:text-white">Fazer Login</CardTitle>
-                <CardDescription className="text-gray-600 dark:text-gray-400">
+                <CardTitle className="text-3xl">Fazer Login</CardTitle>
+                <CardDescription>
                   Acesse sua conta e gerencie suas sessões
                 </CardDescription>
               </CardHeader>
@@ -103,7 +103,7 @@ export default function LoginPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">Email</Label>
+                    <Label htmlFor="email">Email</Label>
                     <Input
                       type="email"
                       id="email"
@@ -112,12 +112,11 @@ export default function LoginPage() {
                       placeholder="seu@email.com"
                       required
                       disabled={loading}
-                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-700"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="password" className="text-gray-700 dark:text-gray-300">Senha</Label>
+                    <Label htmlFor="password">Senha</Label>
                     <div className="relative">
                       <Input
                         type={showPassword ? 'text' : 'password'}
@@ -127,7 +126,7 @@ export default function LoginPage() {
                         placeholder="Sua senha"
                         required
                         disabled={loading}
-                        className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-700 pr-12"
+                        className="pr-12"
                       />
                       <button
                         type="button"

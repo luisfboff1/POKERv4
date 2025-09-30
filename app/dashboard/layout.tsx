@@ -57,7 +57,7 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen flex">
       {/* Mobile Menu Button */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border p-4 flex items-center justify-between">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">🎯 Poker Manager</h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -77,18 +77,18 @@ export default function DashboardLayout({
         inset-y-0 left-0
         z-40
         w-64
-        bg-card
-        border-r border-border
+        bg-white dark:bg-gray-900
+        border-r border-gray-200 dark:border-gray-800
         transform transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0
         flex flex-col
       `}>
         {/* Header da Sidebar (desktop) */}
-        <div className="p-6 border-b border-border hidden md:flex items-center justify-between">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-800 hidden md:flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">🎯 Poker Manager</h1>
-            <p className="text-sm text-muted-foreground mt-1">{user.team_name || 'Time'}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{user.team_name || 'Time'}</p>
           </div>
           <ThemeToggle />
         </div>
@@ -102,7 +102,7 @@ export default function DashboardLayout({
                 key={item.name}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
                 <Icon className="w-5 h-5" />
                 <span>{item.name}</span>
@@ -112,11 +112,11 @@ export default function DashboardLayout({
         </nav>
 
         {/* User Info + Logout */}
-        <div className="border-t border-border p-4">
+        <div className="border-t border-gray-200 dark:border-gray-800 p-4">
           <div className="px-4 py-3 mb-2">
             <p className="text-sm font-medium truncate">{user.name}</p>
-            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{user.email}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
               {user.role === 'super_admin' ? 'Super Admin' : user.role === 'admin' ? 'Administrador' : 'Jogador'}
             </p>
           </div>
