@@ -57,8 +57,8 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen flex">
       {/* Mobile Menu Button */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">🎯 Poker Manager</h1>
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-3 flex items-center justify-between">
+        <h1 className="text-base font-bold">🎯 Poker Manager</h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Button
@@ -85,10 +85,10 @@ export default function DashboardLayout({
         flex flex-col
       `}>
         {/* Header da Sidebar (desktop) */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-800 hidden md:flex items-center justify-between">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-800 hidden md:flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">🎯 Poker Manager</h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{user.team_name || 'Time'}</p>
+            <h1 className="text-lg font-bold">🎯 Poker Manager</h1>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{user.team_name || 'Time'}</p>
           </div>
           <ThemeToggle />
         </div>
@@ -102,7 +102,7 @@ export default function DashboardLayout({
                 key={item.name}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
                 <Icon className="w-5 h-5" />
                 <span>{item.name}</span>

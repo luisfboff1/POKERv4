@@ -81,7 +81,7 @@ export default function RegisterPage() {
         <div className="w-full max-w-md">
           <Card>
             <CardHeader className="text-center">
-              <CardTitle className="text-3xl">Criar Conta</CardTitle>
+              <CardTitle className="text-2xl">Criar Conta</CardTitle>
               <CardDescription>
                 Cadastre-se gratuitamente e comece a gerenciar suas sessões
               </CardDescription>

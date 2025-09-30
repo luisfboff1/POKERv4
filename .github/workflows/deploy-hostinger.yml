@@ -22,11 +22,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: "npm"
 
       - name: 📦 Instalar dependências
         run: |
-          echo "📦 Instalando dependências do Next.js..."
-          npm install
+          echo "📦 Instalando dependências (com cache)..."
+          npm install --prefer-offline --no-audit --no-fund
 
       - name: 🏗️ Build Next.js (SSG)
         run: |

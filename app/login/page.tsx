@@ -85,7 +85,7 @@ export default function LoginPage() {
           <div className="w-full max-w-md">
             <Card>
               <CardHeader className="text-center">
-                <CardTitle className="text-3xl">Fazer Login</CardTitle>
+                <CardTitle className="text-2xl">Fazer Login</CardTitle>
                 <CardDescription>
                   Acesse sua conta e gerencie suas sessões
                 </CardDescription>
