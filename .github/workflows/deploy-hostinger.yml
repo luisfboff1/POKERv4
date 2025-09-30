@@ -26,8 +26,8 @@ jobs:
 
       - name: 📦 Instalar dependências
         run: |
-          echo "📦 Instalando dependências (com cache)..."
-          npm install --prefer-offline --no-audit --no-fund
+          echo "📦 Instalando dependências (npm ci com cache)..."
+          npm ci --prefer-offline
 
       - name: 🏗️ Build Next.js (SSG)
         run: |
