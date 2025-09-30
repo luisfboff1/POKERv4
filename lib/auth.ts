@@ -5,17 +5,23 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'poker-secret-key-change-in-production'
 );
 
-export interface JWTPayload {
+export interface CustomJWTPayload {
   user: User;
   iat?: number;
   exp?: number;
 }
 
 // ===== VERIFICAR TOKEN JWT =====
-export async function verifyToken(token: string): Promise<JWTPayload | null> {
+export async function verifyToken(token: string): Promise<CustomJWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload as JWTPayload;
+    
+    // Verificar se o payload contém user
+    if (!payload || typeof payload !== 'object' || !('user' in payload)) {
+      return null;
+    }
+    
+    return payload as CustomJWTPayload;
   } catch (error) {
     console.error('Token inválido:', error);
     return null;
@@ -24,7 +30,7 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
 
 // ===== CRIAR TOKEN JWT =====
 export async function createToken(user: User): Promise<string> {
-  const token = await new SignJWT({ user })
+  const token = await new SignJWT({ user } as any)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('7d') // Token válido por 7 dias
