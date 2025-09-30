@@ -100,7 +100,6 @@ jobs:
             **/.git*/**
             **/node_modules/**
             **/.next/**
-            **/api/.env
             **/.ftp-deploy-sync-state*
 
       - name: ✅ Deploy concluído
