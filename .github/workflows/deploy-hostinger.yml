@@ -43,47 +43,53 @@ jobs:
 
       - name: 🔧 Configurar APIs PHP
         run: |
-          echo "🔧 Copiando APIs PHP existentes..."
-
-          # Copiar pasta api/ para dentro de dist/
+          echo "🔧 Preparando pasta dist/api..."
           mkdir -p dist/api
+          
+          echo "📋 Copiando APIs PHP..."
           cp -r api/* dist/api/
-          echo "✅ APIs PHP copiadas!"
+          echo "✅ APIs copiadas!"
+          
+          echo "🔧 Criando arquivo .env..."
+          cat > dist/api/.env << 'ENVEOF'
+# Banco de Dados
+DB_HOST=${{ secrets.DB_HOST }}
+DB_NAME=${{ secrets.DB_NAME }}
+DB_USER=${{ secrets.DB_USER }}
+DB_PASSWORD=${{ secrets.DB_PASSWORD }}
 
-          echo "🔧 Configurando variáveis de ambiente PHP..."
+# JWT Secret
+JWT_SECRET=${{ secrets.JWT_SECRET }}
 
-          # Criar .env para o backend PHP
-          echo "# Banco de Dados" > dist/api/.env
-          echo "DB_HOST=${{ secrets.DB_HOST }}" >> dist/api/.env
-          echo "DB_NAME=${{ secrets.DB_NAME }}" >> dist/api/.env
-          echo "DB_USER=${{ secrets.DB_USER }}" >> dist/api/.env
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> dist/api/.env
-          echo "" >> dist/api/.env
-          echo "# JWT Secret" >> dist/api/.env
-          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> dist/api/.env
-          echo "" >> dist/api/.env
-          echo "# Email (SMTP)" >> dist/api/.env
-          echo "SMTP_HOST=${{ secrets.SMTP_HOST }}" >> dist/api/.env
-          echo "SMTP_PORT=${{ secrets.SMTP_PORT }}" >> dist/api/.env
-          echo "SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}" >> dist/api/.env
-          echo "SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}" >> dist/api/.env
-          echo "SMTP_ENCRYPTION=${{ secrets.SMTP_ENCRYPTION }}" >> dist/api/.env
-          echo "" >> dist/api/.env
-          echo "# PokerBot (Groq AI)" >> dist/api/.env
-          echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> dist/api/.env
+# Email (SMTP)
+SMTP_HOST=${{ secrets.SMTP_HOST }}
+SMTP_PORT=${{ secrets.SMTP_PORT }}
+SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}
+SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+SMTP_ENCRYPTION=${{ secrets.SMTP_ENCRYPTION }}
 
+# PokerBot (Groq AI)
+GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+ENVEOF
+          
+          echo "📄 Verificando .env criado:"
+          ls -la dist/api/.env
+          echo "Tamanho do arquivo:" $(wc -c < dist/api/.env) "bytes"
+          
           echo "📦 Instalando PHPMailer via Composer..."
           cd dist/api
           curl -sS https://getcomposer.org/installer | php
           php composer.phar install --no-dev --optimize-autoloader
           cd ../..
-
+          
           echo "📄 Copiando .htaccess..."
           cp .htaccess dist/ || echo "⚠️ .htaccess não encontrado"
-
+          
           echo "✅ Build e configuração concluídos!"
+          echo "Arquivos em dist:"
           ls -la dist/
-          ls -la dist/api/
+          echo "Arquivos em dist/api:"
+          ls -la dist/api/ | head -20
 
       - name: 🚀 Deploy para Hostinger via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
