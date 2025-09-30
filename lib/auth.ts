@@ -21,7 +21,8 @@ export async function verifyToken(token: string): Promise<CustomJWTPayload | nul
       return null;
     }
     
-    return payload as CustomJWTPayload;
+    // Cast seguro através de unknown
+    return payload as unknown as CustomJWTPayload;
   } catch (error) {
     console.error('Token inválido:', error);
     return null;
