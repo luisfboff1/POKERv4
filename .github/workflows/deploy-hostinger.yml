@@ -45,46 +45,39 @@ jobs:
         run: |
           echo "🔧 Preparando pasta dist/api..."
           mkdir -p dist/api
-          
+
           echo "📋 Copiando APIs PHP..."
           cp -r api/* dist/api/
           echo "✅ APIs copiadas!"
-          
+
           echo "🔧 Criando arquivo .env..."
-          cat > dist/api/.env << 'ENVEOF'
-# Banco de Dados
-DB_HOST=${{ secrets.DB_HOST }}
-DB_NAME=${{ secrets.DB_NAME }}
-DB_USER=${{ secrets.DB_USER }}
-DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          {
+            echo "DB_HOST=${{ secrets.DB_HOST }}"
+            echo "DB_NAME=${{ secrets.DB_NAME }}"
+            echo "DB_USER=${{ secrets.DB_USER }}"
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}"
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}"
+            echo "SMTP_HOST=${{ secrets.SMTP_HOST }}"
+            echo "SMTP_PORT=${{ secrets.SMTP_PORT }}"
+            echo "SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}"
+            echo "SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}"
+            echo "SMTP_ENCRYPTION=${{ secrets.SMTP_ENCRYPTION }}"
+            echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}"
+          } > dist/api/.env
 
-# JWT Secret
-JWT_SECRET=${{ secrets.JWT_SECRET }}
-
-# Email (SMTP)
-SMTP_HOST=${{ secrets.SMTP_HOST }}
-SMTP_PORT=${{ secrets.SMTP_PORT }}
-SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}
-SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
-SMTP_ENCRYPTION=${{ secrets.SMTP_ENCRYPTION }}
-
-# PokerBot (Groq AI)
-GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
-ENVEOF
-          
           echo "📄 Verificando .env criado:"
           ls -la dist/api/.env
           echo "Tamanho do arquivo:" $(wc -c < dist/api/.env) "bytes"
-          
+
           echo "📦 Instalando PHPMailer via Composer..."
           cd dist/api
           curl -sS https://getcomposer.org/installer | php
           php composer.phar install --no-dev --optimize-autoloader
           cd ../..
-          
+
           echo "📄 Copiando .htaccess..."
           cp .htaccess dist/ || echo "⚠️ .htaccess não encontrado"
-          
+
           echo "✅ Build e configuração concluídos!"
           echo "Arquivos em dist:"
           ls -la dist/
