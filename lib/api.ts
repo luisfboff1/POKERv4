@@ -82,13 +82,13 @@ export const api = {
     
     get: (id: number) => fetchAPI(`/session.php?action=get&id=${id}`),
     
-    create: (data: unknown) =>
+    create: (data: Record<string, any>) =>
       fetchAPI('/session.php', {
         method: 'POST',
         body: JSON.stringify({ action: 'create', ...data }),
       }),
     
-    update: (id: number, data: unknown) =>
+    update: (id: number, data: Record<string, any>) =>
       fetchAPI('/session.php', {
         method: 'POST',
         body: JSON.stringify({ action: 'update', id, ...data }),
@@ -113,7 +113,7 @@ export const api = {
     
     get: (id: number) => fetchAPI(`/players.php?action=get&id=${id}`),
     
-    update: (id: number, data: unknown) =>
+    update: (id: number, data: Record<string, any>) =>
       fetchAPI('/players.php', {
         method: 'POST',
         body: JSON.stringify({ action: 'update', id, ...data }),
@@ -147,7 +147,7 @@ export const api = {
   agent: {
     getStatus: () => fetchAPI('/agent.php?action=status'),
     
-    startSession: (data: unknown) =>
+    startSession: (data: Record<string, any>) =>
       fetchAPI('/agent.php', {
         method: 'POST',
         body: JSON.stringify({ action: 'start', ...data }),
