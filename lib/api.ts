@@ -32,11 +32,18 @@ async function fetchAPI<T>(
       headers,
     });
 
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch (e) {
+      console.error('Erro ao parsear JSON:', await response.text());
+      throw new ApiError('Resposta inválida do servidor', response.status);
+    }
 
     if (!response.ok) {
+      console.error('Erro da API:', data);
       throw new ApiError(
-        data.message || 'Erro na requisição',
+        data.error || data.message || 'Erro na requisição',
         response.status,
         data
       );
@@ -47,6 +54,7 @@ async function fetchAPI<T>(
     if (error instanceof ApiError) {
       throw error;
     }
+    console.error('Erro de conexão:', error);
     throw new ApiError('Erro de conexão com o servidor', 500);
   }
 }
