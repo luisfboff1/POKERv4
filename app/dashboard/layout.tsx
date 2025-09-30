@@ -54,7 +54,7 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-card border-r border-gray-700">
+      <aside className="w-64 bg-card border-r border-border">
         <div className="p-6">
           <h1 className="text-2xl font-bold">🎯 Poker Manager</h1>
           <p className="text-sm text-muted-foreground mt-1">{user.team_name || 'Time'}</p>
@@ -76,7 +76,7 @@ export default function DashboardLayout({
           })}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700 w-64">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border w-64">
           <div className="px-4 py-3 mb-2">
             <p className="text-sm font-medium">{user.name}</p>
             <p className="text-xs text-muted-foreground">{user.email}</p>
