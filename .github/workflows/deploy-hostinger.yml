@@ -1,93 +1,110 @@
-# ⚠️  ATENÇÃO: NÃO MODIFICAR ESTE ARQUIVO SEM APROVAÇÃO DO LUIS
-# Este deploy está funcionando perfeitamente. Mudanças podem quebrar o sistema.
-# Se precisar alterar algo, SEMPRE consultar Luis primeiro!
-# Deploy atual: React build + FTP para Hostinger - FUNCIONAL ✅
+# ⚠️ ATENÇÃO: Deploy atualizado para Next.js + TypeScript
+# Sistema modernizado: Next.js (SSG) + Tailwind 4.1 + shadcn/ui + TypeScript
+# Deploy: Next.js build estático + FTP para Hostinger - ATUALIZADO ✅
 
-name: 🚀 Deploy para Hostinger
+name: 🚀 Deploy para Hostinger (Next.js)
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [master, main]
   pull_request:
-    branches: [ master, main ]
+    branches: [master, main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: 📥 Checkout código
-      uses: actions/checkout@v4
-      
-    - name: 🔧 Configurar Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        
-    - name: 📦 Instalar dependências
-      run: |
-        echo "📦 Instalando dependências..."
-        npm install
-        
-    - name: 🏗️ Build do projeto
-      run: |
-        echo "🏗️ Buildando projeto React..."
-        # 🤖 Configurando PokerBot - CRIAR .env ANTES DO BUILD
-        echo "VITE_GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" > .env
-        echo "📄 Verificando .env criado para o frontend:"
-        cat .env
-        
-        npm run build # AGORA O BUILD VAI LER A CHAVE CORRETA
-        
-        echo "📄 Copiando .htaccess..."
-        cp .htaccess dist/
-        echo "📄 Copiando .env para dist/ (para garantir que esteja lá, embora o valor já esteja embutido no JS)"
-        cp .env dist/
-                echo "🔧 Configurando banco de dados e email..."
-                echo "DB_HOST=${{ secrets.DB_HOST }}" > api/.env
-                echo "DB_NAME=${{ secrets.DB_NAME }}" >> api/.env
-                echo "DB_USER=${{ secrets.DB_USER }}" >> api/.env
-                echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> api/.env
-                echo "SMTP_HOST=${{ secrets.SMTP_HOST }}" >> api/.env
-                echo "SMTP_PORT=${{ secrets.SMTP_PORT }}" >> api/.env
-                echo "SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}" >> api/.env
-                echo "SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}" >> api/.env
-                echo "SMTP_ENCRYPTION=${{ secrets.SMTP_ENCRYPTION }}" >> api/.env
-                
-                echo "📦 Instalando PHPMailer via Composer..."
-                cd api
-                curl -sS https://getcomposer.org/installer | php
-                php composer.phar install --no-dev --optimize-autoloader
-                cd ..
-        echo "✅ Build concluído!"
-        ls -la dist/
-        
-    - name: 🚀 Deploy Frontend via FTP
-      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-      with:
-        server: ${{ secrets.HOSTINGER_FTP_HOST }}
-        username: ${{ secrets.HOSTINGER_FTP_USER }}
-        password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
-        port: 21
-        protocol: ftp
-        local-dir: ./dist/
-        server-dir: /poker/
-        
-    - name: 🔧 Deploy API via FTP
-      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-      with:
-        server: ${{ secrets.HOSTINGER_FTP_HOST }}
-        username: ${{ secrets.HOSTINGER_FTP_USER }}
-        password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
-        port: 21
-        protocol: ftp
-        local-dir: ./api/
-        server-dir: /poker/api/
-        
-    - name: ✅ Deploy concluído
-      run: |
-        echo "🎉 Deploy realizado com sucesso!"
-        echo "🌐 Site disponível em: https://luisfboff.com"
-        echo "📧 Contato: luis@luisfboff.com"
-        echo "👨‍💻 Desenvolvedor: Luis Fernando Boff"
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🔧 Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 📦 Instalar dependências
+        run: |
+          echo "📦 Instalando dependências do Next.js..."
+          npm install
+
+      - name: 🏗️ Build Next.js (SSG)
+        run: |
+          echo "🏗️ Construindo aplicação Next.js para produção..."
+
+          # Configurar variáveis de ambiente FRONTEND (apenas NEXT_PUBLIC_*)
+          echo "NEXT_PUBLIC_API_URL=/api" > .env.local
+          echo "NEXT_PUBLIC_GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env.local
+
+          # Build Next.js (gera arquivos estáticos em /dist)
+          npm run build
+
+          echo "✅ Build Next.js concluído!"
+
+      - name: 🔧 Configurar APIs PHP
+        run: |
+          echo "🔧 Copiando APIs PHP existentes..."
+
+          # Copiar pasta api/ para dentro de dist/
+          mkdir -p dist/api
+          cp -r api/* dist/api/
+          echo "✅ APIs PHP copiadas!"
+
+          echo "🔧 Configurando variáveis de ambiente PHP..."
+
+          # Criar .env para o backend PHP
+          echo "# Banco de Dados" > dist/api/.env
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> dist/api/.env
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> dist/api/.env
+          echo "DB_USER=${{ secrets.DB_USER }}" >> dist/api/.env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> dist/api/.env
+          echo "" >> dist/api/.env
+          echo "# JWT Secret" >> dist/api/.env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> dist/api/.env
+          echo "" >> dist/api/.env
+          echo "# Email (SMTP)" >> dist/api/.env
+          echo "SMTP_HOST=${{ secrets.SMTP_HOST }}" >> dist/api/.env
+          echo "SMTP_PORT=${{ secrets.SMTP_PORT }}" >> dist/api/.env
+          echo "SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}" >> dist/api/.env
+          echo "SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}" >> dist/api/.env
+          echo "SMTP_ENCRYPTION=${{ secrets.SMTP_ENCRYPTION }}" >> dist/api/.env
+          echo "" >> dist/api/.env
+          echo "# PokerBot (Groq AI)" >> dist/api/.env
+          echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> dist/api/.env
+
+          echo "📦 Instalando PHPMailer via Composer..."
+          cd dist/api
+          curl -sS https://getcomposer.org/installer | php
+          php composer.phar install --no-dev --optimize-autoloader
+          cd ../..
+
+          echo "📄 Copiando .htaccess..."
+          cp .htaccess dist/ || echo "⚠️ .htaccess não encontrado"
+
+          echo "✅ Build e configuração concluídos!"
+          ls -la dist/
+          ls -la dist/api/
+
+      - name: 🚀 Deploy para Hostinger via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.HOSTINGER_FTP_HOST }}
+          username: ${{ secrets.HOSTINGER_FTP_USER }}
+          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          port: 21
+          protocol: ftp
+          local-dir: ./dist/
+          server-dir: /poker/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.next/**
+
+      - name: ✅ Deploy concluído
+        run: |
+          echo "🎉 Deploy realizado com sucesso!"
+          echo "🌐 Site disponível em: https://luisfboff.com"
+          echo "📧 Contato: luis@luisfboff.com"
+          echo "👨‍💻 Desenvolvedor: Luis Fernando Boff"
+          echo "🚀 Stack: Next.js + TypeScript + Tailwind 4.1 + shadcn/ui"
