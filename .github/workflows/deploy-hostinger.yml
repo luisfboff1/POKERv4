@@ -95,11 +95,14 @@ jobs:
           protocol: ftp
           local-dir: ./dist/
           server-dir: /poker/
+          state-name: nextjs-deploy
+          dangerous-clean-slate: true
           exclude: |
             **/.git*
             **/.git*/**
             **/node_modules/**
             **/.next/**
+            **/api/.env
 
       - name: ✅ Deploy concluído
         run: |

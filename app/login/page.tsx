@@ -3,6 +3,7 @@
 import { useState, FormEvent } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,16 +37,19 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800">
       {/* Header */}
-      <div className="absolute top-0 left-0 right-0 p-6">
+      <div className="absolute top-0 left-0 right-0 p-6 z-10">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="text-white font-bold text-2xl">
             🎯 Poker Manager
           </div>
-          <div className="text-white/80">
-            Não tem conta?{' '}
-            <Link href="/register" className="text-white underline hover:text-blue-200">
-              Cadastre-se
-            </Link>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <div className="text-white/80">
+              Não tem conta?{' '}
+              <Link href="/register" className="text-white underline hover:text-blue-200">
+                Cadastre-se
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -79,10 +83,10 @@ export default function LoginPage() {
         {/* Lado direito - Formulário de login */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
           <div className="w-full max-w-md">
-            <Card className="bg-white">
+            <Card className="bg-white dark:bg-gray-900">
               <CardHeader className="text-center">
-                <CardTitle className="text-3xl">Fazer Login</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-3xl text-gray-900 dark:text-white">Fazer Login</CardTitle>
+                <CardDescription className="text-gray-600 dark:text-gray-400">
                   Acesse sua conta e gerencie suas sessões
                 </CardDescription>
               </CardHeader>
@@ -99,7 +103,7 @@ export default function LoginPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">Email</Label>
                     <Input
                       type="email"
                       id="email"
@@ -108,12 +112,12 @@ export default function LoginPage() {
                       placeholder="seu@email.com"
                       required
                       disabled={loading}
-                      className="bg-white text-gray-900"
+                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-700"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="password">Senha</Label>
+                    <Label htmlFor="password" className="text-gray-700 dark:text-gray-300">Senha</Label>
                     <div className="relative">
                       <Input
                         type={showPassword ? 'text' : 'password'}
@@ -123,7 +127,7 @@ export default function LoginPage() {
                         placeholder="Sua senha"
                         required
                         disabled={loading}
-                        className="bg-white text-gray-900 pr-12"
+                        className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-700 pr-12"
                       />
                       <button
                         type="button"

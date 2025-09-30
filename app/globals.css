@@ -1,8 +1,33 @@
 /* Tailwind 4.1 - Nova sintaxe com @import */
 @import "tailwindcss";
 
-/* Definir cores customizadas no @theme */
+/* Definir cores com suporte a Light/Dark Mode */
 @theme {
+  /* Light Mode (padrão) */
+  --color-background: 0 0% 100%;
+  --color-foreground: 222.2 84% 4.9%;
+  --color-card: 0 0% 100%;
+  --color-card-foreground: 222.2 84% 4.9%;
+  --color-popover: 0 0% 100%;
+  --color-popover-foreground: 222.2 84% 4.9%;
+  --color-primary: 217.2 91.2% 59.8%;
+  --color-primary-foreground: 210 40% 98%;
+  --color-secondary: 210 40% 96.1%;
+  --color-secondary-foreground: 222.2 47.4% 11.2%;
+  --color-muted: 210 40% 96.1%;
+  --color-muted-foreground: 215.4 16.3% 46.9%;
+  --color-accent: 210 40% 96.1%;
+  --color-accent-foreground: 222.2 47.4% 11.2%;
+  --color-destructive: 0 84.2% 60.2%;
+  --color-destructive-foreground: 210 40% 98%;
+  --color-border: 214.3 31.8% 91.4%;
+  --color-input: 214.3 31.8% 91.4%;
+  --color-ring: 217.2 91.2% 59.8%;
+  --radius: 0.5rem;
+}
+
+/* Dark Mode */
+.dark {
   --color-background: 222.2 84% 4.9%;
   --color-foreground: 210 40% 98%;
   --color-card: 222.2 84% 4.9%;
@@ -22,7 +47,6 @@
   --color-border: 217.2 32.6% 17.5%;
   --color-input: 217.2 32.6% 17.5%;
   --color-ring: 224.3 76.3% 48%;
-  --radius: 0.5rem;
 }
 
 @layer base {

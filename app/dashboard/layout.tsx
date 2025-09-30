@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import { ThemeToggle } from '@/components/theme-toggle';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,7 +14,8 @@ import {
   Users,
   Shield,
   LogOut,
-  Menu
+  Menu,
+  X
 } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -23,6 +25,7 @@ export default function DashboardLayout({
 }) {
   const { user, logout, loading, isAuthenticated } = useAuth();
   const router = useRouter();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -53,20 +56,52 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-card border-r border-border">
-        <div className="p-6">
-          <h1 className="text-2xl font-bold">🎯 Poker Manager</h1>
-          <p className="text-sm text-muted-foreground mt-1">{user.team_name || 'Time'}</p>
+      {/* Mobile Menu Button */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border p-4 flex items-center justify-between">
+        <h1 className="text-xl font-bold">🎯 Poker Manager</h1>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </Button>
+        </div>
+      </div>
+
+      {/* Sidebar - Responsiva */}
+      <aside className={`
+        fixed md:static
+        inset-y-0 left-0
+        z-40
+        w-64
+        bg-card
+        border-r border-border
+        transform transition-transform duration-300 ease-in-out
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:translate-x-0
+        flex flex-col
+      `}>
+        {/* Header da Sidebar (desktop) */}
+        <div className="p-6 border-b border-border hidden md:flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">🎯 Poker Manager</h1>
+            <p className="text-sm text-muted-foreground mt-1">{user.team_name || 'Time'}</p>
+          </div>
+          <ThemeToggle />
         </div>
 
-        <nav className="px-4 space-y-2">
+        {/* Navigation */}
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {filteredNavigation.map((item) => {
             const Icon = item.icon;
             return (
               <Link
                 key={item.name}
                 href={item.href}
+                onClick={() => setSidebarOpen(false)}
                 className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
               >
                 <Icon className="w-5 h-5" />
@@ -76,10 +111,11 @@ export default function DashboardLayout({
           })}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border w-64">
+        {/* User Info + Logout */}
+        <div className="border-t border-border p-4">
           <div className="px-4 py-3 mb-2">
-            <p className="text-sm font-medium">{user.name}</p>
-            <p className="text-xs text-muted-foreground">{user.email}</p>
+            <p className="text-sm font-medium truncate">{user.name}</p>
+            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
             <p className="text-xs text-muted-foreground mt-1">
               {user.role === 'super_admin' ? 'Super Admin' : user.role === 'admin' ? 'Administrador' : 'Jogador'}
             </p>
@@ -95,13 +131,20 @@ export default function DashboardLayout({
         </div>
       </aside>
 
+      {/* Overlay (mobile) */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
-        <div className="p-8">
+        <div className="p-4 md:p-8 mt-16 md:mt-0">
           {children}
         </div>
       </main>
     </div>
   );
 }
-
