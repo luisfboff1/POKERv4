@@ -121,6 +121,12 @@ export const api = {
     
     get: (id: number) => fetchAPI(`/players.php?action=get&id=${id}`),
     
+    create: (name: string, email?: string) =>
+      fetchAPI('/players.php', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'create', name, email }),
+      }),
+    
     update: (id: number, data: Record<string, any>) =>
       fetchAPI('/players.php', {
         method: 'POST',

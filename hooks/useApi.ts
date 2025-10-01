@@ -89,11 +89,22 @@ export function usePlayers() {
     []
   );
 
+  const createPlayer = async (name: string, email?: string) => {
+    try {
+      const result = await api.players.create(name, email);
+      await refetch();
+      return result;
+    } catch (err) {
+      throw err;
+    }
+  };
+
   return {
     players: data || [],
     loading,
     error,
     refetch,
+    createPlayer,
   };
 }
 

@@ -30,7 +30,7 @@ type SessionStep = 'create' | 'players' | 'active' | 'cashout' | 'transfers';
 export default function CurrentSessionPage() {
   const router = useRouter();
   const { createSession, sessions } = useSessions();
-  const { players: existingPlayers } = usePlayers();
+  const { players: existingPlayers, createPlayer } = usePlayers();
   
   // Estado da sessão
   const [currentSession, setCurrentSession] = useState<LiveSession | null>(null);
@@ -39,6 +39,7 @@ export default function CurrentSessionPage() {
   // Controles de interface
   const [searchPlayer, setSearchPlayer] = useState('');
   const [showAddPlayer, setShowAddPlayer] = useState(false);
+  const [showAllPlayers, setShowAllPlayers] = useState(false);
   const [newPlayerName, setNewPlayerName] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
   const [defaultBuyin, setDefaultBuyin] = useState(50);
@@ -50,11 +51,92 @@ export default function CurrentSessionPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Chave para localStorage
+  const CACHE_KEY = 'current_session_cache';
+
+  // Funções de cache local
+  const saveToCache = (session: LiveSession) => {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        ...session,
+        lastSaved: new Date().toISOString()
+      }));
+    } catch (error) {
+      console.error('Erro ao salvar no cache:', error);
+    }
+  };
+
+  const loadFromCache = (): LiveSession | null => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const session = JSON.parse(cached);
+        // Verificar se o cache não é muito antigo (max 24h)
+        const lastSaved = new Date(session.lastSaved);
+        const now = new Date();
+        const hoursDiff = (now.getTime() - lastSaved.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursDiff < 24) {
+          return session;
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar do cache:', error);
+    }
+    return null;
+  };
+
+  const clearCache = () => {
+    try {
+      localStorage.removeItem(CACHE_KEY);
+    } catch (error) {
+      console.error('Erro ao limpar cache:', error);
+    }
+  };
+
+  // Função para lidar com Enter
+  const handleKeyPress = (event: React.KeyboardEvent, action: () => void) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      action();
+    }
+  };
+
   // Verificar se há sessão ativa ao carregar
   useEffect(() => {
-    // TODO: Implementar busca por sessões ativas quando a API suportar
-    // Por enquanto começamos sempre do zero
-  }, [sessions]);
+    // Tentar carregar sessão do cache ao inicializar
+    const cachedSession = loadFromCache();
+    if (cachedSession) {
+      setCurrentSession(cachedSession);
+      // Determinar em qual etapa estamos baseado no status da sessão
+      switch (cachedSession.status) {
+        case 'creating':
+          setStep('create');
+          break;
+        case 'players':
+          setStep('players');
+          break;
+        case 'active':
+          setStep('active');
+          break;
+        case 'cashout':
+          setStep('cashout');
+          break;
+        case 'finished':
+          setStep('transfers');
+          break;
+        default:
+          setStep('create');
+      }
+    }
+  }, []);
+
+  // Salvar no cache sempre que a sessão mudar
+  useEffect(() => {
+    if (currentSession) {
+      saveToCache(currentSession);
+    }
+  }, [currentSession]);
 
   // Funções da sessão
   const createNewSession = () => {
@@ -97,32 +179,61 @@ export default function CurrentSessionPage() {
   };
 
   // Funções de jogadores
-  const addPlayerToSession = (player: any, isExisting: boolean) => {
+  const addPlayerToSession = async (player: any, isExisting: boolean) => {
     if (!currentSession) return;
     if (!player) return;
     
     const playerName = isExisting ? (player?.name || '') : (player || '');
     if (!playerName.trim()) return;
     
-    const newPlayer: LivePlayer = {
-      id: Date.now().toString(),
-      name: playerName,
-      buyin: defaultBuyin,
-      totalBuyin: defaultBuyin,
-      cashout: 0,
-      janta: 0,
-      rebuys: [],
-      isExisting
-    };
-
-    setCurrentSession({
-      ...currentSession,
-      players: [...currentSession.players, newPlayer]
-    });
+    // Verificar se o jogador já está na mesa
+    const existsInSession = currentSession.players.some(p => 
+      p.name.toLowerCase() === playerName.toLowerCase()
+    );
     
-    setSearchPlayer('');
-    setNewPlayerName('');
-    setShowAddPlayer(false);
+    if (existsInSession) {
+      setError('Jogador já está na mesa');
+      return;
+    }
+
+    try {
+      let playerData = player;
+      
+      // Se não é um jogador existente, criar no backend
+      if (!isExisting) {
+        setLoading(true);
+        const newPlayerResponse = await createPlayer(playerName);
+        playerData = newPlayerResponse;
+      }
+      
+      const newPlayer: LivePlayer = {
+        id: isExisting ? player.id?.toString() || Date.now().toString() : Date.now().toString(),
+        name: playerName,
+        email: isExisting ? player.email : '',
+        buyin: defaultBuyin,
+        totalBuyin: defaultBuyin,
+        cashout: 0,
+        janta: 0,
+        rebuys: [],
+        isExisting
+      };
+
+      setCurrentSession({
+        ...currentSession,
+        players: [...currentSession.players, newPlayer]
+      });
+      
+      // Limpar formulários
+      setSearchPlayer('');
+      setNewPlayerName('');
+      setShowAddPlayer(false);
+      setError('');
+      
+    } catch (err: any) {
+      setError(err.message || 'Erro ao adicionar jogador');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updatePlayerField = (playerId: string, field: keyof LivePlayer, value: any) => {
@@ -223,6 +334,11 @@ export default function CurrentSessionPage() {
         recommendations
       });
 
+      // Limpar cache após salvar com sucesso
+      clearCache();
+      setCurrentSession(null);
+      setStep('create');
+      
       // Redirecionar para histórico
       router.push('/dashboard/history');
     } catch (err) {
@@ -410,6 +526,13 @@ export default function CurrentSessionPage() {
                     placeholder="Buscar jogador existente..."
                     value={searchPlayer}
                     onChange={(e) => setSearchPlayer(e.target.value)}
+                    onKeyPress={(e) => handleKeyPress(e, () => {
+                      if (searchPlayer.trim() && filteredExistingPlayers.length === 0) {
+                        addPlayerToSession(searchPlayer.trim(), false);
+                      } else if (filteredExistingPlayers.length > 0) {
+                        addPlayerToSession(filteredExistingPlayers[0], true);
+                      }
+                    })}
                     className="pl-10"
                   />
                 </div>
@@ -420,6 +543,13 @@ export default function CurrentSessionPage() {
                   <Plus className="h-4 w-4 mr-2" />
                   Novo
                 </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowAllPlayers(true)}
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Lista
+                </Button>
               </div>
             ) : (
               <div className="flex gap-2">
@@ -427,6 +557,11 @@ export default function CurrentSessionPage() {
                   placeholder="Nome do novo jogador"
                   value={newPlayerName}
                   onChange={(e) => setNewPlayerName(e.target.value)}
+                  onKeyPress={(e) => handleKeyPress(e, () => {
+                    if (newPlayerName.trim()) {
+                      addPlayerToSession(newPlayerName.trim(), false);
+                    }
+                  })}
                 />
                 <Button 
                   onClick={() => addPlayerToSession(newPlayerName, false)}
@@ -512,6 +647,72 @@ export default function CurrentSessionPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Modal Lista Completa de Jogadores */}
+        {showAllPlayers && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+            <Card className="w-full max-w-md max-h-[80vh] overflow-hidden">
+              <CardHeader>
+                <CardTitle>Todos os Jogadores</CardTitle>
+                <CardDescription>
+                  Selecione um jogador da lista
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="overflow-y-auto max-h-[60vh]">
+                <div className="space-y-2">
+                  {existingPlayers.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Users className="mx-auto h-12 w-12 mb-3 opacity-50" />
+                      <p>Nenhum jogador cadastrado</p>
+                    </div>
+                  ) : (
+                    existingPlayers.map(player => {
+                      const isInSession = currentSession.players.some(p => 
+                        p.name.toLowerCase() === player.name.toLowerCase()
+                      );
+                      
+                      return (
+                        <button
+                          key={player.id}
+                          onClick={() => {
+                            if (!isInSession) {
+                              addPlayerToSession(player, true);
+                              setShowAllPlayers(false);
+                            }
+                          }}
+                          disabled={isInSession}
+                          className={`w-full text-left p-3 rounded border hover:bg-muted text-sm transition-colors ${
+                            isInSession 
+                              ? 'opacity-50 cursor-not-allowed bg-muted/30' 
+                              : 'hover:border-primary/50'
+                          }`}
+                        >
+                          <div className="font-medium">{player.name}</div>
+                          {player.email && (
+                            <div className="text-muted-foreground text-xs">{player.email}</div>
+                          )}
+                          {isInSession && (
+                            <div className="text-primary text-xs mt-1">● Já na mesa</div>
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+                
+                <div className="flex gap-2 pt-4 border-t mt-4">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowAllPlayers(false)}
+                    className="flex-1"
+                  >
+                    Fechar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     );
   }
