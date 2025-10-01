@@ -98,9 +98,29 @@ export default function CurrentSessionPage() {
   const clearCache = () => {
     try {
       localStorage.removeItem(CACHE_KEY);
+      // Também limpar outros caches relacionados
+      localStorage.removeItem('session_data');
+      localStorage.removeItem('current_session');
+      localStorage.removeItem('poker_session_cache');
+      localStorage.removeItem('user_data');
     } catch (error) {
       console.error('Erro ao limpar cache:', error);
     }
+  };
+
+  const forceCleanStart = () => {
+    clearCache();
+    setCurrentSession({
+      id: 0,
+      date: new Date().toISOString().split('T')[0],
+      location: '',
+      players: [],
+      status: 'creating'
+    });
+    setStep('create');
+    setSearchPlayer('');
+    setNewPlayerName('');
+    setError('');
   };
 
   // Função para lidar com Enter
@@ -434,9 +454,15 @@ export default function CurrentSessionPage() {
   const isBalanced = totals.totalBuyin === totals.totalCashout;
   
   // Filtrar jogadores existentes para busca
-  const filteredExistingPlayers = (existingPlayers || []).filter(p => 
-    searchPlayer && searchPlayer.trim() && p?.name && p.name.toLowerCase().includes(searchPlayer.toLowerCase())
-  );
+  const filteredExistingPlayers = (existingPlayers || []).filter(p => {
+    if (!p?.name) return false;
+    
+    // Se não há busca, mostrar todos (limitado depois no render)
+    if (!searchPlayer || !searchPlayer.trim()) return true;
+    
+    // Se há busca, filtrar por nome
+    return p.name.toLowerCase().includes(searchPlayer.toLowerCase());
+  });
 
   // Se não há sessão ativa, mostrar opção de criar
   if (!currentSession) {
@@ -1261,28 +1287,43 @@ export default function CurrentSessionPage() {
               />
             </div>
             
-            {searchPlayer && filteredExistingPlayers.length > 0 && (
-              <div className="border rounded-lg p-2 bg-muted/30 max-h-32 overflow-y-auto">
-                {filteredExistingPlayers.slice(0, 3).map(player => (
-                  <button
-                    key={player?.id}
-                    onClick={() => addPlayerToSession(player, true)}
-                    className="w-full text-left p-2 rounded hover:bg-muted text-sm"
-                  >
-                    {player?.name}
-                  </button>
-                ))}
+            {/* Lista de jogadores encontrados */}
+            {filteredExistingPlayers.length > 0 && (
+              <div>
+                <Label className="text-sm font-medium">
+                  {searchPlayer.trim() ? 'Jogadores encontrados:' : 'Jogadores cadastrados:'}
+                </Label>
+                <div className="mt-2 border rounded-lg p-2 bg-muted/30 max-h-40 overflow-y-auto">
+                  {filteredExistingPlayers.slice(0, 5).map(player => (
+                    <button
+                      key={player?.id}
+                      onClick={() => addPlayerToSession(player, true)}
+                      className="w-full text-left p-2 rounded hover:bg-muted text-sm transition-colors"
+                    >
+                      <div className="font-medium">{player?.name}</div>
+                      {player?.email && (
+                        <div className="text-xs text-muted-foreground">{player?.email}</div>
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
             
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => addPlayerToSession(searchPlayer, false)}
-                disabled={!searchPlayer.trim()}
-                className="flex-1"
-              >
-                Adicionar "{searchPlayer}"
-              </Button>
+            {/* Botão para adicionar jogador novo (apenas se digitou algo) */}
+            {searchPlayer.trim() && (
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => addPlayerToSession(searchPlayer, false)}
+                  className="flex-1"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar "{searchPlayer.trim()}"
+                </Button>
+              </div>
+            )}
+            
+            <div className="flex justify-end">
               <Button 
                 variant="outline"
                 onClick={() => {
@@ -1290,7 +1331,7 @@ export default function CurrentSessionPage() {
                   setSearchPlayer('');
                 }}
               >
-                Cancelar
+                Fechar
               </Button>
             </div>
           </div>
