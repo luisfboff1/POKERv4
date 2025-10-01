@@ -17,7 +17,9 @@ import {
   CheckCircle,
   Clock,
   XCircle,
-  Eye
+  Eye,
+  CreditCard,
+  Utensils
 } from 'lucide-react';
 import { Modal, ModalContent, useModal, useConfirmModal } from '@/components/ui/modal';
 
@@ -43,6 +45,33 @@ export default function HistoryPage() {
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const sessionDetailsModal = useModal();
   const { confirm, ConfirmModalComponent } = useConfirmModal();
+
+  // Função para atualizar pagamentos de jogador
+  const updatePlayerPayment = async (sessionId: number, playerIndex: number, field: 'session_paid' | 'janta_paid', value: boolean) => {
+    try {
+      const session = sessions.find(s => s.id === sessionId);
+      if (!session || !session.players_data) return;
+      
+      const updatedPlayersData = [...session.players_data];
+      updatedPlayersData[playerIndex] = {
+        ...updatedPlayersData[playerIndex],
+        [field]: value
+      };
+      
+      // Aqui você pode fazer a chamada para API para salvar
+      // Por enquanto, vamos apenas atualizar o estado local
+      setSelectedSession({
+        ...selectedSession,
+        players_data: updatedPlayersData
+      });
+      
+      // TODO: Implementar API call para salvar no backend
+      console.log(`Atualizado: ${field} = ${value} para jogador ${playerIndex} na sessão ${sessionId}`);
+      
+    } catch (error) {
+      console.error('Erro ao atualizar pagamento:', error);
+    }
+  };
 
   // Filtrar sessões
   const filteredSessions = sessions.filter(session => {
@@ -341,15 +370,47 @@ export default function HistoryPage() {
                   <div className="space-y-2">
                     {selectedSession.players_data.map((player: any, index: number) => (
                       <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                        <span className="font-medium">{player.name}</span>
-                        <div className="text-sm space-x-4">
-                          <span>Buy-in: R$ {player.buyin}</span>
-                          <span>Cash-out: R$ {player.cashout}</span>
-                          <span className={`font-medium ${
-                            (player.cashout - player.buyin) >= 0 ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {player.cashout - player.buyin >= 0 ? '+' : ''}R$ {player.cashout - player.buyin}
-                          </span>
+                        <div className="flex-1">
+                          <span className="font-medium">{player.name}</span>
+                          <div className="text-sm space-x-4 mt-1">
+                            <span>Buy-in: R$ {player.buyin}</span>
+                            <span>Cash-out: R$ {player.cashout}</span>
+                            <span className={`font-medium ${
+                              (player.cashout - player.buyin) >= 0 ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {player.cashout - player.buyin >= 0 ? '+' : ''}R$ {player.cashout - player.buyin}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Checkboxes de Pagamento */}
+                        <div className="flex gap-4">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id={`session_paid_${selectedSession.id}_${index}`}
+                              checked={player.session_paid || false}
+                              onChange={(e) => updatePlayerPayment(selectedSession.id, index, 'session_paid', e.target.checked)}
+                              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                            />
+                            <label htmlFor={`session_paid_${selectedSession.id}_${index}`} className="text-xs flex items-center gap-1">
+                              <CreditCard className="h-3 w-3" />
+                              Sessão
+                            </label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id={`janta_paid_${selectedSession.id}_${index}`}
+                              checked={player.janta_paid || false}
+                              onChange={(e) => updatePlayerPayment(selectedSession.id, index, 'janta_paid', e.target.checked)}
+                              className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                            />
+                            <label htmlFor={`janta_paid_${selectedSession.id}_${index}`} className="text-xs flex items-center gap-1">
+                              <Utensils className="h-3 w-3" />
+                              Janta
+                            </label>
+                          </div>
                         </div>
                       </div>
                     ))}

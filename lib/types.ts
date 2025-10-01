@@ -68,6 +68,9 @@ export interface LivePlayer {
   janta: number;
   rebuys: number[];
   isExisting?: boolean; // se é um jogador cadastrado ou novo
+  // Campos de pagamento
+  session_paid?: boolean; // Se pagou a sessão
+  janta_paid?: boolean; // Se pagou a janta
 }
 
 export interface LiveSession {

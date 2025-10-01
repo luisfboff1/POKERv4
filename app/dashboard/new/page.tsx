@@ -21,7 +21,9 @@ import {
   CheckCircle,
   Edit3,
   Search,
-  UserPlus
+  UserPlus,
+  CreditCard,
+  Check
 } from 'lucide-react';
 
 import type { LiveSession, LivePlayer, TransferRecommendation } from '@/lib/types';
@@ -241,7 +243,10 @@ export default function CurrentSessionPage() {
         cashout: 0,
         janta: 0,
         rebuys: [],
-        isExisting: true // Sempre true agora pois foi salvo no banco
+        isExisting: true, // Sempre true agora pois foi salvo no banco
+        // Inicializar campos de pagamento
+        session_paid: false,
+        janta_paid: false
       };
 
       setCurrentSession({
@@ -878,6 +883,7 @@ export default function CurrentSessionPage() {
                       Buy-in total: R$ {player.totalBuyin} • Janta: R$ {player.janta}
                     </p>
                   </div>
+                  
                   <div className="w-32">
                     <Label>Cash-out</Label>
                     <Input
@@ -887,6 +893,37 @@ export default function CurrentSessionPage() {
                       onChange={(e) => updatePlayerField(player.id, 'cashout', Number(e.target.value) || 0)}
                     />
                   </div>
+
+                  {/* Checkboxes de Pagamento */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id={`session_paid_${player.id}`}
+                        checked={player.session_paid || false}
+                        onChange={(e) => updatePlayerField(player.id, 'session_paid', e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                      <label htmlFor={`session_paid_${player.id}`} className="text-sm flex items-center gap-1">
+                        <CreditCard className="h-3 w-3" />
+                        Sessão
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id={`janta_paid_${player.id}`}
+                        checked={player.janta_paid || false}
+                        onChange={(e) => updatePlayerField(player.id, 'janta_paid', e.target.checked)}
+                        className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                      />
+                      <label htmlFor={`janta_paid_${player.id}`} className="text-sm flex items-center gap-1">
+                        <Utensils className="h-3 w-3" />
+                        Janta
+                      </label>
+                    </div>
+                  </div>
+                  
                   <div className="w-24 text-center">
                     <Label>Resultado</Label>
                     <div className={`text-sm font-medium ${
@@ -1122,10 +1159,98 @@ export default function CurrentSessionPage() {
     );
   }
 
-  return (
-    <>
-      {/* Etapa 1: Criar sessão (definir local e data) */}
-      {step === 'create' && (
+  // Renderizar conteúdo principal baseado na etapa
+  let mainContent = null;
+
+  if (step === 'create') {
+    mainContent = (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Nova Sessão</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Configure os dados básicos para iniciar uma nova partida
+          </p>
+        </div>
+
+        {error && (
+          <Card className="border-destructive/50 bg-destructive/5">
+            <CardContent className="pt-6">
+              <p className="text-sm text-destructive">{error}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Dados da sessão</CardTitle>
+            <CardDescription>
+              Defina onde e quando será realizada a partida
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="date">Data</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={currentSession?.date}
+                  onChange={(e) => setCurrentSession({...currentSession!, date: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="location">Local *</Label>
+                <Input
+                  id="location"
+                  placeholder="Ex: Clube do João, Casa do Pedro..."
+                  value={currentSession?.location}
+                  onChange={(e) => setCurrentSession({...currentSession!, location: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="buyin">Buy-in padrão (R$)</Label>
+              <Input
+                id="buyin"
+                type="number"
+                value={defaultBuyin}
+                onChange={(e) => setDefaultBuyin(Number(e.target.value) || 50)}
+                min="1"
+              />
+              <p className="text-sm text-muted-foreground">
+                Valor inicial que cada jogador pagará ao entrar na mesa
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button 
+                onClick={() => startSession(currentSession?.location || '')}
+                disabled={!currentSession?.location?.trim() || loading}
+                className="flex-1"
+              >
+                {loading ? (
+                  <LoadingSpinner size="sm" className="mr-2" />
+                ) : (
+                  <Play className="mr-2 h-4 w-4" />
+                )}
+                Iniciar Sessão
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setCurrentSession(null)}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  } 
+  // Todas as outras etapas continuam normalmente...
+  else if (step === 'players') {
+    mainContent = (
         <div className="space-y-8">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight">Nova Sessão</h1>
@@ -1422,7 +1547,5 @@ export default function CurrentSessionPage() {
       </Modal>
     </>
   );
-
-  return null;
 }
 
