@@ -617,68 +617,43 @@ export default function CurrentSessionPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar jogador existente..."
-                    value={searchPlayer}
-                    onChange={(e) => setSearchPlayer(e.target.value)}
-                    onKeyPress={(e) => handleKeyPress(e, () => {
-                      if (searchPlayer.trim() && filteredExistingPlayers.length === 0) {
-                        addPlayerToSession(searchPlayer.trim(), false);
-                      } else if (filteredExistingPlayers.length > 0) {
-                        addPlayerToSession(filteredExistingPlayers[0], true);
-                      }
-                    })}
-                    className="pl-10"
-                  />
-                </div>
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    console.log('Clicou em Novo - abrindo modal');
-                    addPlayerModal.open();
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Novo
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    console.log('Clicou em Lista - abrindo modal');
-                    playersListModal.open();
-                  }}
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Lista
-                </Button>
-              </div>
-            ) : (
-              <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Nome do novo jogador"
-                  value={newPlayerName}
-                  onChange={(e) => setNewPlayerName(e.target.value)}
+                  placeholder="Buscar jogador existente..."
+                  value={searchPlayer}
+                  onChange={(e) => setSearchPlayer(e.target.value)}
                   onKeyPress={(e) => handleKeyPress(e, () => {
-                    if (newPlayerName.trim()) {
-                      addPlayerToSession(newPlayerName.trim(), false);
+                    if (searchPlayer.trim() && filteredExistingPlayers.length === 0) {
+                      addPlayerToSession(searchPlayer.trim(), false);
+                    } else if (filteredExistingPlayers.length > 0) {
+                      addPlayerToSession(filteredExistingPlayers[0], true);
                     }
                   })}
+                  className="pl-10"
                 />
-                <Button 
-                  onClick={() => addPlayerToSession(newPlayerName, false)}
-                  disabled={!newPlayerName.trim()}
-                >
-                  Adicionar
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => addPlayerModal.close()}
-                >
-                  Cancelar
-                </Button>
               </div>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  console.log('Clicou em Novo - abrindo modal');
+                  addPlayerModal.open();
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Novo
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  console.log('Clicou em Lista - abrindo modal');
+                  playersListModal.open();
+                }}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Lista
+              </Button>
+            </div>
 
             {/* Lista de jogadores existentes */}
             {searchPlayer && filteredExistingPlayers.length > 0 && (
