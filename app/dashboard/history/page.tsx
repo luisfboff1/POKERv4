@@ -19,6 +19,7 @@ import {
   XCircle,
   Eye
 } from 'lucide-react';
+import { Modal, ModalContent, useModal, useConfirmModal } from '@/components/ui/modal';
 
 interface SessionFilters {
   search: string;
@@ -40,6 +41,8 @@ export default function HistoryPage() {
     dateTo: ''
   });
   const [selectedSession, setSelectedSession] = useState<any>(null);
+  const sessionDetailsModal = useModal();
+  const { confirm, ConfirmModalComponent } = useConfirmModal();
 
   // Filtrar sessões
   const filteredSessions = sessions.filter(session => {
@@ -58,36 +61,38 @@ export default function HistoryPage() {
     return true;
   });
 
-  const handleDeleteSession = (id: number) => {
-    if (window.confirm('Tem certeza que deseja excluir esta sessão?')) {
-      // Usar startTransition para tornar a operação não-bloqueante
-      startTransition(() => {
-        // Usar setTimeout(0) para executar na próxima iteração do event loop
-        setTimeout(async () => {
+  const handleDeleteSession = async (id: number) => {
+    confirm({
+      title: 'Excluir sessão',
+      message: 'Tem certeza que deseja excluir esta sessão? Esta ação não pode ser desfeita.',
+      confirmText: 'Excluir',
+      variant: 'destructive',
+      onConfirm: () => {
+        startTransition(async () => {
           try {
             await deleteSession(id);
+            // Recarregar a lista de sessões após exclusão bem-sucedida
+            await refetch();
           } catch (err) {
-            // Exibir erro após a operação async
-            setTimeout(() => {
-              alert('Erro ao excluir sessão');
-            }, 0);
+            // TODO: Substituir alert por toast ou modal de erro
+            alert('Erro ao excluir sessão');
+            console.error('Erro ao excluir:', err);
           }
-        }, 0);
-      });
-    }
+        });
+      }
+    });
   };
 
-  const handleApproveSession = (id: number) => {
-    startTransition(() => {
-      setTimeout(async () => {
-        try {
-          await approveSession(id);
-        } catch (err) {
-          setTimeout(() => {
-            alert('Erro ao aprovar sessão');
-          }, 0);
-        }
-      }, 0);
+  const handleApproveSession = async (id: number) => {
+    startTransition(async () => {
+      try {
+        await approveSession(id);
+        // Recarregar a lista de sessões após aprovação bem-sucedida
+        await refetch();
+      } catch (err) {
+        alert('Erro ao aprovar sessão');
+        console.error('Erro ao aprovar:', err);
+      }
     });
   };
 
@@ -263,7 +268,10 @@ export default function HistoryPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => setSelectedSession(session)}
+                            onClick={() => {
+                              setSelectedSession(session);
+                              sessionDetailsModal.open();
+                            }}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -312,26 +320,20 @@ export default function HistoryPage() {
         </CardContent>
       </Card>
 
-      {/* Detalhes da Sessão (Modal) */}
-      {selectedSession && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <Card className="max-w-2xl w-full max-h-[90vh] overflow-auto">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Detalhes da Sessão</CardTitle>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setSelectedSession(null)}
-                >
-                  <XCircle className="h-4 w-4" />
-                </Button>
-              </div>
-              <CardDescription>
-                {selectedSession.location} - {new Date(selectedSession.date).toLocaleDateString('pt-BR')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+      {/* Modal de Detalhes da Sessão */}
+      <Modal 
+        isOpen={sessionDetailsModal.isOpen}
+        onClose={() => {
+          sessionDetailsModal.close();
+          setSelectedSession(null);
+        }}
+        title="Detalhes da Sessão"
+        description={selectedSession ? `${selectedSession.location} - ${new Date(selectedSession.date).toLocaleDateString('pt-BR')}` : ''}
+        size="lg"
+      >
+        <ModalContent>
+          {selectedSession && (
+            <div className="space-y-6">
               {/* Jogadores */}
               {selectedSession.players_data && (
                 <div>
@@ -371,10 +373,13 @@ export default function HistoryPage() {
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            </div>
+          )}
+        </ModalContent>
+      </Modal>
+
+      {/* Modal de Confirmação */}
+      {ConfirmModalComponent}
     </div>
   );
 }

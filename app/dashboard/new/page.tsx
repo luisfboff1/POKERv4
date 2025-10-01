@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { Modal, ModalContent, ModalFooter, useModal } from '@/components/ui/modal';
 import { useSessions, usePlayers } from '@/hooks/useApi';
 import { 
   Play, 
@@ -38,8 +39,7 @@ export default function CurrentSessionPage() {
   
   // Controles de interface
   const [searchPlayer, setSearchPlayer] = useState('');
-  const [showAddPlayer, setShowAddPlayer] = useState(false);
-  const [showAllPlayers, setShowAllPlayers] = useState(false);
+  // Estados dos modais removidos - agora usando hooks useModal
   const [newPlayerName, setNewPlayerName] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
   const [defaultBuyin, setDefaultBuyin] = useState(50);
@@ -48,7 +48,9 @@ export default function CurrentSessionPage() {
   const [recommendations, setRecommendations] = useState<TransferRecommendation[]>([]);
   const [manualAdjustments, setManualAdjustments] = useState<any[]>([]);
   const [manualSuggestions, setManualSuggestions] = useState<TransferRecommendation[]>([]);
-  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+  const suggestionModal = useModal();
+  const playersListModal = useModal();
+  const addPlayerModal = useModal();
   const [suggestionForm, setSuggestionForm] = useState({
     from: '',
     to: '',
@@ -233,7 +235,7 @@ export default function CurrentSessionPage() {
       // Limpar formulários
       setSearchPlayer('');
       setNewPlayerName('');
-      setShowAddPlayer(false);
+      addPlayerModal.close();
       setError('');
       
     } catch (err: any) {
@@ -372,7 +374,7 @@ export default function CurrentSessionPage() {
     
     setManualSuggestions([...manualSuggestions, newSuggestion]);
     setSuggestionForm({ from: '', to: '', amount: '' });
-    setShowSuggestionModal(false);
+    suggestionModal.close();
     setError('');
     
     // Recalcular automaticamente
@@ -591,7 +593,7 @@ export default function CurrentSessionPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {!showAddPlayer ? (
+            {!addPlayerModal.isOpen ? (
               <div className="flex gap-2">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -611,14 +613,14 @@ export default function CurrentSessionPage() {
                 </div>
                 <Button 
                   variant="outline"
-                  onClick={() => setShowAddPlayer(true)}
+                  onClick={() => addPlayerModal.open()}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Novo
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={() => setShowAllPlayers(true)}
+                  onClick={() => playersListModal.open()}
                 >
                   <Users className="h-4 w-4 mr-2" />
                   Lista
@@ -644,7 +646,7 @@ export default function CurrentSessionPage() {
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={() => setShowAddPlayer(false)}
+                  onClick={() => addPlayerModal.close()}
                 >
                   Cancelar
                 </Button>
@@ -721,71 +723,7 @@ export default function CurrentSessionPage() {
           </CardContent>
         </Card>
 
-        {/* Modal Lista Completa de Jogadores */}
-        {showAllPlayers && (
-          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-            <Card className="w-full max-w-md max-h-[80vh] overflow-hidden bg-white dark:bg-gray-900 border shadow-2xl opacity-100 backdrop-blur-none">
-              <CardHeader>
-                <CardTitle>Todos os Jogadores</CardTitle>
-                <CardDescription>
-                  Selecione um jogador da lista
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="overflow-y-auto max-h-[60vh]">
-                <div className="space-y-2">
-                  {existingPlayers.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Users className="mx-auto h-12 w-12 mb-3 opacity-50" />
-                      <p>Nenhum jogador cadastrado</p>
-                    </div>
-                  ) : (
-                    existingPlayers.map(player => {
-                      const isInSession = currentSession.players.some(p => 
-                        p.name.toLowerCase() === player.name.toLowerCase()
-                      );
-                      
-                      return (
-                        <button
-                          key={player.id}
-                          onClick={() => {
-                            if (!isInSession) {
-                              addPlayerToSession(player, true);
-                              setShowAllPlayers(false);
-                            }
-                          }}
-                          disabled={isInSession}
-                          className={`w-full text-left p-3 rounded border hover:bg-muted text-sm transition-colors ${
-                            isInSession 
-                              ? 'opacity-50 cursor-not-allowed bg-muted/30' 
-                              : 'hover:border-primary/50'
-                          }`}
-                        >
-                          <div className="font-medium">{player.name}</div>
-                          {player.email && (
-                            <div className="text-muted-foreground text-xs">{player.email}</div>
-                          )}
-                          {isInSession && (
-                            <div className="text-primary text-xs mt-1">● Já na mesa</div>
-                          )}
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-                
-                <div className="flex gap-2 pt-4 border-t mt-4">
-                  <Button 
-                    variant="outline"
-                    onClick={() => setShowAllPlayers(false)}
-                    className="flex-1"
-                  >
-                    Fechar
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        {/* Modal Lista Completa de Jogadores será adicionado no final */}
       </div>
     );
   }
@@ -838,7 +776,7 @@ export default function CurrentSessionPage() {
               <Button 
                 size="sm" 
                 className="w-full"
-                onClick={() => setShowAddPlayer(true)}
+                onClick={() => addPlayerModal.open()}
               >
                 <Plus className="h-4 w-4 mr-1" />
                 Jogador
@@ -905,63 +843,7 @@ export default function CurrentSessionPage() {
           </CardContent>
         </Card>
 
-        {/* Modal Adicionar Jogador Durante Jogo */}
-        {showAddPlayer && (
-          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-            <Card className="w-full max-w-md bg-white dark:bg-gray-900 border shadow-2xl opacity-100 backdrop-blur-none">
-              <CardHeader>
-                <CardTitle>Adicionar Jogador</CardTitle>
-                <CardDescription>
-                  Novo jogador chegou durante o jogo
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar ou digitar nome..."
-                    value={searchPlayer}
-                    onChange={(e) => setSearchPlayer(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                
-                {searchPlayer && filteredExistingPlayers.length > 0 && (
-                  <div className="border rounded-lg p-2 bg-muted/30 max-h-32 overflow-y-auto">
-                    {filteredExistingPlayers.slice(0, 3).map(player => (
-                      <button
-                        key={player?.id}
-                        onClick={() => addPlayerToSession(player, true)}
-                        className="w-full text-left p-2 rounded hover:bg-muted text-sm"
-                      >
-                        {player?.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={() => addPlayerToSession(searchPlayer, false)}
-                    disabled={!searchPlayer.trim()}
-                    className="flex-1"
-                  >
-                    Adicionar "{searchPlayer}"
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={() => {
-                      setShowAddPlayer(false);
-                      setSearchPlayer('');
-                    }}
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        {/* Modal Adicionar Jogador será adicionado no final */}
       </div>
     );
   }
@@ -1085,7 +967,7 @@ export default function CurrentSessionPage() {
                 </CardDescription>
               </div>
               <Button 
-                onClick={() => setShowSuggestionModal(true)}
+                onClick={() => suggestionModal.open()}
                 size="sm"
                 variant="outline"
               >
@@ -1238,115 +1120,291 @@ export default function CurrentSessionPage() {
     );
   }
 
-  // Modal de Sugestão Manual (disponível em todas as etapas)
-  if (showSuggestionModal && currentSession) {
-    return (
-      <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-white dark:bg-gray-900 border shadow-2xl opacity-100 backdrop-blur-none">
-          <CardHeader>
-            <CardTitle>Sugerir Pagamento</CardTitle>
-            <CardDescription>
-              Configure um pagamento específico entre jogadores
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {error && (
-              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded text-destructive text-sm">
-                {error}
+  return (
+    <>
+      {/* Etapa 1: Criar sessão (definir local e data) */}
+      {step === 'create' && (
+        <div className="space-y-8">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">Nova Sessão</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Configure os dados básicos para iniciar uma nova partida
+            </p>
+          </div>
+
+          {error && (
+            <Card className="border-destructive/50 bg-destructive/5">
+              <CardContent className="pt-6">
+                <p className="text-sm text-destructive">{error}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Dados da sessão</CardTitle>
+              <CardDescription>
+                Defina onde e quando será realizada a partida
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date">Data</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={currentSession?.date}
+                    onChange={(e) => setCurrentSession({...currentSession!, date: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="location">Local *</Label>
+                  <Input
+                    id="location"
+                    placeholder="Ex: Clube do João, Casa do Pedro..."
+                    value={currentSession?.location}
+                    onChange={(e) => setCurrentSession({...currentSession!, location: e.target.value})}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex gap-4">
+            <Button 
+              onClick={createNewSession}
+              disabled={loading || !currentSession?.location}
+              className="flex-1 md:flex-none"
+            >
+              {loading && <LoadingSpinner size="sm" className="mr-2" />}
+              Criar Sessão
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* TODO: Adicionar outras etapas aqui */}
+
+      {/* Modal Lista Completa de Jogadores */}
+      <Modal 
+        isOpen={playersListModal.isOpen}
+        onClose={playersListModal.close}
+        title="Todos os Jogadores"
+        description="Selecione um jogador da lista"
+        size="md"
+      >
+        <ModalContent>
+          <div className="space-y-2">
+            {existingPlayers.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="mx-auto h-12 w-12 mb-3 opacity-50" />
+                <p>Nenhum jogador cadastrado</p>
+              </div>
+            ) : (
+              existingPlayers.map(player => {
+                const isInSession = currentSession?.players.some(p => 
+                  p.name.toLowerCase() === player.name.toLowerCase()
+                );
+                
+                return (
+                  <button
+                    key={player.id}
+                    onClick={() => {
+                      if (!isInSession) {
+                        addPlayerToSession(player, true);
+                        playersListModal.close();
+                      }
+                    }}
+                    disabled={isInSession}
+                    className={`w-full text-left p-3 rounded border hover:bg-muted text-sm transition-colors ${
+                      isInSession 
+                        ? 'opacity-50 cursor-not-allowed bg-muted/30' 
+                        : 'hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="font-medium">{player.name}</div>
+                    {player.email && (
+                      <div className="text-muted-foreground text-xs">{player.email}</div>
+                    )}
+                    {isInSession && (
+                      <div className="text-primary text-xs mt-1">● Já na mesa</div>
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </ModalContent>
+      </Modal>
+
+      {/* Modal Adicionar Jogador Durante Jogo */}
+      <Modal 
+        isOpen={addPlayerModal.isOpen}
+        onClose={() => {
+          addPlayerModal.close();
+          setSearchPlayer('');
+        }}
+        title="Adicionar Jogador"
+        description="Novo jogador chegou durante o jogo"
+        size="md"
+      >
+        <ModalContent>
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar ou digitar nome..."
+                value={searchPlayer}
+                onChange={(e) => setSearchPlayer(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            {searchPlayer && filteredExistingPlayers.length > 0 && (
+              <div className="border rounded-lg p-2 bg-muted/30 max-h-32 overflow-y-auto">
+                {filteredExistingPlayers.slice(0, 3).map(player => (
+                  <button
+                    key={player?.id}
+                    onClick={() => addPlayerToSession(player, true)}
+                    className="w-full text-left p-2 rounded hover:bg-muted text-sm"
+                  >
+                    {player?.name}
+                  </button>
+                ))}
               </div>
             )}
             
-            <div className="grid grid-cols-1 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="from">Quem paga</Label>
-                <select
-                  id="from"
-                  value={suggestionForm.from}
-                  onChange={(e) => setSuggestionForm({...suggestionForm, from: e.target.value})}
-                  className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
-                >
-                  <option value="">Selecione o pagador</option>
-                  {currentSession.players.map(player => (
-                    <option key={player.id} value={player.name}>
-                      {player.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex justify-center">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSuggestionForm({
-                      from: suggestionForm.to,
-                      to: suggestionForm.from,
-                      amount: suggestionForm.amount
-                    });
-                  }}
-                  disabled={!suggestionForm.from && !suggestionForm.to}
-                >
-                  ↕ Trocar
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="to">Quem recebe</Label>
-                <select
-                  id="to"
-                  value={suggestionForm.to}
-                  onChange={(e) => setSuggestionForm({...suggestionForm, to: e.target.value})}
-                  className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
-                >
-                  <option value="">Selecione o recebedor</option>
-                  {currentSession.players.map(player => (
-                    <option key={player.id} value={player.name}>
-                      {player.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="amount">Valor (R$)</Label>
-              <Input
-                id="amount"
-                type="number"
-                placeholder="0.00"
-                min="0.01"
-                step="0.01"
-                value={suggestionForm.amount}
-                onChange={(e) => setSuggestionForm({...suggestionForm, amount: e.target.value})}
-              />
-            </div>
-
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-2">
               <Button 
-                onClick={addManualSuggestion}
-                disabled={!suggestionForm.from || !suggestionForm.to || !suggestionForm.amount}
+                onClick={() => addPlayerToSession(searchPlayer, false)}
+                disabled={!searchPlayer.trim()}
                 className="flex-1"
               >
-                Adicionar Sugestão
+                Adicionar "{searchPlayer}"
               </Button>
               <Button 
                 variant="outline"
                 onClick={() => {
-                  setShowSuggestionModal(false);
-                  setSuggestionForm({ from: '', to: '', amount: '' });
-                  setError('');
+                  addPlayerModal.close();
+                  setSearchPlayer('');
                 }}
               >
                 Cancelar
               </Button>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+          </div>
+        </ModalContent>
+      </Modal>
+
+      {/* Modal de Sugestão Manual */}
+      <Modal 
+        isOpen={suggestionModal.isOpen} 
+        onClose={() => {
+          suggestionModal.close();
+          setSuggestionForm({ from: '', to: '', amount: '' });
+          setError('');
+        }}
+        title="Sugerir Pagamento"
+        description="Configure um pagamento específico entre jogadores"
+        size="md"
+      >
+        <ModalContent>
+          {error && (
+            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded text-destructive text-sm mb-4">
+              {error}
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="from">Quem paga</Label>
+              <select
+                id="from"
+                value={suggestionForm.from}
+                onChange={(e) => setSuggestionForm({...suggestionForm, from: e.target.value})}
+                className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+              >
+                <option value="">Selecione o pagador</option>
+                {currentSession?.players.map(player => (
+                  <option key={player.id} value={player.name}>
+                    {player.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSuggestionForm({
+                    from: suggestionForm.to,
+                    to: suggestionForm.from,
+                    amount: suggestionForm.amount
+                  });
+                }}
+                disabled={!suggestionForm.from && !suggestionForm.to}
+              >
+                ↕ Trocar
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="to">Quem recebe</Label>
+              <select
+                id="to"
+                value={suggestionForm.to}
+                onChange={(e) => setSuggestionForm({...suggestionForm, to: e.target.value})}
+                className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+              >
+                <option value="">Selecione o recebedor</option>
+                {currentSession?.players.map(player => (
+                  <option key={player.id} value={player.name}>
+                    {player.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="amount">Valor (R$)</Label>
+            <Input
+              id="amount"
+              type="number"
+              placeholder="0.00"
+              min="0.01"
+              step="0.01"
+              value={suggestionForm.amount}
+              onChange={(e) => setSuggestionForm({...suggestionForm, amount: e.target.value})}
+            />
+          </div>
+        </ModalContent>
+        
+        <ModalFooter>
+          <Button 
+            variant="outline"
+            onClick={() => {
+              suggestionModal.close();
+              setSuggestionForm({ from: '', to: '', amount: '' });
+              setError('');
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={addManualSuggestion}
+            disabled={!suggestionForm.from || !suggestionForm.to || !suggestionForm.amount}
+          >
+            Adicionar Sugestão
+          </Button>
+        </ModalFooter>
+      </Modal>
+    </>
+  );
 
   return null;
 }

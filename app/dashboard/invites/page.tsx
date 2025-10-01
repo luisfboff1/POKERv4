@@ -18,10 +18,12 @@ import {
   XCircle,
   AlertTriangle 
 } from 'lucide-react';
+import { useConfirmModal } from '@/components/ui/modal';
 
 export default function InvitesPage() {
   const { invites, loading, error, createInvite, deleteInvite } = useInvites();
   const [showForm, setShowForm] = useState(false);
+  const { confirm, ConfirmModalComponent } = useConfirmModal();
   const [formData, setFormData] = useState({
     email: '',
     role: 'player'
@@ -57,13 +59,20 @@ export default function InvitesPage() {
   };
 
   const handleDeleteInvite = async (id: number) => {
-    if (window.confirm('Tem certeza que deseja excluir este convite?')) {
-      try {
-        await deleteInvite(id);
-      } catch (err) {
-        alert('Erro ao excluir convite');
+    confirm({
+      title: 'Excluir convite',
+      message: 'Tem certeza que deseja excluir este convite? Esta ação não pode ser desfeita.',
+      confirmText: 'Excluir',
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          await deleteInvite(id);
+        } catch (err) {
+          // TODO: Substituir alert por toast ou modal de erro
+          alert('Erro ao excluir convite');
+        }
       }
-    }
+    });
   };
 
   const getStatusIcon = (status: string) => {
@@ -332,6 +341,9 @@ export default function InvitesPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de Confirmação */}
+      {ConfirmModalComponent}
     </div>
   );
 }
