@@ -51,6 +51,9 @@ try {
                 $stmt = $pdo->prepare("DELETE FROM sessions WHERE id = ? AND tenant_id = ?");
                 $stmt->execute([$id, $tenant_id]);
                 
+                // Atualizar estatísticas dos jogadores após exclusão
+                updatePlayersStats($pdo, $tenant_id);
+                
                 // Log da ação
                 AuthMiddleware::logAction($pdo, 'delete_session', 'sessions', $id, $existing_session, null);
                 
@@ -74,6 +77,9 @@ try {
             ]);
             
             $session_id = $pdo->lastInsertId();
+            
+            // Atualizar estatísticas dos jogadores
+            updatePlayersStats($pdo, $tenant_id);
             
             // Log da ação
             AuthMiddleware::logAction($pdo, 'create_session', 'sessions', $session_id, null, $input);
@@ -109,6 +115,9 @@ try {
                 $tenant_id
             ]);
             
+            // Atualizar estatísticas dos jogadores
+            updatePlayersStats($pdo, $tenant_id);
+            
             // Log da ação
             AuthMiddleware::logAction($pdo, 'update_session', 'sessions', $id, $existing_session, $input);
             
@@ -132,6 +141,9 @@ try {
             $stmt = $pdo->prepare("DELETE FROM sessions WHERE id = ? AND tenant_id = ?");
             $stmt->execute([$id, $tenant_id]);
             
+            // Atualizar estatísticas dos jogadores após exclusão
+            updatePlayersStats($pdo, $tenant_id);
+            
             // Log da ação
             AuthMiddleware::logAction($pdo, 'delete_session', 'sessions', $id, $existing_session, null);
             
@@ -143,5 +155,77 @@ try {
     }
 } catch (Exception $e) {
     error('Server error');
+}
+
+/**
+ * Função para atualizar estatísticas dos jogadores na tabela players
+ * com base nos dados das sessões
+ */
+function updatePlayersStats($pdo, $tenant_id) {
+    try {
+        // Calcular estatísticas agregadas de todos os jogadores
+        $stmt = $pdo->prepare("
+            SELECT 
+                JSON_UNQUOTE(JSON_EXTRACT(pd.value, '$.name')) as player_name,
+                COUNT(*) as total_sessions,
+                SUM(CAST(JSON_UNQUOTE(JSON_EXTRACT(pd.value, '$.buyin')) AS DECIMAL(10,2))) as total_buyin,
+                SUM(CAST(JSON_UNQUOTE(JSON_EXTRACT(pd.value, '$.cashout')) AS DECIMAL(10,2))) as total_cashout
+            FROM sessions s
+            CROSS JOIN JSON_TABLE(
+                s.players_data,
+                '$[*]' COLUMNS (
+                    value JSON PATH '$'
+                )
+            ) pd
+            WHERE s.tenant_id = ?
+            AND JSON_UNQUOTE(JSON_EXTRACT(pd.value, '$.name')) IS NOT NULL
+            AND JSON_UNQUOTE(JSON_EXTRACT(pd.value, '$.name')) != ''
+            GROUP BY JSON_UNQUOTE(JSON_EXTRACT(pd.value, '$.name'))
+        ");
+        
+        $stmt->execute([$tenant_id]);
+        $stats = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Para cada jogador, fazer upsert na tabela players
+        foreach ($stats as $stat) {
+            $name = $stat['player_name'];
+            $name_normalized = strtolower($name);
+            $name_normalized = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name_normalized);
+            $name_normalized = preg_replace('/[^a-z0-9 ]/', '', $name_normalized);
+            $name_normalized = trim($name_normalized);
+            
+            $updateStmt = $pdo->prepare("
+                INSERT INTO players (
+                    tenant_id, 
+                    name, 
+                    name_normalized, 
+                    total_sessions, 
+                    total_buyin, 
+                    total_cashout,
+                    status
+                ) VALUES (?, ?, ?, ?, ?, ?, 'active')
+                ON DUPLICATE KEY UPDATE
+                    total_sessions = VALUES(total_sessions),
+                    total_buyin = VALUES(total_buyin),
+                    total_cashout = VALUES(total_cashout),
+                    status = 'active',
+                    updated_at = CURRENT_TIMESTAMP
+            ");
+            
+            $updateStmt->execute([
+                $tenant_id,
+                $name,
+                $name_normalized,
+                intval($stat['total_sessions']),
+                floatval($stat['total_buyin'] ?? 0),
+                floatval($stat['total_cashout'] ?? 0)
+            ]);
+        }
+        
+        return true;
+    } catch (Exception $e) {
+        error_log("Erro ao atualizar estatísticas dos jogadores: " . $e->getMessage());
+        return false;
+    }
 }
 ?>

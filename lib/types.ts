@@ -30,13 +30,17 @@ export interface RegisterData {
 // ===== PLAYER =====
 export interface Player {
   id: number;
-  user_id: number;
+  user_id?: number; // Opcional pois jogadores podem não ter usuário
   name: string;
-  email: string;
-  role: string;
+  email?: string;
+  role?: string;
   status: 'active' | 'inactive';
   team_id: number;
   team_name?: string;
+  // Campos estatísticos da nova tabela players
+  total_sessions?: number;
+  total_buyin?: number;
+  total_cashout?: number;
 }
 
 // ===== SESSION =====

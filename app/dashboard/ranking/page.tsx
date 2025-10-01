@@ -4,11 +4,17 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { LoadingState, EmptyState, ErrorState } from '@/components/ui/loading';
-import { useSessions } from '@/hooks/useApi';
-import { Trophy, Medal, Award, TrendingUp, TrendingDown } from 'lucide-react';
+import { usePlayers, useSessions } from '@/hooks/useApi';
+import { Trophy, Medal, Award, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
+import { Player } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { api } from '@/lib/api';
+import { useState } from 'react';
 
 interface PlayerStats {
+  id: number;
   name: string;
+  email: string;
   sessionsPlayed: number;
   totalBuyin: number;
   totalCashout: number;
@@ -20,64 +26,90 @@ interface PlayerStats {
 }
 
 export default function RankingPage() {
-  const { sessions, loading, error } = useSessions();
+  const { players, loading: playersLoading, error: playersError, refetch: refetchPlayers } = usePlayers();
+  const { sessions, loading: sessionsLoading } = useSessions();
+  const [syncingStats, setSyncingStats] = useState(false);
 
-  // Calcular estatísticas dos jogadores
+  // Combinar dados dos jogadores da tabela com estatísticas calculadas das sessões
   const playerStats = useMemo(() => {
+    if (!players.length) return [];
+
     const stats = new Map<string, PlayerStats>();
 
-    sessions.forEach(session => {
-      if (!session.players_data || !Array.isArray(session.players_data)) return;
-
-      session.players_data.forEach((player: any) => {
-        if (!player.name) return;
-
-        const existing = stats.get(player.name) || {
-          name: player.name,
-          sessionsPlayed: 0,
-          totalBuyin: 0,
-          totalCashout: 0,
-          profit: 0,
-          profitPerSession: 0,
-          winRate: 0,
-          biggestWin: 0,
-          biggestLoss: 0
-        };
-
-        const sessionProfit = (player.cashout || 0) - (player.buyin || 0);
-        
-        existing.sessionsPlayed++;
-        existing.totalBuyin += player.buyin || 0;
-        existing.totalCashout += player.cashout || 0;
-        existing.profit += sessionProfit;
-        
-        if (sessionProfit > existing.biggestWin) {
-          existing.biggestWin = sessionProfit;
-        }
-        
-        if (sessionProfit < existing.biggestLoss) {
-          existing.biggestLoss = sessionProfit;
-        }
-
-        stats.set(player.name, existing);
+    // Primeiro, criar estatísticas base dos jogadores cadastrados
+    players.forEach(player => {
+      const profit = (player.total_cashout || 0) - (player.total_buyin || 0);
+      
+      stats.set(player.name, {
+        id: player.id,
+        name: player.name,
+        email: player.email || '',
+        sessionsPlayed: player.total_sessions || 0,
+        totalBuyin: player.total_buyin || 0,
+        totalCashout: player.total_cashout || 0,
+        profit,
+        profitPerSession: (player.total_sessions || 0) > 0 ? profit / (player.total_sessions || 0) : 0,
+        winRate: 0, // Será calculado com base nas sessões
+        biggestWin: 0, // Será calculado com base nas sessões
+        biggestLoss: 0, // Será calculado com base nas sessões
       });
     });
 
-    // Calcular métricas finais
-    const result = Array.from(stats.values()).map(player => ({
-      ...player,
-      profitPerSession: player.sessionsPlayed > 0 ? player.profit / player.sessionsPlayed : 0,
-      winRate: player.sessionsPlayed > 0 ? 
-        (sessions.filter(s => 
-          s.players_data?.find((p: any) => 
-            p.name === player.name && (p.cashout - p.buyin) > 0
+    // Depois, calcular métricas adicionais baseadas nas sessões (winRate, biggestWin, biggestLoss)
+    if (sessions.length > 0) {
+      sessions.forEach(session => {
+        if (!session.players_data || !Array.isArray(session.players_data)) return;
+
+        session.players_data.forEach((sessionPlayer: any) => {
+          if (!sessionPlayer.name) return;
+
+          const playerStat = stats.get(sessionPlayer.name);
+          if (!playerStat) return; // Só processa jogadores que estão na tabela
+
+          const sessionProfit = (sessionPlayer.cashout || 0) - (sessionPlayer.buyin || 0);
+          
+          // Atualizar maior ganho e maior perda
+          if (sessionProfit > playerStat.biggestWin) {
+            playerStat.biggestWin = sessionProfit;
+          }
+          
+          if (sessionProfit < playerStat.biggestLoss) {
+            playerStat.biggestLoss = sessionProfit;
+          }
+        });
+      });
+
+      // Calcular taxa de vitória
+      stats.forEach((playerStat, playerName) => {
+        const winSessions = sessions.filter(session => 
+          session.players_data?.find((p: any) => 
+            p.name === playerName && (p.cashout - p.buyin) > 0
           )
-        ).length / player.sessionsPlayed) * 100 : 0
-    }));
+        ).length;
+        
+        playerStat.winRate = playerStat.sessionsPlayed > 0 ? 
+          (winSessions / playerStat.sessionsPlayed) * 100 : 0;
+      });
+    }
 
     // Ordenar por lucro total
-    return result.sort((a, b) => b.profit - a.profit);
-  }, [sessions]);
+    return Array.from(stats.values()).sort((a, b) => b.profit - a.profit);
+  }, [players, sessions]);
+
+  const loading = playersLoading || sessionsLoading;
+  const error = playersError;
+
+  const handleSyncStats = async () => {
+    try {
+      setSyncingStats(true);
+      await api.players.syncStats();
+      await refetchPlayers(); // Recarregar dados após sincronização
+    } catch (error) {
+      console.error('Erro ao sincronizar estatísticas:', error);
+    } finally {
+      setSyncingStats(false);
+    }
+  };
 
   const getRankIcon = (position: number) => {
     switch (position) {
@@ -120,8 +152,8 @@ export default function RankingPage() {
         <Card>
           <CardContent className="pt-6">
             <EmptyState 
-              title="Nenhum ranking disponível"
-              description="Assim que novas sessões forem criadas, os rankings serão calculados automaticamente."
+              title="Nenhum jogador cadastrado"
+              description="Os jogadores são automaticamente cadastrados quando participam de sessões. Crie sua primeira sessão para começar a ver os rankings."
               icon={Trophy}
             />
           </CardContent>
@@ -132,11 +164,22 @@ export default function RankingPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Ranking de jogadores</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Performance calculada com base em {sessions.length} sessões registradas
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Ranking de jogadores</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Estatísticas consolidadas de {players.length} jogadores cadastrados com {sessions.length} sessões registradas
+          </p>
+        </div>
+        <Button 
+          onClick={handleSyncStats}
+          disabled={syncingStats}
+          variant="outline"
+          size="sm"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${syncingStats ? 'animate-spin' : ''}`} />
+          {syncingStats ? 'Sincronizando...' : 'Sincronizar'}
+        </Button>
       </div>
 
       {/* Cards de destaque */}

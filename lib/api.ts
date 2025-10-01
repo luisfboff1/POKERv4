@@ -132,6 +132,11 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ action: 'update', id, ...data }),
       }),
+
+    syncStats: () =>
+      fetchAPI('/sync_players_stats.php', {
+        method: 'POST',
+      }),
   },
 
   // ===== INVITES =====

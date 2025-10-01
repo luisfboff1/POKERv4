@@ -187,21 +187,18 @@ export default function CurrentSessionPage() {
       const sessionData = {
         ...currentSession,
         location,
-        status: 'active' as const
+        status: 'players' as const // Apenas local, não salvar ainda no backend
       };
       
-      // Criar sessão no backend
-      await createSession({
-        date: sessionData.date,
-        location: sessionData.location,
-        status: 'pending', // Mapear para status válido da API
-        players_data: sessionData.players
-      });
-
+      // NÃO criar no backend ainda - apenas atualizar estado local
       setCurrentSession(sessionData);
       setStep('players');
+      
+      // Salvar no cache local para não perder dados
+      saveToCache(sessionData);
+      
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao criar sessão');
+      setError(err instanceof Error ? err.message : 'Erro ao iniciar sessão');
     } finally {
       setLoading(false);
     }
@@ -619,8 +616,7 @@ export default function CurrentSessionPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {!addPlayerModal.isOpen ? (
-              <div className="flex gap-2">
+            <div className="flex gap-2">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -639,14 +635,20 @@ export default function CurrentSessionPage() {
                 </div>
                 <Button 
                   variant="outline"
-                  onClick={() => addPlayerModal.open()}
+                  onClick={() => {
+                    console.log('Clicou em Novo - abrindo modal');
+                    addPlayerModal.open();
+                  }}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Novo
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={() => playersListModal.open()}
+                  onClick={() => {
+                    console.log('Clicou em Lista - abrindo modal');
+                    playersListModal.open();
+                  }}
                 >
                   <Users className="h-4 w-4 mr-2" />
                   Lista
@@ -677,7 +679,6 @@ export default function CurrentSessionPage() {
                   Cancelar
                 </Button>
               </div>
-            )}
 
             {/* Lista de jogadores existentes */}
             {searchPlayer && filteredExistingPlayers.length > 0 && (
