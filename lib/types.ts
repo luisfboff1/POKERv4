@@ -53,6 +53,35 @@ export interface Session {
   recommendations?: any[];
 }
 
+// ===== LIVE SESSION (for real-time game management) =====
+export interface LivePlayer {
+  id: string;
+  name: string;
+  email?: string;
+  buyin: number;
+  totalBuyin: number;
+  cashout: number;
+  janta: number;
+  rebuys: number[];
+  isExisting?: boolean; // se é um jogador cadastrado ou novo
+}
+
+export interface LiveSession {
+  id?: number;
+  date: string;
+  location: string;
+  status: 'creating' | 'players' | 'active' | 'cashout' | 'finished';
+  players: LivePlayer[];
+  created_at?: string;
+  finished_at?: string;
+}
+
+export interface TransferRecommendation {
+  from: string;
+  to: string;
+  amount: number;
+}
+
 export interface PlayerBalance {
   player_id: number;
   player_name: string;
