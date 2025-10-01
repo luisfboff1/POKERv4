@@ -31,6 +31,33 @@ try {
             break;
 
         case 'POST':
+            $input = json_decode(file_get_contents('php://input'), true);
+            $action = $input['action'] ?? 'create';
+            
+            if ($action === 'delete') {
+                // Deletar sessão (apenas do próprio tenant)
+                $id = $input['id'] ?? null;
+                if (!$id) error('ID required', 400);
+                
+                // Verificar se a sessão pertence ao tenant atual
+                $checkStmt = $pdo->prepare("SELECT * FROM sessions WHERE id = ? AND tenant_id = ?");
+                $checkStmt->execute([$id, $tenant_id]);
+                $existing_session = $checkStmt->fetch();
+                
+                if (!$existing_session) {
+                    error('Sessão não encontrada ou acesso negado', 404);
+                }
+                
+                $stmt = $pdo->prepare("DELETE FROM sessions WHERE id = ? AND tenant_id = ?");
+                $stmt->execute([$id, $tenant_id]);
+                
+                // Log da ação
+                AuthMiddleware::logAction($pdo, 'delete_session', 'sessions', $id, $existing_session, null);
+                
+                success(['deleted' => true]);
+                break;
+            }
+            
             // Verificar limites do plano antes de criar
             $limits = AuthMiddleware::checkPlanLimits($pdo, 'sessions_monthly');
             if (!$limits['allowed']) {
@@ -38,8 +65,6 @@ try {
             }
             
             // Criar nova sessão
-            $input = json_decode(file_get_contents('php://input'), true);
-            
             $stmt = $pdo->prepare("INSERT INTO sessions (tenant_id, date, players_data, recommendations) VALUES (?, ?, ?, ?)");
             $stmt->execute([
                 $tenant_id,

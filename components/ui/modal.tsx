@@ -51,7 +51,8 @@ export function Modal({
       <div 
         className={`
           relative w-full ${sizeClasses[size]} 
-          bg-white dark:bg-gray-800 
+          bg-white dark:bg-gray-900 
+          border border-gray-200 dark:border-gray-700
           rounded-lg shadow-xl 
           max-h-[90vh] overflow-hidden
           animate-in fade-in-0 zoom-in-95 duration-300
@@ -77,7 +78,7 @@ export function Modal({
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="ml-4 h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="ml-4 h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 <X className="h-4 w-4" />
                 <span className="sr-only">Fechar</span>
@@ -179,7 +180,7 @@ export function ConfirmModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       <ModalContent>
-        <p className="text-sm text-muted-foreground">{message}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{message}</p>
       </ModalContent>
       <ModalFooter>
         <Button variant="outline" onClick={onClose}>
