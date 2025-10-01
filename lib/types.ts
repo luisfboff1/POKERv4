@@ -138,3 +138,11 @@ export interface ApiResponse<T = unknown> {
   error?: string;
 }
 
+// Payload para criação de sessão (lado cliente)
+export interface CreateSessionPayload {
+  date: string;
+  location: string;
+  players_data?: SessionPlayerData[];
+  recommendations?: TransferRecommendation[];
+}
+

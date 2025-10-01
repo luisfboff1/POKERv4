@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { api, ApiError } from '@/lib/api';
-import type { Session, SessionDetail, Player, Invite } from '@/lib/types';
+import type { Session, SessionDetail, Player, Invite, CreateSessionPayload, SessionPlayerData } from '@/lib/types';
 
 // Hook genérico para chamadas de API
 export function useApi<T>(
@@ -41,7 +41,7 @@ export function useSessions() {
     []
   );
 
-  const createSession = async (sessionData: Record<string, any>) => {
+  const createSession = async (sessionData: CreateSessionPayload) => {
     try {
       await api.sessions.create(sessionData);
       await refetch();
@@ -71,7 +71,7 @@ export function useSessions() {
     }
   };
 
-  const updateSessionPayments = async (id: number, playersData: any[]) => {
+  const updateSessionPayments = async (id: number, playersData: Pick<SessionPlayerData,'id'|'name'|'session_paid'|'janta_paid'>[]) => {
     try {
       await api.sessions.updatePayments(id, playersData);
       await refetch();

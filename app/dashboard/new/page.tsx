@@ -94,7 +94,6 @@ export default function CurrentSessionPage() {
       await createSession({
         date: currentSession.date,
         location: currentSession.location,
-        status: 'approved',
         players_data: finalPlayers,
         recommendations
       });
