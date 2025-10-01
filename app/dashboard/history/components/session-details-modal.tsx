@@ -2,7 +2,7 @@ import { Modal, ModalContent } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { PlayerPaymentRow } from './player-payment-row';
 import { LocalSession } from './sessions-table';
-import { useMemo, useState, Dispatch, SetStateAction } from 'react';
+import { useMemo, useState, useRef, Dispatch, SetStateAction } from 'react';
 
 interface PlayerStateSnapshot {
   id: string | number;
@@ -35,23 +35,19 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const originalPlayersState: PlayerStateSnapshot[] = useMemo(() => {
-    if (!session?.players_data) return [];
-    return session.players_data.map((p) => ({
-      id: (p.id ?? p.name) as string | number,
-      session_paid: !!p.session_paid,
-      janta_paid: !!p.janta_paid,
-    }));
-  }, [session?.players_data]);
-
+  // Snapshot somente quando entra em modo edição
+  const originalPlayersRef = useRef<PlayerStateSnapshot[] | null>(null);
   const hasPaymentChanges = useMemo(() => {
+    if (!editing) return false;
     if (!session?.players_data) return false;
+    const snapshot = originalPlayersRef.current;
+    if (!snapshot) return false;
     return session.players_data.some((p) => {
-      const orig = originalPlayersState.find((o: PlayerStateSnapshot) => o.id === (p.id ?? p.name));
-      if (!orig) return true;
+      const orig = snapshot.find((o) => o.id === (p.id ?? p.name));
+      if (!orig) return true; // novo jogador improvável aqui
       return orig.session_paid !== !!p.session_paid || orig.janta_paid !== !!p.janta_paid;
     });
-  }, [session, originalPlayersState]);
+  }, [editing, session?.players_data]);
 
   const updatePlayerPayment = (playerIndex: number, field: 'session_paid' | 'janta_paid', value: boolean) => {
     if (!editing) return;
@@ -95,13 +91,48 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
           <div className="space-y-6">
             <div className="flex justify-end gap-2">
               {!editing && (
-                <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Criar snapshot somente ao entrar em edição
+                    if (session?.players_data) {
+                      originalPlayersRef.current = session.players_data.map((p) => ({
+                        id: (p.id ?? p.name) as string | number,
+                        session_paid: !!p.session_paid,
+                        janta_paid: !!p.janta_paid,
+                      }));
+                    } else {
+                      originalPlayersRef.current = [];
+                    }
+                    setEditing(true);
+                  }}
+                >
                   Editar Pagamentos
                 </Button>
               )}
               {editing && (
                 <>
-                  <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      // Restaurar snapshot se cancelar
+                      if (originalPlayersRef.current && session?.players_data) {
+                        onUpdateSessionPlayers((prev) => {
+                          if (!prev) return prev;
+                          const restored = prev.players_data?.map((p) => {
+                            const snap = originalPlayersRef.current!.find((s) => s.id === (p.id ?? p.name));
+                            if (!snap) return p;
+                            return { ...p, session_paid: snap.session_paid, janta_paid: snap.janta_paid };
+                          });
+                          return { ...prev, players_data: restored };
+                        });
+                      }
+                      setEditing(false);
+                      originalPlayersRef.current = null;
+                    }}
+                  >
                     Cancelar
                   </Button>
                   <Button 
