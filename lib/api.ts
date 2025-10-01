@@ -87,8 +87,8 @@ export const api = {
   // ===== SESSIONS =====
   sessions: {
     list: () => fetchAPI('/session.php?action=list'),
-    
-    get: (id: number) => fetchAPI(`/session.php?action=get&id=${id}`),
+    // GET individual (usa ?id=) agora suportado
+    get: (id: number) => fetchAPI(`/session.php?id=${id}`),
     
     create: (data: Record<string, any>) =>
       fetchAPI('/session.php', {
@@ -100,6 +100,12 @@ export const api = {
       fetchAPI('/session.php', {
         method: 'POST',
         body: JSON.stringify({ action: 'update', id, ...data }),
+      }),
+    // Atualização específica de pagamentos (session_paid / janta_paid)
+    updatePayments: (id: number, playersData: any[]) =>
+      fetchAPI('/session.php', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'update_payments', id, players_data: playersData }),
       }),
     
     delete: (id: number) =>

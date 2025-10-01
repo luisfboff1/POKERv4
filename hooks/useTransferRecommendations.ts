@@ -1,65 +1,87 @@
 import { useState } from 'react';
 import type { LiveSession, TransferRecommendation } from '@/lib/types';
 
+/**
+ * Hook de cálculo de transferências.
+ * Implementa a lógica descrita em OTIMIZACAO_TRANSFERENCIAS_COMPLETA.md:
+ * 1. Calcula saldos líquidos (cashout - totalBuyin)
+ * 2. Aplica recomendações manuais como restrições alterando os saldos conforme sinal
+ * 3. Otimiza o restante minimizando número de transferências
+ */
 export function useTransferRecommendations(currentSession: LiveSession | null) {
-  const [recommendations, setRecommendations] = useState<TransferRecommendation[]>([]);
-  const [manualSuggestions, setManualSuggestions] = useState<TransferRecommendation[]>([]);
+  const [recommendations, setRecommendations] = useState<TransferRecommendation[]>([]); // Resultado final (manuais + otimizadas)
+  const [manualSuggestions, setManualSuggestions] = useState<TransferRecommendation[]>([]); // Somente as manuais
+  const [needsRecalc, setNeedsRecalc] = useState(false); // Flag para mostrar botão de atualizar
 
-  const calculateRecommendations = () => {
+  const recompute = () => {
     if (!currentSession) return;
-    const playersWithBalance = currentSession.players.map((p: any) => ({
+    // 1. Saldos iniciais
+    const baseBalances = currentSession.players.map(p => ({
       name: p.name,
-      balance: p.cashout - p.totalBuyin
+      net: Number((p.cashout || 0) - p.totalBuyin)
     }));
-    const balancesCopy = [...playersWithBalance];
-    manualSuggestions.forEach(suggestion => {
-      const fromPlayer = balancesCopy.find(p => p.name === suggestion.from);
-      const toPlayer = balancesCopy.find(p => p.name === suggestion.to);
-      if (fromPlayer && toPlayer) {
-        fromPlayer.balance += suggestion.amount;
-        toPlayer.balance -= suggestion.amount;
+
+    // 2. Aplicar recomendações como restrições (ajustando sinais)
+    manualSuggestions.forEach(rec => {
+      const payer = baseBalances.find(b => b.name === rec.from);
+      const receiver = baseBalances.find(b => b.name === rec.to);
+      if (!payer || !receiver) return; // segurança
+      const amount = rec.amount;
+      // Pagador: se negativo, reduz dívida somando; se positivo, reduz crédito subtraindo
+      if (payer.net < 0) {
+        payer.net += amount;
+      } else {
+        payer.net -= amount;
+      }
+      // Recebedor: se positivo, reduz crédito; se negativo, reduz dívida somando
+      if (receiver.net > 0) {
+        receiver.net -= amount;
+      } else {
+        receiver.net += amount;
       }
     });
-    const creditors = balancesCopy.filter(p => p.balance > 0.01);
-    const debtors = balancesCopy.filter(p => p.balance < -0.01);
-    const newRecommendations: TransferRecommendation[] = [...manualSuggestions];
-    let i = 0, j = 0;
-    while (i < creditors.length && j < debtors.length) {
-      const creditor = creditors[i];
-      const debtor = debtors[j];
-      const amount = Math.min(creditor.balance, -debtor.balance);
+
+    // 3. Separar credores e devedores remanescentes
+    const creditors = baseBalances.filter(b => b.net > 0.01).sort((a,b) => b.net - a.net); // opcional: ordenar
+    const debtors = baseBalances.filter(b => b.net < -0.01).map(d => ({ ...d, net: Math.abs(d.net) })).sort((a,b) => b.net - a.net);
+
+    const optimized: TransferRecommendation[] = [];
+    // 4. Matching greedily minimizando quantidade
+    while (creditors.length && debtors.length) {
+      const c = creditors[0];
+      const d = debtors[0];
+      const amount = Math.min(c.net, d.net);
       if (amount > 0.01) {
-        newRecommendations.push({
-          from: debtor.name,
-          to: creditor.name,
-          amount: Math.round(amount * 100) / 100
-        });
-        creditor.balance -= amount;
-        debtor.balance += amount;
+        optimized.push({ from: d.name, to: c.name, amount: Math.round(amount * 100) / 100 });
+        c.net -= amount;
+        d.net -= amount;
       }
-      if (creditor.balance <= 0.01) i++;
-      if (debtor.balance >= -0.01) j++;
+      if (c.net <= 0.01) creditors.shift();
+      if (d.net <= 0.01) debtors.shift();
     }
-    setRecommendations(newRecommendations);
+
+    // 5. Resultado final = manuais (como estão) + otimizadas
+    setRecommendations([...manualSuggestions, ...optimized]);
+    setNeedsRecalc(false);
   };
 
   const addManualSuggestion = (suggestion: TransferRecommendation) => {
-    setManualSuggestions([...manualSuggestions, suggestion]);
-    setTimeout(() => calculateRecommendations(), 100);
+    setManualSuggestions(prev => [...prev, suggestion]);
+    setNeedsRecalc(true); // exige clique manual agora
   };
 
   const removeManualSuggestion = (index: number) => {
-    const newSuggestions = manualSuggestions.filter((_, i) => i !== index);
-    setManualSuggestions(newSuggestions);
-    setTimeout(() => calculateRecommendations(), 100);
+    setManualSuggestions(prev => prev.filter((_, i) => i !== index));
+    setNeedsRecalc(true);
   };
 
   return {
     recommendations,
     manualSuggestions,
-    calculateRecommendations,
     addManualSuggestion,
     removeManualSuggestion,
-    setManualSuggestions
+    setManualSuggestions,
+    recompute,
+    needsRecalc
   };
 }

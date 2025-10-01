@@ -52,10 +52,11 @@ export default function CurrentSessionPage() {
   const {
     recommendations,
     manualSuggestions,
-    calculateRecommendations,
     addManualSuggestion: addManualSuggestionRaw,
     removeManualSuggestion,
-    setManualSuggestions
+    setManualSuggestions,
+    recompute,
+    needsRecalc
   } = useTransferRecommendations(currentSession);
 
   // Modais
@@ -234,7 +235,7 @@ export default function CurrentSessionPage() {
         isBalanced={isBalanced}
         updatePlayerField={updatePlayerField}
         setStep={setStep as (s: SessionStep) => void}
-        calculateRecommendations={calculateRecommendations}
+        calculateRecommendations={recompute}
       />
     );
   } else if (step === 'transfers') {
@@ -249,6 +250,8 @@ export default function CurrentSessionPage() {
         setStep={setStep as (s: SessionStep) => void}
         suggestionModal={suggestionModal}
         removeManualSuggestion={removeManualSuggestion}
+        recompute={recompute}
+        needsRecalc={needsRecalc}
       />
     );
   }

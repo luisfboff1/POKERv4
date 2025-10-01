@@ -17,6 +17,8 @@ interface SessionTransfersStepProps {
   setStep: (step: SessionStep) => void;
   suggestionModal: { open: () => void };
   removeManualSuggestion: (index: number) => void;
+  recompute: () => void; // Recalcular otimização
+  needsRecalc: boolean;  // Indica se há mudanças pendentes
 }
 
 export const SessionTransfersStep: React.FC<SessionTransfersStepProps> = ({
@@ -28,7 +30,9 @@ export const SessionTransfersStep: React.FC<SessionTransfersStepProps> = ({
   finishSession,
   setStep,
   suggestionModal,
-  removeManualSuggestion
+  removeManualSuggestion,
+  recompute,
+  needsRecalc
 }) => (
   <div className="space-y-6">
     <div>
@@ -38,14 +42,19 @@ export const SessionTransfersStep: React.FC<SessionTransfersStepProps> = ({
 
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <CardTitle>Otimizar Transferências</CardTitle>
             <CardDescription>Configure pagamentos manuais ou use a otimização automática</CardDescription>
           </div>
-          <Button onClick={() => suggestionModal.open()} size="sm" variant="outline">
-            <Plus className="mr-2 h-4 w-4" /> Sugerir Pagamento
-          </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => suggestionModal.open()} size="sm" variant="outline">
+                <Plus className="mr-2 h-4 w-4" /> Sugerir Pagamento
+              </Button>
+              <Button size="sm" variant={needsRecalc ? 'default' : 'outline'} disabled={!needsRecalc} onClick={recompute}>
+                {needsRecalc ? 'Atualizar Otimização' : 'Otimização Atual'}
+              </Button>
+            </div>
         </div>
       </CardHeader>
       <CardContent>

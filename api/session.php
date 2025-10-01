@@ -16,17 +16,27 @@ $method = $_SERVER['REQUEST_METHOD'];
 try {
     switch ($method) {
         case 'GET':
+            // Opcional: buscar uma sessão específica
+            if (isset($_GET['id'])) {
+                $id = $_GET['id'];
+                $stmt = $pdo->prepare("SELECT * FROM sessions WHERE id = ? AND tenant_id = ? LIMIT 1");
+                $stmt->execute([$id, $tenant_id]);
+                $session = $stmt->fetch();
+                if (!$session) error('Sessão não encontrada', 404);
+                $session['players_data'] = json_decode($session['players_data'] ?? '[]', true);
+                $session['recommendations'] = json_decode($session['recommendations'] ?? '[]', true);
+                success($session);
+                break;
+            }
             // Listar sessões do tenant atual apenas
             $stmt = $pdo->prepare("SELECT * FROM sessions WHERE tenant_id = ? ORDER BY date DESC, id DESC");
             $stmt->execute([$tenant_id]);
             $sessions = $stmt->fetchAll();
-            
             // Converter JSON strings para arrays
             foreach ($sessions as &$session) {
                 $session['players_data'] = json_decode($session['players_data'] ?? '[]', true);
                 $session['recommendations'] = json_decode($session['recommendations'] ?? '[]', true);
             }
-            
             success($sessions);
             break;
 
@@ -58,6 +68,44 @@ try {
                 AuthMiddleware::logAction($pdo, 'delete_session', 'sessions', $id, $existing_session, null);
                 
                 success(['deleted' => true]);
+                break;
+            }
+
+            if ($action === 'update_payments') {
+                $id = $input['id'] ?? null;
+                if (!$id) error('ID required', 400);
+                // Carregar sessão existente
+                $checkStmt = $pdo->prepare("SELECT * FROM sessions WHERE id = ? AND tenant_id = ?");
+                $checkStmt->execute([$id, $tenant_id]);
+                $existing_session = $checkStmt->fetch();
+                if (!$existing_session) error('Sessão não encontrada ou acesso negado', 404);
+                $current_players = json_decode($existing_session['players_data'] ?? '[]', true);
+                $updates = $input['players_data'] ?? [];
+                // Índice por id ou nome
+                $index = [];
+                foreach ($current_players as $i => $p) {
+                    $key = isset($p['id']) ? (string)$p['id'] : strtolower($p['name'] ?? '');
+                    $index[$key] = $i;
+                }
+                foreach ($updates as $upd) {
+                    $key = isset($upd['id']) ? (string)$upd['id'] : strtolower($upd['name'] ?? '');
+                    if (isset($index[$key])) {
+                        $idx = $index[$key];
+                        // Atualizar apenas flags permitidas
+                        if (isset($upd['session_paid'])) $current_players[$idx]['session_paid'] = (bool)$upd['session_paid'];
+                        if (isset($upd['janta_paid'])) $current_players[$idx]['janta_paid'] = (bool)$upd['janta_paid'];
+                    }
+                }
+                $stmt = $pdo->prepare("UPDATE sessions SET players_data = ? WHERE id = ? AND tenant_id = ?");
+                $stmt->execute([
+                    json_encode($current_players),
+                    $id,
+                    $tenant_id
+                ]);
+                // Atualizar estatísticas (opcional — pagamentos não influenciam buyin/cashout, mas mantemos consistência)
+                updatePlayersStats($pdo, $tenant_id);
+                AuthMiddleware::logAction($pdo, 'update_session_payments', 'sessions', $id, $existing_session, ['players_data' => $updates]);
+                success(['updated' => true, 'players_data' => $current_players]);
                 break;
             }
             

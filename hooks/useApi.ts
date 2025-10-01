@@ -71,6 +71,16 @@ export function useSessions() {
     }
   };
 
+  const updateSessionPayments = async (id: number, playersData: any[]) => {
+    try {
+      await api.sessions.updatePayments(id, playersData);
+      await refetch();
+      return true;
+    } catch (err) {
+      throw err;
+    }
+  };
+
   return {
     sessions: data || [],
     loading,
@@ -79,6 +89,7 @@ export function useSessions() {
     createSession,
     deleteSession,
     approveSession,
+    updateSessionPayments,
   };
 }
 

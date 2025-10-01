@@ -51,9 +51,8 @@ export function Modal({
       <div 
         className={`
           relative w-full ${sizeClasses[size]} 
-          bg-white dark:bg-gray-900
-          text-gray-900 dark:text-gray-100
-          border border-gray-200 dark:border-gray-700
+          bg-background text-foreground
+          border border-border
           rounded-lg shadow-xl
           max-h-[90vh] overflow-hidden
           animate-in fade-in-0 zoom-in-95 duration-300
@@ -61,15 +60,15 @@ export function Modal({
       >
         {/* Header */}
         {showHeader && (title || showCloseButton) && (
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+          <div className="flex items-center justify-between p-6 border-b border-border bg-background">
             <div className="flex-1 min-w-0">
               {title && (
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+                <h2 className="text-lg font-semibold truncate">
                   {title}
                 </h2>
               )}
               {description && (
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                <p className="mt-1 text-sm text-muted-foreground">
                   {description}
                 </p>
               )}
@@ -79,7 +78,7 @@ export function Modal({
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="ml-4 h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
+                className="ml-4 h-8 w-8 p-0 text-muted-foreground"
               >
                 <X className="h-4 w-4" />
                 <span className="sr-only">Fechar</span>
@@ -89,7 +88,7 @@ export function Modal({
         )}
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-140px)] bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+        <div className="overflow-y-auto max-h-[calc(90vh-140px)] bg-background text-foreground">
           {children}
         </div>
       </div>
@@ -116,7 +115,7 @@ interface ModalContentProps {
 
 export function ModalContent({ children, className = "" }: ModalContentProps) {
   return (
-    <div className={`p-6 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 ${className}`}>
+    <div className={`p-6 bg-background text-foreground ${className}`}>
       {children}
     </div>
   );
@@ -129,7 +128,7 @@ interface ModalFooterProps {
 
 export function ModalFooter({ children, className = "" }: ModalFooterProps) {
   return (
-    <div className={`flex justify-end gap-2 p-6 pt-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 ${className}`}>
+    <div className={`flex justify-end gap-2 p-6 pt-0 border-t border-border bg-background ${className}`}>
       {children}
     </div>
   );
@@ -181,7 +180,7 @@ export function ConfirmModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       <ModalContent>
-        <p className="text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900">{message}</p>
+        <p className="text-sm text-foreground">{message}</p>
       </ModalContent>
       <ModalFooter>
         <Button variant="outline" onClick={onClose}>
