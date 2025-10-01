@@ -47,6 +47,13 @@ export default function CurrentSessionPage() {
   // Estados de transferência
   const [recommendations, setRecommendations] = useState<TransferRecommendation[]>([]);
   const [manualAdjustments, setManualAdjustments] = useState<any[]>([]);
+  const [manualSuggestions, setManualSuggestions] = useState<TransferRecommendation[]>([]);
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+  const [suggestionForm, setSuggestionForm] = useState({
+    from: '',
+    to: '',
+    amount: ''
+  });
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -279,15 +286,27 @@ export default function CurrentSessionPage() {
     
     // Calcular balances finais
     const playersWithBalance = currentSession.players.map((p: LivePlayer) => ({
-      ...p,
+      name: p.name,
       balance: p.cashout - p.totalBuyin
     }));
 
-    // Separar credores e devedores (sem considerar janta)
-    const creditors = playersWithBalance.filter((p: any) => p.balance > 0);
-    const debtors = playersWithBalance.filter((p: any) => p.balance < 0);
+    // Aplicar sugestões manuais primeiro
+    const balancesCopy = [...playersWithBalance];
+    manualSuggestions.forEach(suggestion => {
+      const fromPlayer = balancesCopy.find(p => p.name === suggestion.from);
+      const toPlayer = balancesCopy.find(p => p.name === suggestion.to);
+      
+      if (fromPlayer && toPlayer) {
+        fromPlayer.balance += suggestion.amount; // Quem paga fica com saldo mais positivo
+        toPlayer.balance -= suggestion.amount;   // Quem recebe fica com saldo mais negativo
+      }
+    });
 
-    const newRecommendations: TransferRecommendation[] = [];
+    // Separar credores e devedores após aplicar sugestões
+    const creditors = balancesCopy.filter(p => p.balance > 0.01);
+    const debtors = balancesCopy.filter(p => p.balance < -0.01);
+
+    const newRecommendations: TransferRecommendation[] = [...manualSuggestions];
     let i = 0, j = 0;
     
     while (i < creditors.length && j < debtors.length) {
@@ -296,22 +315,76 @@ export default function CurrentSessionPage() {
       
       const amount = Math.min(creditor.balance, -debtor.balance);
       
-      if (amount > 0) {
+      if (amount > 0.01) { // Evitar centavos
         newRecommendations.push({
           from: debtor.name,
           to: creditor.name,
-          amount
+          amount: Math.round(amount * 100) / 100
         });
         
         creditor.balance -= amount;
         debtor.balance += amount;
       }
       
-      if (creditor.balance === 0) i++;
-      if (debtor.balance === 0) j++;
+      if (creditor.balance <= 0.01) i++;
+      if (debtor.balance >= -0.01) j++;
     }
 
     setRecommendations(newRecommendations);
+  };
+
+  // Funções para sugestões manuais
+  const addManualSuggestion = () => {
+    const { from, to, amount } = suggestionForm;
+    
+    // Validações
+    if (!from || !to || !amount) {
+      setError('Todos os campos são obrigatórios');
+      return;
+    }
+    
+    if (from === to) {
+      setError('Pagador e recebedor devem ser diferentes');
+      return;
+    }
+    
+    const amountNum = parseFloat(amount);
+    if (amountNum <= 0) {
+      setError('Valor deve ser maior que zero');
+      return;
+    }
+    
+    // Verificar se os jogadores existem na sessão
+    const fromExists = currentSession?.players.some(p => p.name === from);
+    const toExists = currentSession?.players.some(p => p.name === to);
+    
+    if (!fromExists || !toExists) {
+      setError('Jogadores devem estar na sessão atual');
+      return;
+    }
+    
+    // Adicionar sugestão
+    const newSuggestion: TransferRecommendation = {
+      from,
+      to,
+      amount: amountNum
+    };
+    
+    setManualSuggestions([...manualSuggestions, newSuggestion]);
+    setSuggestionForm({ from: '', to: '', amount: '' });
+    setShowSuggestionModal(false);
+    setError('');
+    
+    // Recalcular automaticamente
+    setTimeout(() => calculateRecommendations(), 100);
+  };
+
+  const removeManualSuggestion = (index: number) => {
+    const newSuggestions = manualSuggestions.filter((_, i) => i !== index);
+    setManualSuggestions(newSuggestions);
+    
+    // Recalcular automaticamente
+    setTimeout(() => calculateRecommendations(), 100);
   };
 
   const finishSession = async () => {
@@ -651,7 +724,7 @@ export default function CurrentSessionPage() {
         {/* Modal Lista Completa de Jogadores */}
         {showAllPlayers && (
           <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-            <Card className="w-full max-w-md max-h-[80vh] overflow-hidden">
+            <Card className="w-full max-w-md max-h-[80vh] overflow-hidden bg-background border shadow-2xl">
               <CardHeader>
                 <CardTitle>Todos os Jogadores</CardTitle>
                 <CardDescription>
@@ -835,7 +908,7 @@ export default function CurrentSessionPage() {
         {/* Modal Adicionar Jogador Durante Jogo */}
         {showAddPlayer && (
           <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-            <Card className="w-full max-w-md">
+            <Card className="w-full max-w-md bg-background border shadow-2xl">
               <CardHeader>
                 <CardTitle>Adicionar Jogador</CardTitle>
                 <CardDescription>
@@ -1001,38 +1074,116 @@ export default function CurrentSessionPage() {
           </p>
         </div>
 
+        {/* Sugestões Manuais */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Otimizar Transferências</CardTitle>
+                <CardDescription>
+                  Configure pagamentos manuais ou use a otimização automática
+                </CardDescription>
+              </div>
+              <Button 
+                onClick={() => setShowSuggestionModal(true)}
+                size="sm"
+                variant="outline"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Sugerir Pagamento
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {manualSuggestions.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-sm font-medium mb-3">Sugestões Manuais:</h4>
+                <div className="space-y-2">
+                  {manualSuggestions.map((suggestion, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-medium">
+                          M
+                        </div>
+                        <div className="text-sm">
+                          <span className="font-medium">{suggestion.from}</span> → {' '}
+                          <span className="font-medium">{suggestion.to}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-blue-700">
+                          R$ {suggestion.amount}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => removeManualSuggestion(index)}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {recommendations.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Transferências Recomendadas</CardTitle>
+              <CardTitle>Transferências Finais</CardTitle>
               <CardDescription>
-                Transfers otimizadas para zerar todos os saldos
+                {manualSuggestions.length > 0 
+                  ? 'Otimização considerando suas sugestões manuais'
+                  : 'Transfers otimizadas para zerar todos os saldos'
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {recommendations.map((rec, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-red-100 text-red-700 rounded-full flex items-center justify-center text-sm font-medium">
-                        {rec.from[0]}
-                      </div>
-                      <span>→</span>
-                      <div className="w-8 h-8 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-sm font-medium">
-                        {rec.to[0]}
-                      </div>
-                      <div>
-                        <div className="text-sm">
-                          <span className="font-medium">{rec.from}</span> paga{' '}
-                          <span className="font-medium">{rec.to}</span>
+                {recommendations.map((rec, index) => {
+                  const isManual = manualSuggestions.some(s => 
+                    s.from === rec.from && s.to === rec.to && s.amount === rec.amount
+                  );
+                  
+                  return (
+                    <div key={index} className={`flex items-center justify-between p-4 rounded-lg ${
+                      isManual ? 'bg-blue-50 border border-blue-200' : 'bg-muted/30'
+                    }`}>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                          isManual 
+                            ? 'bg-blue-500 text-white' 
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          {isManual ? 'M' : rec.from[0]}
+                        </div>
+                        <span>→</span>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                          isManual 
+                            ? 'bg-blue-500 text-white' 
+                            : 'bg-green-100 text-green-700'
+                        }`}>
+                          {isManual ? 'M' : rec.to[0]}
+                        </div>
+                        <div>
+                          <div className="text-sm">
+                            <span className="font-medium">{rec.from}</span> paga{' '}
+                            <span className="font-medium">{rec.to}</span>
+                            {isManual && <span className="ml-2 text-xs text-blue-600">(manual)</span>}
+                          </div>
                         </div>
                       </div>
+                      <div className={`text-lg font-bold ${
+                        isManual ? 'text-blue-700' : 'text-primary'
+                      }`}>
+                        R$ {rec.amount}
+                      </div>
                     </div>
-                    <div className="text-lg font-bold text-primary">
-                      R$ {rec.amount}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -1083,6 +1234,116 @@ export default function CurrentSessionPage() {
             Voltar
           </Button>
         </div>
+      </div>
+    );
+  }
+
+  // Modal de Sugestão Manual (disponível em todas as etapas)
+  if (showSuggestionModal && currentSession) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-background border shadow-2xl">
+          <CardHeader>
+            <CardTitle>Sugerir Pagamento</CardTitle>
+            <CardDescription>
+              Configure um pagamento específico entre jogadores
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {error && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded text-destructive text-sm">
+                {error}
+              </div>
+            )}
+            
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="from">Quem paga</Label>
+                <select
+                  id="from"
+                  value={suggestionForm.from}
+                  onChange={(e) => setSuggestionForm({...suggestionForm, from: e.target.value})}
+                  className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                >
+                  <option value="">Selecione o pagador</option>
+                  {currentSession.players.map(player => (
+                    <option key={player.id} value={player.name}>
+                      {player.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex justify-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSuggestionForm({
+                      from: suggestionForm.to,
+                      to: suggestionForm.from,
+                      amount: suggestionForm.amount
+                    });
+                  }}
+                  disabled={!suggestionForm.from && !suggestionForm.to}
+                >
+                  ↕ Trocar
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="to">Quem recebe</Label>
+                <select
+                  id="to"
+                  value={suggestionForm.to}
+                  onChange={(e) => setSuggestionForm({...suggestionForm, to: e.target.value})}
+                  className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                >
+                  <option value="">Selecione o recebedor</option>
+                  {currentSession.players.map(player => (
+                    <option key={player.id} value={player.name}>
+                      {player.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="amount">Valor (R$)</Label>
+              <Input
+                id="amount"
+                type="number"
+                placeholder="0.00"
+                min="0.01"
+                step="0.01"
+                value={suggestionForm.amount}
+                onChange={(e) => setSuggestionForm({...suggestionForm, amount: e.target.value})}
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button 
+                onClick={addManualSuggestion}
+                disabled={!suggestionForm.from || !suggestionForm.to || !suggestionForm.amount}
+                className="flex-1"
+              >
+                Adicionar Sugestão
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  setShowSuggestionModal(false);
+                  setSuggestionForm({ from: '', to: '', amount: '' });
+                  setError('');
+                }}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
