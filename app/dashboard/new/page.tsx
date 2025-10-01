@@ -206,23 +206,23 @@ export default function CurrentSessionPage() {
     try {
       let playerData = player;
       
-      // Se não é um jogador existente, criar no backend
-      if (!isExisting) {
-        setLoading(true);
-        const newPlayerResponse = await createPlayer(playerName);
-        playerData = newPlayerResponse;
-      }
+      // Sempre fazer upsert no backend para garantir dados atualizados
+      setLoading(true);
+      const upsertResponse = await createPlayer(playerName, isExisting ? player.email : '');
+      
+      // Usar dados do response (pode ser novo ou existente atualizado)
+      playerData = upsertResponse.data || upsertResponse;
       
       const newPlayer: LivePlayer = {
-        id: isExisting ? player.id?.toString() || Date.now().toString() : Date.now().toString(),
-        name: playerName,
-        email: isExisting ? player.email : '',
+        id: playerData?.id?.toString() || Date.now().toString(),
+        name: playerData?.name || playerName,
+        email: playerData?.email || '',
         buyin: defaultBuyin,
         totalBuyin: defaultBuyin,
         cashout: 0,
         janta: 0,
         rebuys: [],
-        isExisting
+        isExisting: true // Sempre true agora pois foi salvo no banco
       };
 
       setCurrentSession({
@@ -724,7 +724,7 @@ export default function CurrentSessionPage() {
         {/* Modal Lista Completa de Jogadores */}
         {showAllPlayers && (
           <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-            <Card className="w-full max-w-md max-h-[80vh] overflow-hidden bg-background border shadow-2xl">
+            <Card className="w-full max-w-md max-h-[80vh] overflow-hidden bg-white dark:bg-gray-900 border shadow-2xl opacity-100 backdrop-blur-none">
               <CardHeader>
                 <CardTitle>Todos os Jogadores</CardTitle>
                 <CardDescription>
@@ -908,7 +908,7 @@ export default function CurrentSessionPage() {
         {/* Modal Adicionar Jogador Durante Jogo */}
         {showAddPlayer && (
           <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-            <Card className="w-full max-w-md bg-background border shadow-2xl">
+            <Card className="w-full max-w-md bg-white dark:bg-gray-900 border shadow-2xl opacity-100 backdrop-blur-none">
               <CardHeader>
                 <CardTitle>Adicionar Jogador</CardTitle>
                 <CardDescription>
@@ -1242,7 +1242,7 @@ export default function CurrentSessionPage() {
   if (showSuggestionModal && currentSession) {
     return (
       <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-background border shadow-2xl">
+        <Card className="w-full max-w-md bg-white dark:bg-gray-900 border shadow-2xl opacity-100 backdrop-blur-none">
           <CardHeader>
             <CardTitle>Sugerir Pagamento</CardTitle>
             <CardDescription>

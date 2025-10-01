@@ -19,19 +19,20 @@ try {
             $action = $_GET['action'] ?? 'list';
             
             if ($action === 'list') {
-                // Buscar jogadores únicos do tenant atual
+                // Buscar jogadores da tabela dedicada
                 $stmt = $pdo->prepare("
-                    SELECT DISTINCT 
-                        JSON_UNQUOTE(JSON_EXTRACT(players.value, '$.name')) as name,
-                        JSON_UNQUOTE(JSON_EXTRACT(players.value, '$.email')) as email,
-                        JSON_UNQUOTE(JSON_EXTRACT(players.value, '$.id')) as id
-                    FROM sessions s
-                    CROSS JOIN JSON_TABLE(s.players_data, '$[*]' COLUMNS (
-                        value JSON PATH '$'
-                    )) as players
-                    WHERE s.tenant_id = ? 
-                    AND s.players_data IS NOT NULL
-                    AND JSON_UNQUOTE(JSON_EXTRACT(players.value, '$.name')) IS NOT NULL
+                    SELECT 
+                        id,
+                        name,
+                        email,
+                        total_sessions,
+                        total_buyin,
+                        total_cashout,
+                        status,
+                        created_at
+                    FROM players 
+                    WHERE tenant_id = ? 
+                    AND status = 'active'
                     ORDER BY name
                 ");
                 $stmt->execute([$tenant_id]);
@@ -41,12 +42,15 @@ try {
                 $formatted_players = [];
                 foreach ($players as $player) {
                     $formatted_players[] = [
-                        'id' => intval($player['id'] ?? 0),
+                        'id' => intval($player['id']),
                         'name' => $player['name'],
                         'email' => $player['email'] ?? '',
                         'role' => 'player',
-                        'status' => 'active',
-                        'team_id' => $tenant_id
+                        'status' => $player['status'],
+                        'team_id' => $tenant_id,
+                        'total_sessions' => intval($player['total_sessions']),
+                        'total_buyin' => floatval($player['total_buyin']),
+                        'total_cashout' => floatval($player['total_cashout'])
                     ];
                 }
                 
@@ -66,32 +70,48 @@ try {
                     error('Nome é obrigatório', 400);
                 }
                 
-                // Verificar se jogador já existe neste tenant
-                $stmt = $pdo->prepare("
-                    SELECT COUNT(*) as count
-                    FROM sessions s
-                    CROSS JOIN JSON_TABLE(s.players_data, '$[*]' COLUMNS (
-                        name VARCHAR(255) PATH '$.name'
-                    )) as players
-                    WHERE s.tenant_id = ? 
-                    AND players.name = ?
-                ");
-                $stmt->execute([$tenant_id, $name]);
-                $exists = $stmt->fetch()['count'] > 0;
+                // Normalizar nome (lowercase, sem acentos)
+                $name_normalized = strtolower($name);
+                $name_normalized = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name_normalized);
+                $name_normalized = preg_replace('/[^a-z0-9 ]/', '', $name_normalized);
+                $name_normalized = trim($name_normalized);
                 
-                if ($exists) {
-                    error('Jogador já existe', 409);
+                // Upsert: inserir ou atualizar se já existe
+                $stmt = $pdo->prepare("
+                    INSERT INTO players (
+                        tenant_id, name, name_normalized, email, status
+                    ) VALUES (?, ?, ?, ?, 'active')
+                    ON DUPLICATE KEY UPDATE
+                        name = VALUES(name),
+                        email = COALESCE(VALUES(email), email),
+                        status = 'active',
+                        updated_at = CURRENT_TIMESTAMP
+                ");
+                
+                $stmt->execute([$tenant_id, $name, $name_normalized, $email]);
+                
+                // Buscar o jogador (novo ou existente)
+                $stmt = $pdo->prepare("
+                    SELECT id, name, email, status, created_at
+                    FROM players 
+                    WHERE tenant_id = ? AND name_normalized = ?
+                ");
+                $stmt->execute([$tenant_id, $name_normalized]);
+                $player = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$player) {
+                    error('Erro ao criar/encontrar jogador', 500);
                 }
                 
-                // Retornar dados do novo jogador (será adicionado na sessão)
+                // Retornar dados do jogador
                 $new_player = [
-                    'id' => time() . rand(1000, 9999), // ID temporário único
-                    'name' => $name,
-                    'email' => $email,
+                    'id' => intval($player['id']),
+                    'name' => $player['name'],
+                    'email' => $player['email'] ?? '',
                     'role' => 'player',
-                    'status' => 'active',
+                    'status' => $player['status'],
                     'team_id' => $tenant_id,
-                    'created' => true // Flag para indicar que foi criado
+                    'created' => true // Flag para indicar que foi processado
                 ];
                 
                 success($new_player);

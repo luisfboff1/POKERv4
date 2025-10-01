@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,9 @@ interface SessionFilters {
 
 export default function HistoryPage() {
   const { user } = useAuth();
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'closed'>('all');
+  const [isPending, startTransition] = useTransition();
   const { sessions, loading, error, refetch, deleteSession, approveSession } = useSessions();
   const [filters, setFilters] = useState<SessionFilters>({
     search: '',
@@ -55,22 +58,37 @@ export default function HistoryPage() {
     return true;
   });
 
-  const handleDeleteSession = async (id: number) => {
+  const handleDeleteSession = (id: number) => {
     if (window.confirm('Tem certeza que deseja excluir esta sessão?')) {
-      try {
-        await deleteSession(id);
-      } catch (err) {
-        alert('Erro ao excluir sessão');
-      }
+      // Usar startTransition para tornar a operação não-bloqueante
+      startTransition(() => {
+        // Usar setTimeout(0) para executar na próxima iteração do event loop
+        setTimeout(async () => {
+          try {
+            await deleteSession(id);
+          } catch (err) {
+            // Exibir erro após a operação async
+            setTimeout(() => {
+              alert('Erro ao excluir sessão');
+            }, 0);
+          }
+        }, 0);
+      });
     }
   };
 
-  const handleApproveSession = async (id: number) => {
-    try {
-      await approveSession(id);
-    } catch (err) {
-      alert('Erro ao aprovar sessão');
-    }
+  const handleApproveSession = (id: number) => {
+    startTransition(() => {
+      setTimeout(async () => {
+        try {
+          await approveSession(id);
+        } catch (err) {
+          setTimeout(() => {
+            alert('Erro ao aprovar sessão');
+          }, 0);
+        }
+      }, 0);
+    });
   };
 
   const getStatusIcon = (status: string) => {
@@ -257,9 +275,14 @@ export default function HistoryPage() {
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleApproveSession(session.id)}
+                                  disabled={isPending}
                                   className="text-green-600 hover:text-green-700"
                                 >
-                                  <CheckCircle className="h-4 w-4" />
+                                  {isPending ? (
+                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-green-600 border-t-transparent" />
+                                  ) : (
+                                    <CheckCircle className="h-4 w-4" />
+                                  )}
                                 </Button>
                               )}
                               
@@ -267,9 +290,14 @@ export default function HistoryPage() {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleDeleteSession(session.id)}
+                                disabled={isPending}
                                 className="text-destructive hover:text-destructive/80"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                {isPending ? (
+                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-destructive border-t-transparent" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
                               </Button>
                             </>
                           )}

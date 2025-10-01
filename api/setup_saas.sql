@@ -72,7 +72,40 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ========================================
--- 3. MODIFICAR TABELA SESSIONS EXISTENTE
+-- 3. TABELA DE JOGADORES
+-- ========================================
+CREATE TABLE IF NOT EXISTS players (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NOT NULL COMMENT 'ID do tenant/cliente',
+    
+    -- Dados do jogador
+    name VARCHAR(255) NOT NULL COMMENT 'Nome do jogador',
+    name_normalized VARCHAR(255) NOT NULL COMMENT 'Nome normalizado (lowercase, sem acentos)',
+    email VARCHAR(255) NULL COMMENT 'Email do jogador (opcional)',
+    phone VARCHAR(20) NULL COMMENT 'Telefone do jogador (opcional)',
+    
+    -- Estatísticas
+    total_sessions INT DEFAULT 0 COMMENT 'Total de sessões participadas',
+    total_buyin DECIMAL(10,2) DEFAULT 0 COMMENT 'Total investido em buy-ins',
+    total_cashout DECIMAL(10,2) DEFAULT 0 COMMENT 'Total recebido em cash-outs',
+    
+    -- Status
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    -- Constraints e índices
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_player_per_tenant (tenant_id, name_normalized),
+    INDEX idx_tenant_id (tenant_id),
+    INDEX idx_name_normalized (name_normalized),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ========================================
+-- 4. MODIFICAR TABELA SESSIONS EXISTENTE
 -- ========================================
 -- Primeiro, vamos adicionar a coluna tenant_id
 ALTER TABLE sessions 
@@ -84,7 +117,7 @@ ALTER TABLE sessions ADD INDEX idx_tenant_id (tenant_id);
 ALTER TABLE sessions ADD INDEX idx_tenant_date (tenant_id, date);
 
 -- ========================================
--- 4. TABELA DE SESSÕES JWT (OPCIONAL)
+-- 5. TABELA DE SESSÕES JWT (OPCIONAL)
 -- ========================================
 CREATE TABLE IF NOT EXISTS user_sessions (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -102,7 +135,7 @@ CREATE TABLE IF NOT EXISTS user_sessions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ========================================
--- 5. TABELA DE LOGS DE AUDITORIA
+-- 6. TABELA DE LOGS DE AUDITORIA
 -- ========================================
 CREATE TABLE IF NOT EXISTS audit_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -126,7 +159,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ========================================
--- 6. DADOS INICIAIS
+-- 7. DADOS INICIAIS
 -- ========================================
 
 -- Inserir tenant principal (você como admin)
