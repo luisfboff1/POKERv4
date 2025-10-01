@@ -56,7 +56,7 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
           <div className="flex gap-2">
             <Button onClick={() => addPlayerToSession(searchPlayer, false)} className="flex-1">
               <Plus className="h-4 w-4 mr-2" />
-              Adicionar "{searchPlayer.trim()}"
+              Adicionar &quot;{searchPlayer.trim()}&quot;
             </Button>
           </div>
         )}

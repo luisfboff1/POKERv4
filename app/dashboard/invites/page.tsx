@@ -51,7 +51,7 @@ export default function InvitesPage() {
       await createInvite(formData.email, formData.role);
       setFormData({ email: '', role: 'player' });
       setShowForm(false);
-    } catch (err) {
+    } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : 'Erro ao enviar convite');
     } finally {
       setFormLoading(false);
@@ -67,7 +67,7 @@ export default function InvitesPage() {
       onConfirm: async () => {
         try {
           await deleteInvite(id);
-        } catch (err) {
+        } catch {
           // TODO: Substituir alert por toast ou modal de erro
           alert('Erro ao excluir convite');
         }

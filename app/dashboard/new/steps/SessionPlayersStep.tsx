@@ -129,7 +129,7 @@ export const SessionPlayersStep: React.FC<SessionPlayersStepProps> = ({
               onClick={() => addPlayerToSession(searchPlayer.trim(), false)}
               size="sm"
             >
-              <Plus className="h-4 w-4 mr-1" /> Adicionar "{searchPlayer.trim()}"
+              <Plus className="h-4 w-4 mr-1" /> Adicionar &quot;{searchPlayer.trim()}&quot;
             </Button>
           </div>
         )}

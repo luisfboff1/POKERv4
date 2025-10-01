@@ -5,17 +5,16 @@ import { Label } from '@/components/ui/label';
 import { Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import type { LiveSession, LivePlayer } from '@/lib/types';
+import type { UpdateLivePlayerField } from './types';
 import type { SessionStep } from './SessionCreateStep';
 import { formatCurrency } from '@/lib/format';
-
-type EditableLivePlayerField = 'janta' | 'cashout' | 'session_paid' | 'janta_paid';
 
 interface SessionActiveStepProps {
   currentSession: LiveSession;
   totals: { totalBuyin: number; totalJanta: number; playersCount: number };
   addPlayerModal: { open: () => void };
   setStep: (step: SessionStep) => void;
-  updatePlayerField: <K extends EditableLivePlayerField>(id: string, field: K, value: LivePlayer[K]) => void;
+  updatePlayerField: UpdateLivePlayerField;
   addRebuy: (id: string, amount: number) => void;
 }
 

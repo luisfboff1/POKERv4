@@ -1,14 +1,23 @@
 import { useState } from 'react';
 import type { LiveSession, LivePlayer } from '@/lib/types';
+import type { UpdateLivePlayerField, LivePlayerEditableField } from '@/app/dashboard/new/steps/types';
 
-export function usePlayerActions(currentSession: LiveSession | null, setCurrentSession: (s: LiveSession | null) => void, defaultBuyin: number, createPlayer: any) {
+export function usePlayerActions(
+  currentSession: LiveSession | null,
+  setCurrentSession: (s: LiveSession | null) => void,
+  defaultBuyin: number,
+  createPlayer: (name: string, email?: string) => Promise<any>
+) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const addPlayerToSession = async (player: any, isExisting: boolean) => {
+  const addPlayerToSession = async (
+    player: { id?: string | number; name?: string; email?: string } | string,
+    isExisting: boolean
+  ) => {
     if (!currentSession) return;
     if (!player) return;
-    const playerName = isExisting ? (player?.name || '') : (player || '');
+    const playerName = isExisting && typeof player !== 'string' ? (player.name || '') : (typeof player === 'string' ? player : '');
     if (!playerName.trim()) return;
     const existsInSession = currentSession.players.some(p => p.name.toLowerCase() === playerName.toLowerCase());
     if (existsInSession) {
@@ -17,13 +26,15 @@ export function usePlayerActions(currentSession: LiveSession | null, setCurrentS
     }
     try {
       setLoading(true);
-      let playerData = player;
-      const upsertResponse = await createPlayer(playerName, isExisting ? player.email : '');
-      playerData = upsertResponse.data || upsertResponse;
+      let playerData: { id?: string | number; name?: string; email?: string } | string = player;
+      const email = isExisting && typeof player !== 'string' ? player.email : '';
+      const upsertResponse = await createPlayer(playerName, email);
+      playerData = (upsertResponse as any).data || upsertResponse; // API wrapper retorna possivelmente {success,data}
+      const normalized = typeof playerData === 'string' ? { name: playerData } : playerData;
       const newPlayer: LivePlayer = {
-        id: playerData?.id?.toString() || Date.now().toString(),
-        name: playerData?.name || playerName,
-        email: playerData?.email || '',
+        id: normalized?.id?.toString() || Date.now().toString(),
+        name: normalized?.name || playerName,
+        email: normalized?.email || '',
         buyin: defaultBuyin,
         totalBuyin: defaultBuyin,
         cashout: 0,
@@ -38,14 +49,14 @@ export function usePlayerActions(currentSession: LiveSession | null, setCurrentS
         players: [...currentSession.players, newPlayer]
       });
       setError('');
-    } catch (err: any) {
-      setError(err.message || 'Erro ao adicionar jogador');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao adicionar jogador';
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
-
-  const updatePlayerField = (playerId: string, field: keyof LivePlayer, value: any) => {
+  const updatePlayerField: UpdateLivePlayerField = (playerId, field, value) => {
     if (!currentSession) return;
     setCurrentSession({
       ...currentSession,

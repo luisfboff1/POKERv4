@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { LoadingState, EmptyState, ErrorState } from '@/components/ui/loading';
 import { usePlayers, useSessions } from '@/hooks/useApi';
 import { Trophy, Medal, Award, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
-import { Player } from '@/lib/types';
+import type { SessionPlayerData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { useState } from 'react';
@@ -60,7 +60,7 @@ export default function RankingPage() {
       sessions.forEach(session => {
         if (!session.players_data || !Array.isArray(session.players_data)) return;
 
-        session.players_data.forEach((sessionPlayer: any) => {
+  session.players_data.forEach((sessionPlayer: SessionPlayerData) => {
           if (!sessionPlayer.name) return;
 
           const playerStat = stats.get(sessionPlayer.name);
@@ -82,8 +82,8 @@ export default function RankingPage() {
       // Calcular taxa de vitória
       stats.forEach((playerStat, playerName) => {
         const winSessions = sessions.filter(session => 
-          session.players_data?.find((p: any) => 
-            p.name === playerName && (p.cashout - p.buyin) > 0
+          session.players_data?.find((p: SessionPlayerData) => 
+            p.name === playerName && ((p.cashout || 0) - (p.buyin || 0)) > 0
           )
         ).length;
         

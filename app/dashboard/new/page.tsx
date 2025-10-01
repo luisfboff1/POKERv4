@@ -43,9 +43,7 @@ export default function CurrentSessionPage() {
     updatePlayerField,
     addRebuy,
     removePlayer,
-    loading: playerLoading,
-    error: playerError,
-    setError: setPlayerError
+    error: playerError
   } = usePlayerActions(currentSession, setCurrentSession, defaultBuyin, createPlayer);
 
   // Recomendações de transferência
@@ -54,7 +52,7 @@ export default function CurrentSessionPage() {
     manualSuggestions,
     addManualSuggestion: addManualSuggestionRaw,
     removeManualSuggestion,
-    setManualSuggestions,
+  // setManualSuggestions não utilizado diretamente aqui
     recompute,
     needsRecalc
   } = useTransferRecommendations(currentSession);
@@ -104,8 +102,9 @@ export default function CurrentSessionPage() {
       setCurrentSession(null);
       setStep('create');
       router.push('/dashboard/history');
-    } catch (err: any) {
-      setError(err.message || 'Erro ao finalizar sessão');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao finalizar sessão';
+      setError(message);
     } finally {
       setLoading(false);
     }

@@ -5,16 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CreditCard, Utensils } from 'lucide-react';
 import type { LiveSession, LivePlayer } from '@/lib/types';
+import type { UpdateLivePlayerField } from './types';
 import type { SessionStep } from './SessionCreateStep';
 import { formatCurrency } from '@/lib/format';
-
-type EditableLivePlayerField = 'janta' | 'cashout' | 'session_paid' | 'janta_paid';
 
 interface SessionCashoutStepProps {
   currentSession: LiveSession;
   totals: { totalBuyin: number; totalCashout: number; totalJanta: number };
   isBalanced: boolean;
-  updatePlayerField: <K extends EditableLivePlayerField>(id: string, field: K, value: LivePlayer[K]) => void;
+  updatePlayerField: UpdateLivePlayerField;
   setStep: (step: SessionStep) => void;
   calculateRecommendations: () => void;
 }

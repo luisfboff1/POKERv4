@@ -35,7 +35,7 @@ async function fetchAPI<T>(
     let data;
     try {
       data = await response.json();
-    } catch (e) {
+    } catch {
       console.error('Erro ao parsear JSON:', await response.text());
       throw new ApiError('Resposta inválida do servidor', response.status);
     }
@@ -133,7 +133,7 @@ export const api = {
         body: JSON.stringify({ action: 'create', name, email }),
       }),
     
-    update: (id: number, data: Record<string, any>) =>
+    update: (id: number, data: Record<string, unknown>) =>
       fetchAPI('/players.php', {
         method: 'POST',
         body: JSON.stringify({ action: 'update', id, ...data }),
@@ -172,7 +172,7 @@ export const api = {
   agent: {
     getStatus: () => fetchAPI('/agent.php?action=status'),
     
-    startSession: (data: Record<string, any>) =>
+    startSession: (data: Record<string, unknown>) =>
       fetchAPI('/agent.php', {
         method: 'POST',
         body: JSON.stringify({ action: 'start', ...data }),

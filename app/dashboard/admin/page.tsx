@@ -21,8 +21,8 @@ import {
 export default function AdminPage() {
   const { user } = useAuth();
   const { players, loading: playersLoading } = usePlayers();
-  const { invites, loading: invitesLoading } = useInvites();
-  const { sessions, loading: sessionsLoading } = useSessions();
+  const { invites } = useInvites();
+  const { sessions } = useSessions();
 
   // Verificar se é super admin
   if (user?.role !== 'super_admin') {

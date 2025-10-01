@@ -1,6 +1,5 @@
 import React from 'react';
 import { Modal, ModalContent } from '@/components/ui/modal';
-import { Button } from '@/components/ui/button';
 import { Users } from 'lucide-react';
 import type { Player, LiveSession, LivePlayer } from '@/lib/types';
 
