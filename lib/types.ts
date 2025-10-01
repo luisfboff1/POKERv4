@@ -49,6 +49,8 @@ export interface Session {
   created_by_name?: string;
   created_at: string;
   team_id: number;
+  players_data?: any[];
+  recommendations?: any[];
 }
 
 export interface PlayerBalance {
