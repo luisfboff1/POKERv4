@@ -99,10 +99,14 @@ export default function CurrentSessionPage() {
   // Funções de jogadores
   const addPlayerToSession = (player: any, isExisting: boolean) => {
     if (!currentSession) return;
+    if (!player) return;
+    
+    const playerName = isExisting ? (player?.name || '') : (player || '');
+    if (!playerName.trim()) return;
     
     const newPlayer: LivePlayer = {
       id: Date.now().toString(),
-      name: isExisting ? player.name : player,
+      name: playerName,
       buyin: defaultBuyin,
       totalBuyin: defaultBuyin,
       cashout: 0,
@@ -239,8 +243,8 @@ export default function CurrentSessionPage() {
   const isBalanced = totals.totalBuyin === totals.totalCashout;
   
   // Filtrar jogadores existentes para busca
-  const filteredExistingPlayers = existingPlayers.filter(p => 
-    p.name.toLowerCase().includes(searchPlayer.toLowerCase())
+  const filteredExistingPlayers = (existingPlayers || []).filter(p => 
+    searchPlayer && searchPlayer.trim() && p?.name && p.name.toLowerCase().includes(searchPlayer.toLowerCase())
   );
 
   // Se não há sessão ativa, mostrar opção de criar
@@ -446,11 +450,11 @@ export default function CurrentSessionPage() {
                 <div className="space-y-1">
                   {filteredExistingPlayers.slice(0, 5).map(player => (
                     <button
-                      key={player.id}
+                      key={player?.id}
                       onClick={() => addPlayerToSession(player, true)}
                       className="w-full text-left p-2 rounded hover:bg-muted text-sm"
                     >
-                      {player.name} ({player.email})
+                      {player?.name} ({player?.email})
                     </button>
                   ))}
                 </div>
@@ -652,11 +656,11 @@ export default function CurrentSessionPage() {
                   <div className="border rounded-lg p-2 bg-muted/30 max-h-32 overflow-y-auto">
                     {filteredExistingPlayers.slice(0, 3).map(player => (
                       <button
-                        key={player.id}
+                        key={player?.id}
                         onClick={() => addPlayerToSession(player, true)}
                         className="w-full text-left p-2 rounded hover:bg-muted text-sm"
                       >
-                        {player.name}
+                        {player?.name}
                       </button>
                     ))}
                   </div>
