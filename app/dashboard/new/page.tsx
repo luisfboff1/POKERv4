@@ -7,23 +7,28 @@ export default function NewSessionPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-4xl font-bold">Nova Sessão</h1>
-        <p className="text-muted-foreground mt-2">
-          Criar uma nova partida de poker
+        <h1 className="text-3xl font-semibold tracking-tight">Criar nova sessão</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Configure mesas, valores e participantes para iniciar uma nova rodada
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Criar Sessão</CardTitle>
-          <CardDescription>
-            Formulário para criar nova partida
+      <Card className="bg-surface text-surface-foreground">
+        <CardHeader className="flex flex-col gap-1">
+          <CardTitle className="text-lg">Dados da sessão</CardTitle>
+          <CardDescription className="text-muted-foreground/80">
+            Em breve será possível configurar todos os parâmetros antes de iniciar a partida
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-12 text-muted-foreground">
-            <Plus className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>Formulário em desenvolvimento</p>
+          <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border/80 bg-page py-12 text-center text-sm text-muted-foreground">
+            <Plus className="h-10 w-10 text-primary/60" />
+            <div>
+              <p className="text-base font-medium text-foreground">Ferramenta de criação em desenvolvimento</p>
+              <p className="mt-1 text-muted-foreground">
+                Configure blinds, buy-ins, cash-outs e PokerBot assim que esta etapa estiver concluída.
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

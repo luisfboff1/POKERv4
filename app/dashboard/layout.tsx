@@ -55,10 +55,10 @@ export default function DashboardLayout({
   );
 
   return (
-    <div className="min-h-screen flex">
+    <div className="flex min-h-screen bg-page text-page-foreground">
       {/* Mobile Menu Button */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-3 flex items-center justify-between">
-        <h1 className="text-base font-bold">🎯 Poker Manager</h1>
+      <div className="fixed left-0 right-0 top-0 z-50 flex items-center justify-between border-b border-border bg-surface/95 px-4 py-3 shadow-[var(--shadow-soft)] backdrop-blur md:hidden">
+        <h1 className="text-base font-semibold">🎯 Poker Manager</h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Button
@@ -77,24 +77,26 @@ export default function DashboardLayout({
         inset-y-0 left-0
         z-40
         w-64
-        bg-white dark:bg-gray-900
-        border-r border-gray-200 dark:border-gray-800
+        bg-surface text-surface-foreground
+        border-r border-border
         transform transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0
         flex flex-col
       `}>
         {/* Header da Sidebar (desktop) */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800 hidden md:flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold">🎯 Poker Manager</h1>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{user.team_name || 'Time'}</p>
+        <div className="hidden items-center justify-between border-b border-border px-4 py-4 md:flex">
+          <div className="space-y-1">
+            <h1 className="text-lg font-semibold">🎯 Poker Manager</h1>
+            <p className="text-xs text-muted-foreground">
+              {user.team_name || 'Time'}
+            </p>
           </div>
           <ThemeToggle />
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-6 text-sm">
           {filteredNavigation.map((item) => {
             const Icon = item.icon;
             return (
@@ -102,7 +104,7 @@ export default function DashboardLayout({
                 key={item.name}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 font-medium text-foreground/90 transition-all hover:bg-accent hover:text-accent-foreground"
               >
                 <Icon className="w-5 h-5" />
                 <span>{item.name}</span>
@@ -112,11 +114,11 @@ export default function DashboardLayout({
         </nav>
 
         {/* User Info + Logout */}
-        <div className="border-t border-gray-200 dark:border-gray-800 p-4">
-          <div className="px-4 py-3 mb-2">
-            <p className="text-sm font-medium truncate">{user.name}</p>
-            <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{user.email}</p>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+        <div className="border-t border-border px-4 py-4">
+          <div className="mb-3 space-y-1 rounded-md border border-border/60 bg-page px-3 py-3">
+            <p className="text-sm font-semibold leading-tight text-foreground">{user.name}</p>
+            <p className="text-xs text-muted-foreground">{user.email}</p>
+            <p className="text-xs text-muted-foreground">
               {user.role === 'super_admin' ? 'Super Admin' : user.role === 'admin' ? 'Administrador' : 'Jogador'}
             </p>
           </div>
@@ -134,14 +136,14 @@ export default function DashboardLayout({
       {/* Overlay (mobile) */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <div className="p-4 md:p-8 mt-16 md:mt-0">
+      <main className="flex-1 overflow-auto bg-page text-page-foreground">
+        <div className="mt-16 space-y-6 p-4 md:mt-0 md:p-8">
           {children}
         </div>
       </main>

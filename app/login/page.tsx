@@ -35,69 +35,69 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800">
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 p-6 z-10">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="text-white font-bold text-2xl">
-            🎯 Poker Manager
-          </div>
-          <div className="flex items-center gap-4">
+    <div className="relative min-h-screen bg-page text-page-foreground">
+      <div className="absolute inset-x-0 top-0 z-10 border-b border-border bg-surface/80 backdrop-blur supports-[backdrop-filter]:bg-surface/60">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+          <div className="text-lg font-semibold tracking-tight text-foreground">🎯 Poker Manager</div>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <ThemeToggle />
-            <div className="text-white/80">
+            <span>
               Não tem conta?{' '}
-              <Link href="/register" className="text-white underline hover:text-blue-200">
+              <Link href="/register" className="font-medium text-primary">
                 Cadastre-se
               </Link>
-            </div>
+            </span>
           </div>
         </div>
       </div>
 
-      <div className="min-h-screen flex">
-        {/* Lado esquerdo - Informações */}
-        <div className="hidden lg:flex lg:w-1/2 flex-col justify-center p-12 text-white">
-          <div className="max-w-md">
-            <h1 className="text-4xl font-bold mb-6">
-              Gerencie suas sessões de poker como um profissional
-            </h1>
-            
-            <div className="space-y-4 mb-8">
-              {[
-                'Controle completo de buy-ins e cash-outs',
-                'Rankings automáticos e estatísticas',
-                'Convites para jogadores do grupo',
-                'Sistema de recomendações inteligentes'
-              ].map((feature, i) => (
-                <div key={i} className="flex items-center">
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                    ✓
-                  </div>
-                  <span>{feature}</span>
-                </div>
-              ))}
+      <div className="flex min-h-screen flex-col lg:flex-row">
+        <div className="relative hidden min-h-screen flex-1 flex-col justify-center overflow-hidden bg-gradient-to-br from-primary/15 via-primary/5 to-transparent px-12 py-24 text-foreground lg:flex">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent" aria-hidden />
+          <div className="relative z-10 max-w-lg space-y-10">
+            <div className="space-y-3">
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                Plataforma completa
+              </span>
+              <h1 className="text-4xl font-bold tracking-tight">Gerencie suas sessões de poker como um profissional</h1>
+              <p className="text-base text-muted-foreground/80">
+                Centralize estatísticas, convites e inteligência do PokerBot em uma única interface moderna e responsiva.
+              </p>
             </div>
+
+            <ul className="space-y-4 text-sm">
+              {[
+                'Controle detalhado de buy-ins, cash-outs e resultados',
+                'Rankings automáticos com gráficos e insights',
+                'Convites e aprovação por papel com notificações',
+                'PokerBot com recomendações otimizadas a cada sessão'
+              ].map((feature, index) => (
+                <li key={feature} className="flex items-start gap-3">
+                  <div className="mt-1 inline-flex h-6 w-6 flex-none items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+                    {index + 1}
+                  </div>
+                  <span className="leading-relaxed text-foreground/90">{feature}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
-        {/* Lado direito - Formulário de login */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+        <div className="flex w-full flex-1 items-center justify-center bg-surface px-6 py-24 shadow-inner lg:bg-transparent">
           <div className="w-full max-w-md">
-            <Card>
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl">Fazer Login</CardTitle>
-                <CardDescription>
-                  Acesse sua conta e gerencie suas sessões
+            <Card className="border-none bg-surface text-surface-foreground shadow-[var(--shadow-soft)]">
+              <CardHeader className="space-y-3 text-center">
+                <CardTitle className="text-2xl font-semibold">Fazer login</CardTitle>
+                <CardDescription className="text-sm text-muted-foreground">
+                  Acesse sua conta para continuar gerenciando suas sessões
                 </CardDescription>
               </CardHeader>
 
-              <CardContent>
+              <CardContent className="space-y-6">
                 {error && (
-                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="flex items-center">
-                      <div className="text-red-500 mr-2">⚠️</div>
-                      <div className="text-red-700 text-sm">{error}</div>
-                    </div>
+                  <div className="flex items-center gap-3 rounded-md border border-destructive/50 bg-destructive/15 px-4 py-3 text-sm text-destructive">
+                    <span className="text-lg leading-none">⚠️</span>
+                    <span>{error}</span>
                   </div>
                 )}
 
@@ -131,7 +131,7 @@ export default function LoginPage() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        className="absolute inset-y-0 right-3 flex items-center text-muted-foreground transition-colors hover:text-foreground"
                         disabled={loading}
                       >
                         {showPassword ? '🙈' : '👁️'}
@@ -139,14 +139,10 @@ export default function LoginPage() {
                     </div>
                   </div>
 
-                  <Button
-                    type="submit"
-                    disabled={loading || !formData.email || !formData.password}
-                    className="w-full"
-                  >
+                  <Button type="submit" disabled={loading || !formData.email || !formData.password} className="w-full">
                     {loading ? (
-                      <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-current" />
                         Entrando...
                       </div>
                     ) : (
@@ -155,22 +151,17 @@ export default function LoginPage() {
                   </Button>
                 </form>
 
-                <div className="mt-8 text-center space-y-4">
-                  <div className="text-sm text-gray-600">
+                <div className="space-y-4 pt-2 text-center text-sm text-muted-foreground">
+                  <p>
                     Esqueceu sua senha?{' '}
-                    <a href="#" className="text-blue-600 hover:underline">
-                      Recuperar
+                    <a href="#" className="font-medium text-primary">
+                      Recuperar acesso
                     </a>
-                  </div>
-                  
-                  <div className="border-t border-gray-200 pt-4">
-                    <div className="text-sm text-gray-600">
-                      Novo por aqui?
-                    </div>
-                    <Link 
-                      href="/register" 
-                      className="text-blue-600 hover:underline font-medium"
-                    >
+                  </p>
+
+                  <div className="border-t border-border pt-4">
+                    <p className="mb-1">Novo por aqui?</p>
+                    <Link href="/register" className="font-medium text-primary">
                       Criar conta gratuita
                     </Link>
                   </div>

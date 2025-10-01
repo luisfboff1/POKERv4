@@ -58,138 +58,159 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800">
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 p-6 z-10">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="text-white font-bold text-2xl">
-            🎯 Poker Manager
-          </div>
-          <div className="flex items-center gap-4">
+    <div className="relative min-h-screen bg-page text-page-foreground">
+      <div className="absolute inset-x-0 top-0 z-10 border-b border-border bg-surface/80 backdrop-blur supports-[backdrop-filter]:bg-surface/60">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+          <div className="text-lg font-semibold tracking-tight text-foreground">🎯 Poker Manager</div>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <ThemeToggle />
-            <div className="text-white/80">
+            <span>
               Já tem conta?{' '}
-              <Link href="/login" className="text-white underline hover:text-blue-200">
+              <Link href="/login" className="font-medium text-primary">
                 Fazer login
               </Link>
-            </div>
+            </span>
           </div>
         </div>
       </div>
 
-      <div className="min-h-screen flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Criar Conta</CardTitle>
-              <CardDescription>
-                Cadastre-se gratuitamente e comece a gerenciar suas sessões
-              </CardDescription>
-            </CardHeader>
+      <div className="flex min-h-screen flex-col lg:flex-row">
+        <div className="relative hidden min-h-screen flex-1 flex-col justify-center overflow-hidden bg-gradient-to-br from-primary/15 via-primary/5 to-transparent px-12 py-24 text-foreground lg:flex">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/5 to-transparent" aria-hidden />
+          <div className="relative z-10 max-w-lg space-y-10">
+            <div className="space-y-3">
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                Cadastro em minutos
+              </span>
+              <h1 className="text-4xl font-bold tracking-tight">Crie sua conta e organize o clube com facilidade</h1>
+              <p className="text-base text-muted-foreground/80">
+                Configure times, convites e acompanhamento financeiro em um ambiente seguro e performático.
+              </p>
+            </div>
 
-            <CardContent>
-              {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <div className="flex items-center">
-                    <div className="text-red-500 mr-2">⚠️</div>
-                    <div className="text-red-700 text-sm">{error}</div>
+            <ul className="space-y-4 text-sm">
+              {[
+                'Convites com aprovação automática ou manual por papel',
+                'Visão consolidada das transações por jogador',
+                'PokerBot integrado com recomendações estratégicas',
+                'Suporte a temas claro e escuro para todas as telas'
+              ].map((feature, index) => (
+                <li key={feature} className="flex items-start gap-3">
+                  <div className="mt-1 inline-flex h-6 w-6 flex-none items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+                    {index + 1}
                   </div>
-                </div>
-              )}
+                  <span className="leading-relaxed text-foreground/90">{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome completo</Label>
-                  <Input
-                    type="text"
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Seu nome"
-                    required
-                    disabled={loading}
-                    className="bg-white text-gray-900"
-                  />
-                </div>
+        <div className="flex w-full flex-1 items-center justify-center bg-surface px-6 py-24 shadow-inner lg:bg-transparent">
+          <div className="w-full max-w-md">
+            <Card className="border-none bg-surface text-surface-foreground shadow-[var(--shadow-soft)]">
+              <CardHeader className="space-y-3 text-center">
+                <CardTitle className="text-2xl font-semibold">Criar conta</CardTitle>
+                <CardDescription className="text-sm text-muted-foreground">
+                  Cadastre-se para acompanhar suas partidas com o Poker Manager
+                </CardDescription>
+              </CardHeader>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    type="email"
-                    id="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="seu@email.com"
-                    required
-                    disabled={loading}
-                    className="bg-white text-gray-900"
-                  />
-                </div>
+              <CardContent className="space-y-6">
+                {error && (
+                  <div className="flex items-center gap-3 rounded-md border border-destructive/50 bg-destructive/15 px-4 py-3 text-sm text-destructive">
+                    <span className="text-lg leading-none">⚠️</span>
+                    <span>{error}</span>
+                  </div>
+                )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Senha</Label>
-                  <div className="relative">
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nome completo</Label>
                     <Input
-                      type={showPassword ? 'text' : 'password'}
-                      id="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="Mínimo 6 caracteres"
+                      type="text"
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Seu nome"
                       required
                       disabled={loading}
-                      className="bg-white text-gray-900 pr-12"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                      disabled={loading}
-                    >
-                      {showPassword ? '🙈' : '👁️'}
-                    </button>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirmar senha</Label>
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    id="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    placeholder="Repita a senha"
-                    required
-                    disabled={loading}
-                    className="bg-white text-gray-900"
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      type="email"
+                      id="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="seu@email.com"
+                      required
+                      disabled={loading}
+                    />
+                  </div>
 
-                <Button
-                  type="submit"
-                  disabled={loading || !formData.email || !formData.password || !formData.name}
-                  className="w-full"
-                >
-                  {loading ? (
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      Criando conta...
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Senha</Label>
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? 'text' : 'password'}
+                        id="password"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        placeholder="Mínimo 6 caracteres"
+                        required
+                        disabled={loading}
+                        className="pr-12"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-3 flex items-center text-muted-foreground transition-colors hover:text-foreground"
+                        disabled={loading}
+                      >
+                        {showPassword ? '🙈' : '👁️'}
+                      </button>
                     </div>
-                  ) : (
-                    'Criar conta'
-                  )}
-                </Button>
-              </form>
+                  </div>
 
-              <div className="mt-6 text-center">
-                <div className="text-sm text-gray-600">
-                  Já tem uma conta?{' '}
-                  <Link href="/login" className="text-blue-600 hover:underline font-medium">
-                    Fazer login
-                  </Link>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirmar senha</Label>
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      id="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      placeholder="Repita a senha"
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <Button type="submit" disabled={loading || !formData.email || !formData.password || !formData.name} className="w-full">
+                    {loading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-current" />
+                        Criando conta...
+                      </div>
+                    ) : (
+                      'Criar conta'
+                    )}
+                  </Button>
+                </form>
+
+                <div className="pt-2 text-center text-sm text-muted-foreground">
+                  <p>
+                    Já tem uma conta?{' '}
+                    <Link href="/login" className="font-medium text-primary">
+                      Fazer login
+                    </Link>
+                  </p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

@@ -7,24 +7,28 @@ export default function RankingPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-4xl font-bold">Ranking de Jogadores</h1>
-        <p className="text-muted-foreground mt-2">
-          Classificação baseada no desempenho geral
+        <h1 className="text-3xl font-semibold tracking-tight">Ranking de jogadores</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Veja a evolução do desempenho de cada membro do clube ao longo das sessões
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Tabela de Classificação</CardTitle>
-          <CardDescription>
-            Rankings calculados automaticamente
+      <Card className="bg-surface text-surface-foreground">
+        <CardHeader className="flex flex-col gap-1">
+          <CardTitle className="text-lg">Tabela de classificação</CardTitle>
+          <CardDescription className="text-muted-foreground/80">
+            Rankings calculados automaticamente com base em lucros, consistência e participação
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-12 text-muted-foreground">
-            <Trophy className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>Nenhum ranking disponível</p>
-            <p className="text-sm mt-2">O ranking será calculado após as primeiras sessões</p>
+          <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border/80 bg-page py-12 text-center text-sm text-muted-foreground">
+            <Trophy className="h-10 w-10 text-primary/60" />
+            <div>
+              <p className="text-base font-medium text-foreground">Nenhum ranking disponível</p>
+              <p className="mt-1 text-muted-foreground">
+                Assim que novas sessões forem inseridas os rankings serão atualizados automaticamente.
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

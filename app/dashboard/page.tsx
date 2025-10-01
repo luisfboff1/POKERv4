@@ -13,61 +13,77 @@ export default function DashboardPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Bem-vindo, {user?.name}!</h1>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          Gerencie suas sessões de poker e acompanhe os rankings
+        <h1 className="text-3xl font-semibold tracking-tight">Bem-vindo, {user?.name}!</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Organize sessões, acompanhe o PokerBot e mantenha controle financeiro em tempo real
         </p>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
         {(user?.role === 'admin' || user?.role === 'super_admin') && (
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <Link href="/dashboard/new">
-              <CardHeader>
-                <Plus className="w-10 h-10 text-primary mb-2" />
-                <CardTitle>Nova Sessão</CardTitle>
-                <CardDescription>
-                  Criar uma nova partida de poker
-                </CardDescription>
+          <Card className="transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]">
+            <Link href="/dashboard/new" className="block">
+              <CardHeader className="space-y-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Plus className="h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <CardTitle className="text-lg">Nova sessão</CardTitle>
+              <CardDescription className="text-muted-foreground/80">
+                Configure mesas, blinds e jogadores em minutos
+              </CardDescription>
+                </div>
               </CardHeader>
             </Link>
           </Card>
         )}
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-          <Link href="/dashboard/history">
-            <CardHeader>
-              <History className="w-10 h-10 text-primary mb-2" />
-              <CardTitle>Histórico</CardTitle>
-              <CardDescription>
-                Ver todas as sessões anteriores
+        <Card className="transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]">
+          <Link href="/dashboard/history" className="block">
+            <CardHeader className="space-y-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <History className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <CardTitle className="text-lg">Histórico</CardTitle>
+              <CardDescription className="text-muted-foreground/80">
+                Consulte estatísticas passadas e exporte relatórios
               </CardDescription>
+              </div>
             </CardHeader>
           </Link>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-          <Link href="/dashboard/ranking">
-            <CardHeader>
-              <Trophy className="w-10 h-10 text-primary mb-2" />
-              <CardTitle>Ranking</CardTitle>
-              <CardDescription>
-                Ver classificação dos jogadores
+        <Card className="transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]">
+          <Link href="/dashboard/ranking" className="block">
+            <CardHeader className="space-y-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Trophy className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <CardTitle className="text-lg">Ranking</CardTitle>
+              <CardDescription className="text-muted-foreground/80">
+                Acompanhe desempenho, ganhos e constância
               </CardDescription>
+              </div>
             </CardHeader>
           </Link>
         </Card>
 
         {(user?.role === 'admin' || user?.role === 'super_admin') && (
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <Link href="/dashboard/invites">
-              <CardHeader>
-                <Users className="w-10 h-10 text-primary mb-2" />
-                <CardTitle>Convites</CardTitle>
-                <CardDescription>
-                  Convidar novos jogadores
-                </CardDescription>
+          <Card className="transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]">
+            <Link href="/dashboard/invites" className="block">
+              <CardHeader className="space-y-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Users className="h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <CardTitle className="text-lg">Convites</CardTitle>
+              <CardDescription className="text-muted-foreground/80">
+                Envie convites e acompanhe aprovações em tempo real
+              </CardDescription>
+                </div>
               </CardHeader>
             </Link>
           </Card>
@@ -75,21 +91,37 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Sessions */}
-      <Card>
+      <Card className="bg-surface text-surface-foreground">
         <CardHeader>
-          <CardTitle>Sessões Recentes</CardTitle>
-          <CardDescription>
-            Últimas partidas registradas
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Sessões recentes</CardTitle>
+              <CardDescription>
+                Visualize rapidamente o status das últimas mesas
+              </CardDescription>
+            </div>
+            {(user?.role === 'admin' || user?.role === 'super_admin') && (
+              <Button asChild variant="outline" size="sm">
+                <Link href="/dashboard/new">
+                  <Plus className="mr-2 h-4 w-4" />Nova sessão
+                </Link>
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-12 text-muted-foreground">
-            <History className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>Nenhuma sessão encontrada</p>
+          <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border/80 bg-surface py-12 text-center text-sm text-muted-foreground">
+            <History className="h-10 w-10 text-primary/60" />
+            <div>
+              <p className="text-base font-medium text-foreground">Nenhuma sessão encontrada</p>
+              <p className="mt-1 text-muted-foreground">
+                Assim que registrar sessões, elas aparecerão aqui automaticamente.
+              </p>
+            </div>
             {(user?.role === 'admin' || user?.role === 'super_admin') && (
-              <Button asChild className="mt-4">
+              <Button asChild variant="secondary">
                 <Link href="/dashboard/new">
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="mr-2 h-4 w-4" />
                   Criar primeira sessão
                 </Link>
               </Button>
