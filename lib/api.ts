@@ -1,5 +1,5 @@
 import { getToken } from './auth';
-import type { ApiResponse } from './types';
+import type { ApiResponse, SessionPlayerData } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
@@ -90,19 +90,19 @@ export const api = {
     // GET individual (usa ?id=) agora suportado
     get: (id: number) => fetchAPI(`/session.php?id=${id}`),
     
-    create: (data: Record<string, any>) =>
+    create: (data: { date: string; location: string; players_data?: SessionPlayerData[] }) =>
       fetchAPI('/session.php', {
         method: 'POST',
         body: JSON.stringify({ action: 'create', ...data }),
       }),
     
-    update: (id: number, data: Record<string, any>) =>
+    update: (id: number, data: Partial<{ date: string; location: string; players_data: SessionPlayerData[] }>) =>
       fetchAPI('/session.php', {
         method: 'POST',
         body: JSON.stringify({ action: 'update', id, ...data }),
       }),
     // Atualização específica de pagamentos (session_paid / janta_paid)
-    updatePayments: (id: number, playersData: any[]) =>
+    updatePayments: (id: number, playersData: Pick<SessionPlayerData, 'id' | 'name' | 'session_paid' | 'janta_paid'>[]) =>
       fetchAPI('/session.php', {
         method: 'POST',
         body: JSON.stringify({ action: 'update_payments', id, players_data: playersData }),

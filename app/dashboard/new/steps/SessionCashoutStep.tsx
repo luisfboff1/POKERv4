@@ -8,11 +8,13 @@ import type { LiveSession, LivePlayer } from '@/lib/types';
 import type { SessionStep } from './SessionCreateStep';
 import { formatCurrency } from '@/lib/format';
 
+type EditableLivePlayerField = 'janta' | 'cashout' | 'session_paid' | 'janta_paid';
+
 interface SessionCashoutStepProps {
   currentSession: LiveSession;
   totals: { totalBuyin: number; totalCashout: number; totalJanta: number };
   isBalanced: boolean;
-  updatePlayerField: (id: string, field: keyof LivePlayer, value: any) => void;
+  updatePlayerField: <K extends EditableLivePlayerField>(id: string, field: K, value: LivePlayer[K]) => void;
   setStep: (step: SessionStep) => void;
   calculateRecommendations: () => void;
 }

@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useSessions, usePlayers } from '@/hooks/useApi';
+import type { Session, SessionPlayerData } from '@/lib/types';
 import Link from 'next/link';
 import { Plus, History, Trophy, Users } from 'lucide-react';
 
@@ -15,21 +16,24 @@ export default function DashboardPage() {
   // Estatísticas gerais
   const stats = {
     totalSessions: sessions.length,
-    pendingSessions: sessions.filter((s: any) => s.status === 'pending').length,
+    pendingSessions: sessions.filter((s: Session) => s.status === 'pending').length,
     totalPlayers: players.length,
-    recentSessions: sessions.slice(0, 5)
+    recentSessions: sessions.slice(0, 5) as Session[]
   };
 
   // Calcular estatísticas financeiras
-  const financialStats = sessions.reduce((acc: any, session: any) => {
-    if (session.players_data && Array.isArray(session.players_data)) {
-      session.players_data.forEach((player: any) => {
-        acc.totalBuyin += player.buyin || 0;
-        acc.totalCashout += player.cashout || 0;
-      });
-    }
-    return acc;
-  }, { totalBuyin: 0, totalCashout: 0 });
+  const financialStats = sessions.reduce(
+    (acc: { totalBuyin: number; totalCashout: number }, session: Session) => {
+      if (Array.isArray(session.players_data)) {
+        session.players_data.forEach((player: SessionPlayerData) => {
+          acc.totalBuyin += player.buyin || 0;
+          acc.totalCashout += player.cashout || 0;
+        });
+      }
+      return acc;
+    },
+    { totalBuyin: 0, totalCashout: 0 }
+  );
 
   return (
     <div className="space-y-8">
@@ -218,10 +222,10 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {stats.recentSessions.map((session: any) => {
+              {stats.recentSessions.map((session: Session) => {
                 const playerCount = session.players_data ? session.players_data.length : 0;
-                const totalBuyin = session.players_data ? 
-                  session.players_data.reduce((sum: number, p: any) => sum + (p.buyin || 0), 0) : 0;
+                const totalBuyin = session.players_data ?
+                  session.players_data.reduce((sum: number, p: SessionPlayerData) => sum + (p.buyin || 0), 0) : 0;
                 
                 return (
                   <div 

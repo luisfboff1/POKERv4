@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useSessions } from '@/hooks/useApi';
 import { formatCurrency } from '@/lib/format';
-import type { Session } from '@/lib/types';
+import type { Session, SessionPlayerData } from '@/lib/types';
 import { LoadingSpinner } from '@/components/ui/loading';
 
 interface PlayerPaymentRow {
@@ -37,13 +37,13 @@ export default function EditSessionPage() {
 
   useEffect(() => {
     if (session) {
-      const mapped = (session.players_data || []).map((p: any) => ({
+      const mapped = (session.players_data || []).map((p: SessionPlayerData) => ({
         id: p.id,
         name: p.name,
-        buyin: p.buyin ?? p.totalBuyin ?? 0,
-        totalBuyin: p.totalBuyin ?? p.buyin ?? 0,
+        buyin: p.buyin ?? 0,
+        totalBuyin: p.buyin ?? 0,
         cashout: p.cashout ?? 0,
-        janta: p.janta ?? 0,
+        janta: 0,
         session_paid: !!p.session_paid,
         janta_paid: !!p.janta_paid,
       }));
@@ -53,7 +53,7 @@ export default function EditSessionPage() {
 
   const originalStateRef = useMemo(() => {
     if (!session) return [] as Array<{ key: string | number; session_paid: boolean; janta_paid: boolean }>;
-    return (session.players_data || []).map((p: any) => ({
+    return (session.players_data || []).map((p: SessionPlayerData) => ({
       key: p.id ?? p.name,
       session_paid: !!p.session_paid,
       janta_paid: !!p.janta_paid,
@@ -88,8 +88,9 @@ export default function EditSessionPage() {
       await updateSessionPayments(sessionId, payload);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
-    } catch (e: any) {
-      setError(e.message || 'Erro ao salvar');
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Erro ao salvar';
+      setError(message);
     } finally {
       setSaving(false);
     }

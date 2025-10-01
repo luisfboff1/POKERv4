@@ -8,12 +8,14 @@ import type { LiveSession, LivePlayer } from '@/lib/types';
 import type { SessionStep } from './SessionCreateStep';
 import { formatCurrency } from '@/lib/format';
 
+type EditableLivePlayerField = 'janta' | 'cashout' | 'session_paid' | 'janta_paid';
+
 interface SessionActiveStepProps {
   currentSession: LiveSession;
   totals: { totalBuyin: number; totalJanta: number; playersCount: number };
   addPlayerModal: { open: () => void };
   setStep: (step: SessionStep) => void;
-  updatePlayerField: (id: string, field: keyof LivePlayer, value: any) => void;
+  updatePlayerField: <K extends EditableLivePlayerField>(id: string, field: K, value: LivePlayer[K]) => void;
   addRebuy: (id: string, amount: number) => void;
 }
 

@@ -51,16 +51,17 @@ export function Modal({
       <div 
         className={`
           relative w-full ${sizeClasses[size]} 
-          bg-background text-foreground
+          bg-card text-card-foreground
           border border-border
           rounded-lg shadow-xl
           max-h-[90vh] overflow-hidden
           animate-in fade-in-0 zoom-in-95 duration-300
+          supports-[backdrop-filter]:bg-card/95
         `}
       >
         {/* Header */}
         {showHeader && (title || showCloseButton) && (
-          <div className="flex items-center justify-between p-6 border-b border-border bg-background">
+          <div className="flex items-center justify-between p-6 border-b border-border bg-card">
             <div className="flex-1 min-w-0">
               {title && (
                 <h2 className="text-lg font-semibold truncate">
@@ -88,7 +89,7 @@ export function Modal({
         )}
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-140px)] bg-background text-foreground">
+        <div className="overflow-y-auto max-h-[calc(90vh-140px)] bg-card text-card-foreground">
           {children}
         </div>
       </div>

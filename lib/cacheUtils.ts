@@ -1,6 +1,15 @@
 export const CACHE_KEY = 'current_session_cache';
 
-export function saveToCache(session: any) {
+// Estrutura mínima esperada de sessão em cache (flexível)
+export interface CachedSessionBase {
+  id?: number | string;
+  date?: string;
+  location?: string;
+  players_data?: unknown;
+  [extra: string]: unknown;
+}
+
+export function saveToCache<T extends CachedSessionBase>(session: T) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify({ ...session, lastSaved: new Date().toISOString() }));
   } catch (error) {
@@ -8,11 +17,11 @@ export function saveToCache(session: any) {
   }
 }
 
-export function loadFromCache() {
+export function loadFromCache<T extends CachedSessionBase>(): (T & { lastSaved: string }) | null {
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
-      const session = JSON.parse(cached);
+      const session = JSON.parse(cached) as T & { lastSaved: string };
       const lastSaved = new Date(session.lastSaved);
       const now = new Date();
       const hoursDiff = (now.getTime() - lastSaved.getTime()) / (1000 * 60 * 60);

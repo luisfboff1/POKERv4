@@ -53,8 +53,19 @@ export interface Session {
   created_by_name?: string;
   created_at: string;
   team_id: number;
-  players_data?: any[];
-  recommendations?: any[];
+  players_data?: SessionPlayerData[];
+  recommendations?: TransferRecommendation[];
+}
+
+// Player data persisted with a historical session (subset of LivePlayer plus payment flags)
+export interface SessionPlayerData {
+  id?: number | string; // Pode ser string se originado de sessão live sem persistir ainda
+  name: string;
+  buyin?: number; // total buy-in acumulado
+  cashout?: number; // valor retirado
+  session_paid?: boolean; // pagou taxa / sessão
+  janta_paid?: boolean; // pagou janta
+  // Campos adicionais futuros (ex: rake, bounty) podem ser adicionados aqui
 }
 
 // ===== LIVE SESSION (for real-time game management) =====
