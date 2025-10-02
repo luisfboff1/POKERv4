@@ -147,10 +147,23 @@ function generatePhpEnv(envVars) {
 }
 
 /**
- * Gerar arquivo .env.local para Next.js
+ * Gerar arquivo .env.local para Next.js (apenas se não existir ou estiver incompleto)
  */
 function generateNextEnv(envVars) {
-  console.log('🔧 Gerando .env.local para Next.js...');
+  const nextEnvPath = join(rootDir, '.env.local');
+  
+  // Verificar se já existe um .env.local completo
+  if (existsSync(nextEnvPath)) {
+    const existingContent = readFileSync(nextEnvPath, 'utf8');
+    
+    // Se já tem configurações de banco (não é só NEXT_PUBLIC_*), não sobrescrever
+    if (existingContent.includes('DB_HOST=') && existingContent.includes('JWT_SECRET=')) {
+      console.log('� .env.local já existe com configurações completas - mantendo arquivo');
+      return;
+    }
+  }
+  
+  console.log('�🔧 Gerando .env.local para Next.js...');
   
   let nextEnvContent = '# Arquivo gerado automaticamente pelo build script\n';
   nextEnvContent += '# Variáveis públicas para Next.js (NEXT_PUBLIC_*)\n\n';
@@ -161,7 +174,6 @@ function generateNextEnv(envVars) {
     }
   });
   
-  const nextEnvPath = join(rootDir, '.env.local');
   writeFileSync(nextEnvPath, nextEnvContent);
   
   console.log(`✅ Arquivo .env.local atualizado (${nextEnvContent.length} bytes)`);

@@ -149,10 +149,10 @@ export const api = {
   invites: {
     list: () => fetchAPI('/invite.php?action=list'),
     
-    create: (email: string, role: string) =>
-      fetchAPI('/invite.php', {
+    create: (email: string, role: string, name?: string) =>
+      fetchAPI('/invite.php?action=send', {
         method: 'POST',
-        body: JSON.stringify({ action: 'create', email, role }),
+        body: JSON.stringify({ email, role, name }),
       }),
     
     accept: (token: string, password: string, name: string) =>

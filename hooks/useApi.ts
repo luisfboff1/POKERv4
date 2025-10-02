@@ -126,9 +126,9 @@ export function useInvites() {
     []
   );
 
-  const createInvite = async (email: string, role: string) => {
+  const createInvite = async (email: string, role: string, name?: string) => {
     try {
-      await api.invites.create(email, role);
+      await api.invites.create(email, role, name);
       await refetch();
       return true;
     } catch (err) {

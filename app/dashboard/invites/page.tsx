@@ -26,7 +26,8 @@ export default function InvitesPage() {
   const { confirm, ConfirmModalComponent } = useConfirmModal();
   const [formData, setFormData] = useState({
     email: '',
-    role: 'player'
+    role: 'player',
+    name: ''
   });
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
@@ -48,8 +49,9 @@ export default function InvitesPage() {
     setFormLoading(true);
 
     try {
-      await createInvite(formData.email, formData.role);
-      setFormData({ email: '', role: 'player' });
+      // Se quiser adicionar campo de nome, basta incluir em formData e passar aqui
+      await createInvite(formData.email, formData.role, formData.name || '');
+  setFormData({ email: '', role: 'player', name: '' });
       setShowForm(false);
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : 'Erro ao enviar convite');
@@ -203,7 +205,7 @@ export default function InvitesPage() {
                   onClick={() => {
                     setShowForm(false);
                     setFormError('');
-                    setFormData({ email: '', role: 'player' });
+                    setFormData({ email: '', role: 'player', name: '' });
                   }}
                 >
                   Cancelar
