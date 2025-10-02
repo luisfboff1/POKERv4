@@ -7,6 +7,7 @@
 require_once 'config.php';
 require_once 'middleware/auth_middleware.php';
 require_once 'email_config.php';
+require_once 'app_config.php';
 
 // Autenticação obrigatória
 $current_user = AuthMiddleware::requireAuth($pdo);
@@ -305,7 +306,8 @@ function handleCancelInvite() {
  */
 function sendInviteEmail($tenant, $inviter, $email, $name, $role, $token) {
     $subject = "🎯 {$inviter['name']} te convidou para a home game: {$tenant['name']}";
-    $accept_url = BASE_URL . "/accept-invite?token=" . $token;
+    // Usar app_url() para gerar URL correta independente do ambiente
+    $accept_url = app_url('accept-invite') . '?token=' . $token;
     
     // Usar o template atualizado do email_config.php
     $html_body = getInviteEmailTemplate($inviter['name'], $tenant['name'], $accept_url);

@@ -5,6 +5,7 @@
  */
 
 require_once 'config.php';
+require_once 'app_config.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -122,8 +123,9 @@ function sendApprovalEmail($tenant_id, $company, $email, $name, $plan, $phone, $
     $admin_email = 'luisfboff@hotmail.com';
     $subject = "🎯 Nova Solicitação de Cadastro - Poker SaaS";
     
-    $approve_url = "https://" . $_SERVER['HTTP_HOST'] . "/api/approve.php?token=" . $approval_token . "&action=approve";
-    $reject_url = "https://" . $_SERVER['HTTP_HOST'] . "/api/approve.php?token=" . $approval_token . "&action=reject";
+    // Usar app_url() para gerar URLs corretas independente do ambiente
+    $approve_url = app_url('api/approve.php') . '?token=' . $approval_token . '&action=approve';
+    $reject_url = app_url('api/approve.php') . '?token=' . $approval_token . '&action=reject';
     
     $html_body = "
     <!DOCTYPE html>

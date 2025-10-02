@@ -6,17 +6,8 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 
-// Carregar variáveis de ambiente do arquivo .env
-if (file_exists(__DIR__ . '/.env')) {
-    $lines = file(__DIR__ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0) {
-            continue; // Pular comentários
-        }
-        list($name, $value) = explode('=', $line, 2);
-        $_ENV[trim($name)] = trim($value);
-    }
-}
+// Carregar configurações centralizadas
+require_once __DIR__ . '/app_config.php';
 
 // Configurações SMTP - Usar variáveis de ambiente por segurança
 define('SMTP_HOST', $_ENV['SMTP_HOST'] ?? 'smtp.hostinger.com'); // Servidor SMTP correto do Hostinger
@@ -29,8 +20,8 @@ define('SMTP_ENCRYPTION', $_ENV['SMTP_ENCRYPTION'] ?? 'tls');
 define('FROM_EMAIL', 'noreply@luisfboff.com');
 define('FROM_NAME', 'Poker SaaS');
 
-// URL base do sistema
-define('BASE_URL', 'https://poker.luisfboff.com');
+// URL base do sistema - usar configuração dinâmica de app_config.php
+define('BASE_URL', APP_BASE_URL);
 
 // Função principal para enviar email
 function sendEmail($to, $subject, $body, $isHTML = true) {
@@ -70,7 +61,7 @@ function sendEmail($to, $subject, $body, $isHTML = true) {
         // Log do erro
         error_log("Erro ao enviar email: {$mail->ErrorInfo}");
         
-        // Fallback: salvar em arquivo para debug
+        // Fallback: salvar em arquivo para debug usando diretório temporário
         $logData = [
             'timestamp' => date('Y-m-d H:i:s'),
             'to' => $to,
@@ -79,7 +70,9 @@ function sendEmail($to, $subject, $body, $isHTML = true) {
             'error' => $mail->ErrorInfo
         ];
         
-        file_put_contents(__DIR__ . '/email_log.txt', json_encode($logData) . "\n", FILE_APPEND);
+        // Usar diretório de logs configurável
+        $logFile = APP_LOG_DIR . '/email_' . date('Y-m-d') . '.log';
+        file_put_contents($logFile, json_encode($logData) . "\n", FILE_APPEND);
         
         return [
             'success' => false,

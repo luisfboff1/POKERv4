@@ -1,6 +1,7 @@
 <?php
 require_once 'config.php';
 require_once 'middleware/auth_middleware.php';
+require_once 'app_config.php';
 
 // Função para instalar TCPDF via Composer (executar uma vez)
 function installTCPDF() {
@@ -37,21 +38,22 @@ class PokerPDFGenerator {
         
         $html = $this->generateSessionHTML($session, $playersData);
         
+        // Limpar arquivos antigos (mais de 24h)
+        clean_old_files(APP_PDF_DIR, 24 * 60 * 60);
+        
         // Salvar HTML temporário (será PDF real na implementação final)
         $fileName = "session_{$sessionId}_" . date('Y-m-d') . ".html";
-        $filePath = __DIR__ . "/temp_pdfs/" . $fileName;
-        
-        // Criar diretório se não existir
-        if (!is_dir(__DIR__ . "/temp_pdfs/")) {
-            mkdir(__DIR__ . "/temp_pdfs/", 0755, true);
-        }
+        $filePath = APP_PDF_DIR . "/" . $fileName;
         
         file_put_contents($filePath, $html);
+        
+        // Gerar URL de download dinâmica considerando base path
+        $downloadUrl = app_path('api/download_pdf.php') . '?file=' . urlencode($fileName);
         
         return [
             'file_name' => $fileName,
             'file_path' => $filePath,
-            'download_url' => "/api/download_pdf.php?file=" . urlencode($fileName),
+            'download_url' => $downloadUrl,
             'session_id' => $sessionId,
             'generated_at' => date('Y-m-d H:i:s')
         ];
@@ -71,19 +73,21 @@ class PokerPDFGenerator {
         
         $html = $this->generateMonthlyHTML($sessions, $month, $year);
         
-        $fileName = "monthly_report_{$year}_{$month}_" . date('Y-m-d') . ".html";
-        $filePath = __DIR__ . "/temp_pdfs/" . $fileName;
+        // Limpar arquivos antigos (mais de 24h)
+        clean_old_files(APP_PDF_DIR, 24 * 60 * 60);
         
-        if (!is_dir(__DIR__ . "/temp_pdfs/")) {
-            mkdir(__DIR__ . "/temp_pdfs/", 0755, true);
-        }
+        $fileName = "monthly_report_{$year}_{$month}_" . date('Y-m-d') . ".html";
+        $filePath = APP_PDF_DIR . "/" . $fileName;
         
         file_put_contents($filePath, $html);
+        
+        // Gerar URL de download dinâmica considerando base path
+        $downloadUrl = app_path('api/download_pdf.php') . '?file=' . urlencode($fileName);
         
         return [
             'file_name' => $fileName,
             'file_path' => $filePath,
-            'download_url' => "/api/download_pdf.php?file=" . urlencode($fileName),
+            'download_url' => $downloadUrl,
             'month' => $month,
             'year' => $year,
             'sessions_count' => count($sessions),
