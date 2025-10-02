@@ -14,6 +14,7 @@ interface ModalProps {
   showHeader?: boolean;
   showCloseButton?: boolean;
   closeOnOverlayClick?: boolean;
+  variant?: 'glass' | 'solid';
 }
 
 export function Modal({
@@ -26,6 +27,7 @@ export function Modal({
   showHeader = true,
   showCloseButton = true,
   closeOnOverlayClick = true,
+  variant = 'glass',
 }: ModalProps) {
   if (!isOpen) return null;
 
@@ -48,20 +50,18 @@ export function Modal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
       onClick={handleOverlayClick}
     >
-      <div 
-        className={`
-          relative w-full ${sizeClasses[size]} 
-          bg-card text-card-foreground
-          border border-border
-          rounded-lg shadow-xl
-          max-h-[90vh] overflow-hidden
+      <div
+        className={`relative w-full ${sizeClasses[size]}
+          text-card-foreground border border-border rounded-lg shadow-xl max-h-[90vh] overflow-hidden
           animate-in fade-in-0 zoom-in-95 duration-300
-          supports-[backdrop-filter]:bg-card/95
+          ${variant === 'glass'
+            ? 'bg-card supports-[backdrop-filter]:bg-card/95 backdrop-blur-sm'
+            : 'bg-background'}
         `}
       >
         {/* Header */}
         {showHeader && (title || showCloseButton) && (
-          <div className="flex items-center justify-between p-6 border-b border-border bg-card">
+          <div className={`flex items-center justify-between p-6 border-b border-border ${variant === 'glass' ? 'bg-card/80' : 'bg-background'}`}> 
             <div className="flex-1 min-w-0">
               {title && (
                 <h2 className="text-lg font-semibold truncate">
@@ -89,7 +89,7 @@ export function Modal({
         )}
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-140px)] bg-card text-card-foreground">
+        <div className={`overflow-y-auto max-h-[calc(90vh-140px)] ${variant === 'glass' ? 'bg-card/80' : 'bg-background'} text-card-foreground`}>
           {children}
         </div>
       </div>

@@ -85,6 +85,7 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
       title="Detalhes da Sessão"
       description={session ? `${session.location} - ${new Date(session.date).toLocaleDateString('pt-BR')}` : ''}
       size="lg"
+      variant="solid"
     >
       <ModalContent>
         {session && (
