@@ -305,6 +305,15 @@ function processInvite($token) {
         
         // Criar usuário com role e player_id do convite
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
+        
+        // Debug: verificar role do convite
+        error_log("DEBUG accept_invite - Role do convite: '" . ($invite['role'] ?? 'NULL') . "' (length: " . strlen($invite['role'] ?? '') . ")");
+        
+        // Garantir que o role nunca seja vazio
+        $role = !empty($invite['role']) ? $invite['role'] : 'player';
+        
+        error_log("DEBUG accept_invite - Role final: '$role'");
+        
         $createUserSql = "INSERT INTO users (tenant_id, name, email, password_hash, role, player_id, is_active, created_at) 
                           VALUES (?, ?, ?, ?, ?, ?, 1, NOW())";
         $createUserStmt = $pdo->prepare($createUserSql);
@@ -313,7 +322,7 @@ function processInvite($token) {
             $name,
             $invite['email'],
             $password_hash,
-            $invite['role'],
+            $role,
             $invite['player_id']
         ]);
         $user_id = $pdo->lastInsertId();
@@ -326,11 +335,11 @@ function processInvite($token) {
         // Log da ação
         logAuditAction($invite['tenant_id'], $user_id, 'accept_invite', 'users', $user_id, null, [
             'invite_id' => $invite['id'],
-            'role' => $invite['role']
+            'role' => $role
         ]);
         
         // Mostrar sucesso
-        showSuccess($invite['tenant_name'], $invite['email'], $invite['role']);
+        showSuccess($invite['tenant_name'], $invite['email'], $role);
         
     } catch (Exception $e) {
         error_log("Erro ao processar convite: " . $e->getMessage());
@@ -641,6 +650,10 @@ function processInviteJSON($token) {
             
             // Criar usuário com role e player_id do convite
             $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+            
+            // Garantir que o role nunca seja vazio
+            $role = !empty($invite['role']) ? $invite['role'] : 'player';
+            
             $stmt = $pdo->prepare("
                 INSERT INTO users (tenant_id, name, email, role, password_hash, player_id, created_at, updated_at) 
                 VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
@@ -649,7 +662,7 @@ function processInviteJSON($token) {
                 $invite['tenant_id'],
                 $name,
                 $invite['email'],
-                $invite['role'],
+                $role,
                 $passwordHash,
                 $invite['player_id']
             ]);
