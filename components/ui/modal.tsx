@@ -49,16 +49,16 @@ export function Modal({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
       onClick={handleOverlayClick}
     >
       <div
         className={`relative w-full ${sizeClasses[size]}
           text-card-foreground border border-border rounded-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col
           animate-in fade-in-0 zoom-in-95 duration-300
-          ${variant === 'glass' && !forceOpaque
-            ? 'bg-card/80 supports-[backdrop-filter]:bg-card/70 backdrop-blur'
-            : 'bg-background'}
+          ${forceOpaque || variant === 'solid'
+            ? 'bg-background'
+            : 'bg-card/80 supports-[backdrop-filter]:bg-card/70 backdrop-blur'}
         `}
       >
         {/* Header */}
