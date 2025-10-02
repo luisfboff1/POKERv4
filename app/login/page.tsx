@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { ThemeToggle } from '@/components/theme-toggle';

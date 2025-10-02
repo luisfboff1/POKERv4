@@ -6,7 +6,8 @@ import { useSessions } from '@/hooks/useApi';
 import { useAuth } from '@/contexts/auth-context';
 import { useModal, useConfirmModal } from '@/components/ui/modal';
 import { SessionFilters } from './components/session-filters';
-import { SessionsTable, LocalSession } from './components/sessions-table';
+import { SessionsTable } from './components/sessions-table';
+import type { LocalSession } from './components/sessions-table';
 import { SessionDetailsModal } from './components/session-details-modal';
 // helpers usados dentro dos componentes importados
 

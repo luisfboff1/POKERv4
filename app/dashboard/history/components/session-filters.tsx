@@ -1,7 +1,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Filter, Search } from 'lucide-react';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 export interface SessionFiltersState {
   search: string;

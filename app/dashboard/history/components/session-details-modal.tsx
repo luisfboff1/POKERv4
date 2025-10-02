@@ -1,8 +1,9 @@
 import { Modal, ModalContent } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { PlayerPaymentRow } from './player-payment-row';
-import { LocalSession } from './sessions-table';
-import { useMemo, useState, useRef, Dispatch, SetStateAction } from 'react';
+import type { LocalSession } from './sessions-table';
+import { useMemo, useState, useRef } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 
 interface PlayerStateSnapshot {
   id: string | number;

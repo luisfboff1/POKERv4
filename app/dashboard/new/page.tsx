@@ -13,7 +13,8 @@ import { useTransferRecommendations } from '@/hooks/useTransferRecommendations';
 import type { LiveSession, TransferRecommendation } from '@/lib/types';
 
 // Componentes de etapas
-import { SessionCreateStep, SessionStep } from './steps/SessionCreateStep';
+import { SessionCreateStep } from './steps/SessionCreateStep';
+import type { SessionStep } from './steps/SessionCreateStep';
 import { SessionPlayersStep } from './steps/SessionPlayersStep';
 import { SessionActiveStep } from './steps/SessionActiveStep';
 import { SessionCashoutStep } from './steps/SessionCashoutStep';
