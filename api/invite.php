@@ -1,8 +1,18 @@
+
 <?php
 /**
  * API de Convites - Sistema hierárquico de usuários
  * Permite admins convidarem novos membros para seus tenants
  */
+
+// CORS headers para todas as rotas da API
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 require_once 'config.php';
 require_once 'middleware/auth_middleware.php';
@@ -57,32 +67,121 @@ switch ($method) {
  * ENVIAR CONVITE - Apenas admins podem convidar
  */
 function handleSendInvite() {
+    // FORÇAR RESPOSTA IMEDIATA PARA DEBUG
+    http_response_code(200);
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'FUNCAO EXECUTADA', 'time' => time()]);
+    exit;
+    
     global $pdo, $current_user;
     
     // Verificar se é admin (tenant_admin ou super_admin)
     if (!in_array($current_user['role'], ['admin', 'super_admin'])) {
-        error('Apenas administradores podem enviar convites', 403);
+        http_response_code(403);
+        header('Content-Type: application/json');
+        echo json_encode([
+            'error' => 'Apenas administradores podem enviar convites - DEBUG',
+            'debug' => [
+                'user_role' => $current_user['role'] ?? 'NULL',
+                'expected_roles' => ['admin', 'super_admin'],
+                'current_user' => $current_user
+            ]
+        ]);
+        exit;
     }
     
-    $input = json_decode(file_get_contents('php://input'), true);
-    
-    if (!$input || !isset($input['email'])) {
+    $raw_input = file_get_contents('php://input');
+    $input = json_decode($raw_input, true);
+
+    // Debug: log do input recebido
+    error_log("DEBUG invite.php - Raw input: " . $raw_input);
+    error_log("DEBUG invite.php - Parsed input: " . json_encode($input));    if (!$input || !isset($input['email'])) {
+        error_log("DEBUG invite.php - Email não fornecido. Input: " . json_encode($input));
         error('Email é obrigatório', 400);
     }
     
     $email = trim(strtolower($input['email']));
     $name = trim($input['name'] ?? '');
-    $role = $input['role'] ?? 'user';
+    $role = trim($input['role'] ?? 'player');  // Mudança: default para 'player' e trim
     $target_tenant_id = $input['tenant_id'] ?? $current_user['tenant_id'];
     
+    // Debug: log dos valores extraídos
+    error_log("DEBUG invite.php - Email: $email, Role: '$role' (type: " . gettype($role) . "), Name: $name");
+    error_log("DEBUG invite.php - Role length: " . strlen($role));
+    error_log("DEBUG invite.php - Role bytes: " . bin2hex($role));
+    error_log("DEBUG invite.php - Role comparison - is 'player': " . ($role === 'player' ? 'true' : 'false') . ", is 'admin': " . ($role === 'admin' ? 'true' : 'false'));
+    error_log("DEBUG invite.php - in_array result: " . (in_array($role, ['player', 'admin']) ? 'true' : 'false'));
+
+    // Dados de vinculação de jogador (apenas para role 'player')
+    $playerLinkType = $input['playerLinkType'] ?? null;
+    $selectedPlayerId = $input['selectedPlayerId'] ?? null;
+    $newPlayerData = $input['newPlayerData'] ?? null;
+
+    // Debug: log dos dados de vinculação
+    error_log("DEBUG invite.php - PlayerLinkType: $playerLinkType, SelectedPlayerId: $selectedPlayerId");
+
     // Validar email
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         error('Email inválido', 400);
     }
+
+    // DEBUG DIRETO NA RESPOSTA - Para você copiar e colar
+    $debug_info = [
+        'raw_input' => $raw_input,
+        'json_decode_success' => ($input ? 'SUCCESS' : 'FAILED'),
+        'json_error' => json_last_error_msg(),
+        'input_array' => $input,
+        'email_extracted' => $email,
+        'role_extracted' => $role,
+        'role_type' => gettype($role),
+        'role_length' => strlen($role),
+        'role_is_string' => (is_string($role) ? 'YES' : 'NO'),
+        'role_equals_player' => ($role === 'player' ? 'YES' : 'NO'),
+        'role_equals_admin' => ($role === 'admin' ? 'YES' : 'NO'),
+        'in_array_result' => (in_array($role, ['player', 'admin']) ? 'YES' : 'NO'),
+        'valid_roles' => ['player', 'admin'],
+        'role_hex' => bin2hex($role)
+    ];
     
-    // Validar role
-    if (!in_array($role, ['user', 'admin'])) {
-        error('Role inválido', 400);
+    // Retornar debug diretamente na resposta se role inválido
+    if (!in_array($role, ['player', 'admin'])) {
+        http_response_code(400);
+        header('Content-Type: application/json');
+        echo json_encode([
+            'error' => 'Role inválido',
+            'debug' => $debug_info
+        ]);
+        exit;
+    }
+    // Validações específicas para vinculação de jogador (admin ou player podem ter jogador vinculado)
+    if ($playerLinkType) {
+        if ($playerLinkType === 'existing' && !$selectedPlayerId) {
+            error('Jogador deve ser selecionado para vinculação', 400);
+        }
+        
+        if ($playerLinkType === 'new' && (!$newPlayerData || !isset($newPlayerData['name']) || trim($newPlayerData['name']) === '')) {
+            error('Nome do jogador é obrigatório', 400);
+        }
+        
+        // Se vinculando a jogador existente, verificar se existe e está disponível
+        if ($playerLinkType === 'existing' && $selectedPlayerId) {
+            $checkPlayerSql = "SELECT id, user_id, tenant_id FROM players WHERE id = ?";
+            $checkPlayerStmt = $pdo->prepare($checkPlayerSql);
+            $checkPlayerStmt->execute([$selectedPlayerId]);
+            $existingPlayer = $checkPlayerStmt->fetch();
+            
+            if (!$existingPlayer) {
+                error('Jogador não encontrado', 404);
+            }
+            
+            if ($existingPlayer['tenant_id'] != $target_tenant_id) {
+                error('Jogador não pertence a este grupo', 403);
+            }
+            
+            if ($existingPlayer['user_id']) {
+                error('Jogador já possui usuário vinculado', 409);
+            }
+        }
     }
     
     // SUPER ADMIN pode convidar para qualquer tenant
@@ -136,8 +235,13 @@ function handleSendInvite() {
         $expires_at = date('Y-m-d H:i:s', time() + (7 * 24 * 60 * 60)); // 7 dias
         
         // Inserir convite
-        $insertSql = "INSERT INTO user_invites (tenant_id, invited_by_user_id, email, name, role, invite_token, expires_at) 
-                      VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $insertSql = "INSERT INTO user_invites (tenant_id, invited_by_user_id, email, name, role, invite_token, expires_at, player_id) 
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        $player_id_for_invite = null;
+        if ($playerLinkType === 'existing' && $selectedPlayerId) {
+            $player_id_for_invite = $selectedPlayerId;
+        }
         
         $insertStmt = $pdo->prepare($insertSql);
         $insertStmt->execute([
@@ -147,7 +251,8 @@ function handleSendInvite() {
             $name,
             $role,
             $invite_token,
-            $expires_at
+            $expires_at,
+            $player_id_for_invite
         ]);
         
         $invite_id = $pdo->lastInsertId();
@@ -155,11 +260,19 @@ function handleSendInvite() {
         // Enviar email de convite
         $email_sent = sendInviteEmail($tenant, $current_user, $email, $name, $role, $invite_token);
         
+        // Se for novo jogador, armazenar dados temporariamente em uma coluna JSON
+        if ($playerLinkType === 'new' && $newPlayerData) {
+            $updateSql = "UPDATE user_invites SET notes = ? WHERE id = ?";
+            $updateStmt = $pdo->prepare($updateSql);
+            $updateStmt->execute([json_encode($newPlayerData), $invite_id]);
+        }
+        
         // Log da ação
         AuthMiddleware::logAction($pdo, 'send_invite', 'user_invites', $invite_id, null, [
             'email' => $email,
             'role' => $role,
             'target_tenant_id' => $target_tenant_id,
+            'player_link_type' => $playerLinkType,
             'email_sent' => $email_sent
         ]);
         
@@ -284,10 +397,10 @@ function handleCancelInvite() {
             error('Você não pode cancelar este convite', 403);
         }
         
-        // Cancelar convite
-        $updateSql = "UPDATE user_invites SET status = 'expired' WHERE id = ?";
-        $updateStmt = $pdo->prepare($updateSql);
-        $updateStmt->execute([$invite_id]);
+    // Excluir convite do banco
+    $deleteSql = "DELETE FROM user_invites WHERE id = ?";
+    $deleteStmt = $pdo->prepare($deleteSql);
+    $deleteStmt->execute([$invite_id]);
         
         // Log da ação
         AuthMiddleware::logAction($pdo, 'cancel_invite', 'user_invites', $invite_id, $invite, null);

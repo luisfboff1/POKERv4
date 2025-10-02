@@ -596,23 +596,82 @@ function processInviteJSON($token) {
             exit;
         }
         
-        // Criar usuário
-        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+        // Iniciar transação para vincular usuário e jogador
+        $pdo->beginTransaction();
         
-        $stmt = $pdo->prepare("
-            INSERT INTO users (tenant_id, name, email, role, password_hash, created_at, updated_at) 
-            VALUES (?, ?, ?, ?, ?, NOW(), NOW())
-        ");
-        
-        $stmt->execute([
-            $invite['tenant_id'],
-            $name,
-            $invite['email'],
-            $invite['role'],
-            $passwordHash
-        ]);
-        
-        $userId = $pdo->lastInsertId();
+        try {
+            $player_id = null;
+            
+            // Se tem vinculação de jogador especificada (admin ou player podem ter)
+            if ($invite['player_id'] || $invite['notes']) {
+                if ($invite['player_id']) {
+                    // Vinculação com jogador existente
+                    $player_id = $invite['player_id'];
+                    
+                    // Verificar se jogador ainda está disponível
+                    $stmt = $pdo->prepare("SELECT user_id FROM players WHERE id = ? AND tenant_id = ?");
+                    $stmt->execute([$player_id, $invite['tenant_id']]);
+                    $playerCheck = $stmt->fetch();
+                    
+                    if ($playerCheck && $playerCheck['user_id']) {
+                        throw new Exception('Jogador já foi vinculado a outro usuário');
+                    }
+                } else {
+                    // Criar novo jogador
+                    $playerName = $name;
+                    $nickname = '';
+                    $phone = '';
+                    
+                    // Se há dados específicos do jogador no convite
+                    if ($invite['notes']) {
+                        $playerData = json_decode($invite['notes'], true);
+                        if ($playerData) {
+                            $playerName = trim($playerData['name']) ?: $name;
+                            $nickname = trim($playerData['nickname'] ?? '');
+                            $phone = trim($playerData['phone'] ?? '');
+                        }
+                    }
+                    
+                    $stmt = $pdo->prepare("
+                        INSERT INTO players (tenant_id, name, nickname, phone, is_active, created_at, updated_at) 
+                        VALUES (?, ?, ?, ?, 1, NOW(), NOW())
+                    ");
+                    $stmt->execute([$invite['tenant_id'], $playerName, $nickname, $phone]);
+                    $player_id = $pdo->lastInsertId();
+                }
+            }
+            
+            // Criar usuário
+            $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+            
+            $stmt = $pdo->prepare("
+                INSERT INTO users (tenant_id, name, email, role, password_hash, player_id, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+            ");
+            
+            $stmt->execute([
+                $invite['tenant_id'],
+                $name,
+                $invite['email'],
+                $invite['role'],
+                $passwordHash,
+                $player_id
+            ]);
+            
+            $userId = $pdo->lastInsertId();
+            
+            // Se criou/vinculou jogador, atualizar user_id no jogador
+            if ($player_id) {
+                $stmt = $pdo->prepare("UPDATE players SET user_id = ? WHERE id = ?");
+                $stmt->execute([$userId, $player_id]);
+            }
+            
+            $pdo->commit();
+            
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
         
         // Marcar convite como aceito
         $stmt = $pdo->prepare("

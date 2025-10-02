@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/contexts/auth-context';
-import { usePlayers, useInvites, useSessions } from '@/hooks/useApi';
+import { usePlayers, useInvites, useSessions, useTenants } from '@/hooks/useApi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -23,6 +23,10 @@ export default function AdminPage() {
   const { players, loading: playersLoading } = usePlayers();
   const { invites } = useInvites();
   const { sessions } = useSessions();
+  const { tenants: tenantsData, loading: tenantsLoading } = useTenants();
+  
+  // Garantir que tenants seja sempre um array
+  const tenants = Array.isArray(tenantsData) ? tenantsData : [];
 
   // Verificar se é super admin
   if (user?.role !== 'super_admin') {
@@ -122,6 +126,68 @@ export default function AdminPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Usuários por Tenant/Host */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Usuários por Host de Jogo
+          </CardTitle>
+          <CardDescription>
+            Visualize quantos usuários cada cliente/host possui em seu grupo
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {tenantsLoading ? (
+            <LoadingState text="Carregando hosts..." />
+          ) : tenants.length === 0 ? (
+            <EmptyState 
+              title="Nenhum host encontrado"
+              description="Não há hosts cadastrados no sistema."
+              icon={Users}
+            />
+          ) : (
+            <div className="space-y-4">
+              {tenants.map((tenant) => (
+                <div key={tenant.id} className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="font-semibold text-lg">{tenant.name}</h3>
+                      <p className="text-sm text-muted-foreground">{tenant.email}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-primary">{tenant.users_count || 0}</div>
+                      <div className="text-xs text-muted-foreground">usuários</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <span>Status: <span className={`font-medium ${tenant.status === 'active' ? 'text-green-600' : 'text-red-600'}`}>{tenant.status === 'active' ? 'Ativo' : 'Inativo'}</span></span>
+                    <span>Plano: <span className="font-medium capitalize">{tenant.plan || 'N/A'}</span></span>
+                    <span>Criado: {new Date(tenant.created_at).toLocaleDateString('pt-BR')}</span>
+                  </div>
+                  {tenant.users && tenant.users.length > 0 && (
+                    <div className="mt-3 pt-3 border-t">
+                      <div className="text-xs font-medium text-muted-foreground mb-2">USUÁRIOS DESTE HOST:</div>
+                      <div className="flex flex-wrap gap-2">
+                        {tenant.users.slice(0, 5).map((user: { id: number; name: string; role: string }) => (
+                          <span key={user.id} className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs">
+                            {user.role === 'admin' && <Shield className="h-3 w-3" />}
+                            {user.name}
+                          </span>
+                        ))}
+                        {tenant.users.length > 5 && (
+                          <span className="text-xs text-muted-foreground">+{tenant.users.length - 5} mais</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Gerenciamento de usuários */}
       <Card>

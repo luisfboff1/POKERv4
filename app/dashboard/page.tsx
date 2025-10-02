@@ -7,13 +7,19 @@ import { useSessions, usePlayers } from '@/hooks/useApi';
 import type { Session, SessionPlayerData } from '@/lib/types';
 import Link from 'next/link';
 import { Plus, History, Trophy, Users } from 'lucide-react';
+import PlayerDashboard from '@/components/PlayerDashboard';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { sessions, loading } = useSessions();
   const { players } = usePlayers();
+
+  // Se o usuário tem um jogador vinculado, mostrar dashboard de jogador
+  if (user && user.player_id) {
+    return <PlayerDashboard user={user} playerId={user.player_id} />;
+  }
   
-  // Estatísticas gerais
+  // Estatísticas gerais para admins
   const stats = {
     totalSessions: sessions.length,
     pendingSessions: sessions.filter((s: Session) => s.status === 'pending').length,

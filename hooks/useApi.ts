@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { api, ApiError } from '@/lib/api';
-import type { Session, SessionDetail, Player, Invite, CreateSessionPayload, SessionPlayerData } from '@/lib/types';
+import type { Session, SessionDetail, Player, Invite, CreateSessionPayload, SessionPlayerData, Tenant } from '@/lib/types';
 
 // Hook genérico para chamadas de API
 export function useApi<T>(
@@ -126,9 +126,13 @@ export function useInvites() {
     []
   );
 
-  const createInvite = async (email: string, role: string, name?: string) => {
+  const createInvite = async (email: string, role: string, name?: string, playerData?: {
+    playerLinkType?: string;
+    selectedPlayerId?: string | null;
+    newPlayerData?: { name: string; nickname: string; phone: string } | null;
+  }) => {
     try {
-      await api.invites.create(email, role, name);
+      await api.invites.create(email, role, name, playerData);
       await refetch();
       return true;
     } catch (err) {
@@ -153,6 +157,40 @@ export function useInvites() {
     refetch,
     createInvite,
     deleteInvite,
+  };
+}
+
+// Hook específico para tenants (super admin)
+export function useTenants() {
+  const { data, loading, error, refetch } = useApi<{tenants: Tenant[]}>(
+    () => api.tenants.list(),
+    []
+  );
+
+  return {
+    tenants: (data?.tenants as Tenant[]) || [],
+    loading,
+    error,
+    refetch,
+  };
+}
+
+// Hook para buscar jogadores de um tenant específico
+export function usePlayersForTenant() {
+  const { data, loading, error, refetch } = useApi<Player[]>(
+    () => api.players.list(),
+    []
+  );
+
+  // Filtrar jogadores que ainda não têm usuário vinculado
+  const availablePlayers = (data || []).filter(player => !player.user_id);
+
+  return {
+    players: data || [],
+    availablePlayers,
+    loading,
+    error,
+    refetch,
   };
 }
 

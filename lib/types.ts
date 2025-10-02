@@ -6,6 +6,7 @@ export interface User {
   role: 'super_admin' | 'admin' | 'player';
   team_id: number;
   team_name?: string;
+  player_id?: number; // Vinculação com jogador para dashboard personalizado
 }
 
 export interface AuthResponse {
@@ -113,6 +114,26 @@ export interface SessionDetail extends Session {
   total_buyin: number;
   total_cashout: number;
   total_balance: number;
+}
+
+// ===== TENANT =====
+export interface Tenant {
+  id: number;
+  name: string;
+  email: string;
+  status: 'active' | 'inactive' | 'suspended';
+  plan: 'basic' | 'premium' | 'enterprise';
+  created_at: string;
+  users_count?: number;
+  users?: TenantUser[];
+}
+
+export interface TenantUser {
+  id: number;
+  name: string;
+  email: string;
+  role: 'admin' | 'player';
+  is_active: boolean;
 }
 
 // ===== INVITE =====

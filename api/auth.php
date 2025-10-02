@@ -63,7 +63,7 @@ function handleLogin() {
         // Buscar usuário com dados do tenant
         $sql = "SELECT 
                     u.id, u.tenant_id, u.name, u.email, u.password_hash, u.role, u.is_active,
-                    u.login_attempts, u.locked_until, u.last_login,
+                    u.login_attempts, u.locked_until, u.last_login, u.player_id,
                     t.name as tenant_name, t.status as tenant_status, t.plan as tenant_plan
                 FROM users u 
                 JOIN tenants t ON u.tenant_id = t.id 
@@ -124,7 +124,8 @@ function handleLogin() {
             'name' => $user['name'],
             'role' => $user['role'],
             'tenant_name' => $user['tenant_name'],
-            'tenant_plan' => $user['tenant_plan']
+            'tenant_plan' => $user['tenant_plan'],
+            'player_id' => $user['player_id']
         ];
         
         $token = JWTHelper::generateToken($token_data);
@@ -149,7 +150,8 @@ function handleLogin() {
                 'role' => $user['role'],
                 'tenant_id' => $user['tenant_id'],
                 'tenant_name' => $user['tenant_name'],
-                'tenant_plan' => $user['tenant_plan']
+                'tenant_plan' => $user['tenant_plan'],
+                'player_id' => $user['player_id']
             ],
             'expires_in' => 24 * 60 * 60 // 24 horas em segundos
         ]);

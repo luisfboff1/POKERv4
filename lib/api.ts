@@ -149,11 +149,23 @@ export const api = {
   invites: {
     list: () => fetchAPI('/invite.php?action=list'),
     
-    create: (email: string, role: string, name?: string) =>
-      fetchAPI('/invite.php?action=send', {
+    create: (email: string, role: string, name?: string, playerData?: {
+      playerLinkType?: string;
+      selectedPlayerId?: string | null;
+      newPlayerData?: { name: string; nickname: string; phone: string } | null;
+    }) => {
+      const payload = { 
+        email, 
+        role, 
+        name,
+        ...(playerData || {})
+      };
+      console.log('DEBUG api.ts - Enviando payload:', payload);
+      return fetchAPI('/invite.php?action=send', {
         method: 'POST',
-        body: JSON.stringify({ email, role, name }),
-      }),
+        body: JSON.stringify(payload),
+      });
+    },
     
     accept: (token: string, password: string, name: string) =>
       fetchAPI('/accept_invite.php', {
@@ -165,6 +177,14 @@ export const api = {
       fetchAPI(`/invite.php?action=cancel&id=${id}`, {
         method: 'DELETE',
       }),
+  },
+
+  // ===== TENANTS (Super Admin) =====
+  tenants: {
+    list: () => fetchAPI('/super_admin.php?action=tenants'),
+    
+    details: (id: number) => 
+      fetchAPI(`/super_admin.php?action=tenant_details&tenant_id=${id}`),
   },
 
   // ===== AGENT (PokerBot) =====
