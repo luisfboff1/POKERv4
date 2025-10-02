@@ -15,6 +15,7 @@ interface ModalProps {
   showCloseButton?: boolean;
   closeOnOverlayClick?: boolean;
   variant?: 'glass' | 'solid';
+  forceOpaque?: boolean; // ignora variant e aplica fundo sólido
 }
 
 export function Modal({
@@ -28,6 +29,7 @@ export function Modal({
   showCloseButton = true,
   closeOnOverlayClick = true,
   variant = 'solid',
+  forceOpaque = false,
 }: ModalProps) {
   if (!isOpen) return null;
 
@@ -54,14 +56,14 @@ export function Modal({
         className={`relative w-full ${sizeClasses[size]}
           text-card-foreground border border-border rounded-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col
           animate-in fade-in-0 zoom-in-95 duration-300
-          ${variant === 'glass'
+          ${variant === 'glass' && !forceOpaque
             ? 'bg-card/80 supports-[backdrop-filter]:bg-card/70 backdrop-blur'
             : 'bg-background'}
         `}
       >
         {/* Header */}
         {showHeader && (title || showCloseButton) && (
-          <div className={`flex items-center justify-between p-4 md:p-6 border-b border-border sticky top-0 z-10 ${variant === 'glass' ? 'bg-card/70 backdrop-blur' : 'bg-background'}`}> 
+          <div className={`flex items-center justify-between p-4 md:p-6 border-b border-border sticky top-0 z-10 ${variant === 'glass' && !forceOpaque ? 'bg-card/70 backdrop-blur' : 'bg-background'}`}> 
             <div className="flex-1 min-w-0">
               {title && (
                 <h2 className="text-lg font-semibold truncate">
@@ -89,7 +91,7 @@ export function Modal({
         )}
 
         {/* Content */}
-        <div className={`flex-1 overflow-y-auto ${variant === 'glass' ? 'bg-card/60' : 'bg-background'} text-card-foreground p-4 md:p-6`}>{children}</div>
+        <div className={`flex-1 overflow-y-auto ${variant === 'glass' && !forceOpaque ? 'bg-card/60' : 'bg-background'} text-card-foreground p-4 md:p-6`}>{children}</div>
       </div>
     </div>
   );
