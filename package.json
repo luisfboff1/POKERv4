@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/build.js",
+    "build:next-only": "next build",
     "start": "next start",
-  "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
