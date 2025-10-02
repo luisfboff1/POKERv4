@@ -67,11 +67,6 @@ switch ($method) {
  * ENVIAR CONVITE - Apenas admins podem convidar
  */
 function handleSendInvite() {
-    // FORÇAR RESPOSTA IMEDIATA PARA DEBUG
-    http_response_code(200);
-    header('Content-Type: application/json');
-    echo json_encode(['status' => 'FUNCAO EXECUTADA', 'time' => time()]);
-    exit;
     
     global $pdo, $current_user;
     
