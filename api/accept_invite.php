@@ -258,20 +258,24 @@ function processInvite($token) {
     $name = trim($_POST['name'] ?? '');
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
-                // Criar usuário com role e player_id do convite
-                $password_hash = password_hash($password, PASSWORD_DEFAULT);
-                $createUserSql = "INSERT INTO users (tenant_id, name, email, password_hash, role, player_id, is_active, created_at) 
-                                  VALUES (?, ?, ?, ?, ?, ?, 1, NOW())";
-                $createUserStmt = $pdo->prepare($createUserSql);
-                $createUserStmt->execute([
-                    $invite['tenant_id'],
-                    $name,
-                    $invite['email'],
-                    $password_hash,
-                    $invite['role'],
-                    $invite['player_id']
-                ]);
-                $user_id = $pdo->lastInsertId();
+    
+    // Validações básicas
+    if (empty($name) || empty($password)) {
+        showError('Nome e senha são obrigatórios');
+    }
+    
+    if ($password !== $confirm_password) {
+        showError('As senhas não coincidem');
+    }
+    
+    if (strlen($password) < 6) {
+        showError('A senha deve ter pelo menos 6 caracteres');
+    }
+    
+    try {
+        // Buscar convite
+        $sql = "SELECT 
+                    i.*,
                     t.name as tenant_name,
                     t.status as tenant_status
                 FROM user_invites i
@@ -299,23 +303,19 @@ function processInvite($token) {
             showError('Este email já está cadastrado no sistema');
         }
         
-        // Criar usuário
+        // Criar usuário com role e player_id do convite
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
-        
-        $createUserSql = "INSERT INTO users (tenant_id, name, email, password_hash, role, is_active, created_at) 
-                          VALUES (?, ?, ?, ?, ?, 1, NOW())";
-        
+        $createUserSql = "INSERT INTO users (tenant_id, name, email, password_hash, role, player_id, is_active, created_at) 
+                          VALUES (?, ?, ?, ?, ?, ?, 1, NOW())";
         $createUserStmt = $pdo->prepare($createUserSql);
-        // Garantir que o role nunca seja vazio
-        $role = !empty($invite['role']) ? $invite['role'] : 'player';
         $createUserStmt->execute([
             $invite['tenant_id'],
             $name,
             $invite['email'],
             $password_hash,
-            $role
+            $invite['role'],
+            $invite['player_id']
         ]);
-        
         $user_id = $pdo->lastInsertId();
         
         // Marcar convite como aceito
@@ -407,8 +407,7 @@ function showSuccess($tenant_name, $email, $role) {
             <div class="info">
                 <h3>📋 Suas Credenciais:</h3>
                 <p><strong>📧 Email:</strong> <?php echo htmlspecialchars($email); ?></p>
-                <p><strong>🎭 Papel:</strong> <?php echo $role === 'admin' ? 'Administrador' : 'Membro'; ?></p>
-                    <p><strong>🎭 Papel:</strong> <?php echo htmlspecialchars($role); ?></p>
+                <p><strong>🎭 Papel:</strong> <?php echo htmlspecialchars($role); ?></p>
                 <p><strong>🔐 Senha:</strong> A que você acabou de criar</p>
             </div>
             
@@ -640,22 +639,21 @@ function processInviteJSON($token) {
                 }
             }
             
-            // Criar usuário
-                        // Criar usuário com role e player_id do convite
-                        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
-                        $stmt = $pdo->prepare("
-                            INSERT INTO users (tenant_id, name, email, role, password_hash, player_id, created_at, updated_at) 
-                            VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
-                        ");
-                        $stmt->execute([
-                            $invite['tenant_id'],
-                            $name,
-                            $invite['email'],
-                            $invite['role'],
-                            $passwordHash,
-                            $invite['player_id']
-                        ]);
-                        $userId = $pdo->lastInsertId();
+            // Criar usuário com role e player_id do convite
+            $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+            $stmt = $pdo->prepare("
+                INSERT INTO users (tenant_id, name, email, role, password_hash, player_id, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+            ");
+            $stmt->execute([
+                $invite['tenant_id'],
+                $name,
+                $invite['email'],
+                $invite['role'],
+                $passwordHash,
+                $invite['player_id']
+            ]);
+            $userId = $pdo->lastInsertId();
             
             // Se criou/vinculou jogador, atualizar user_id no jogador
             if ($player_id) {
