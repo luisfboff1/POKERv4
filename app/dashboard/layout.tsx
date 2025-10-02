@@ -55,7 +55,7 @@ export default function DashboardLayout({
   );
 
   return (
-  <div className="flex min-h-screen bg-page text-page-foreground">
+  <div className={`flex min-h-screen bg-page text-page-foreground ${sidebarOpen ? 'overflow-hidden touch-none' : ''}`}> 
       {/* Mobile Menu Button */}
   <div className="fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-surface/95 px-4 shadow-[var(--shadow-soft)] backdrop-blur md:hidden">
         <h1 className="text-base font-semibold">🎯 Poker Manager</h1>
@@ -75,7 +75,7 @@ export default function DashboardLayout({
       <aside className={`
         fixed md:static
         inset-y-0 left-0
-        z-40
+        z-[70]
         w-64
         bg-surface text-surface-foreground
         border-r border-border
@@ -136,7 +136,7 @@ export default function DashboardLayout({
       {/* Overlay (mobile) */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
