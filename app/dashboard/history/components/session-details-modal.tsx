@@ -169,7 +169,7 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
                 <h4 className="font-medium mb-3">Transferências</h4>
                 <div className="space-y-2">
                   {session.recommendations.map((rec, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg border border-border/40">
+                    <div key={index} className="flex items-center justify-between p-3 bg-card rounded-lg border border-border shadow-sm">
                       <span className="text-sm">
                         <span className="font-medium">{rec.from}</span> → <span className="font-medium">{rec.to}</span>
                       </span>

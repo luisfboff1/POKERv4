@@ -20,7 +20,7 @@ interface PlayerPaymentRowProps {
 export function PlayerPaymentRow({ player, index, sessionId, editing, onToggle }: PlayerPaymentRowProps) {
   const net = (player.cashout || 0) - (player.buyin || 0);
   return (
-  <div className="flex items-center justify-between p-3 bg-muted rounded-lg border border-border/40">
+  <div className="flex items-center justify-between p-3 bg-card rounded-lg border border-border shadow-sm">
       <div className="flex-1">
         <span className="font-medium">{player.name}</span>
         <div className="text-sm space-x-4 mt-1">
