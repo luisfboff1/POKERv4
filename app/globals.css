@@ -44,6 +44,10 @@
 }
 
 @layer base {
+  /* Corrige bug do Tailwind 4: força bg-background a usar hsl(var(--color-background)) */
+  .bg-background {
+    background-color: hsl(var(--color-background)) !important;
+  }
   *, *::before, *::after {
     border-color: hsl(var(--color-border));
   }
