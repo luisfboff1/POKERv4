@@ -20,7 +20,7 @@ interface PlayerPaymentRowProps {
 export function PlayerPaymentRow({ player, index, sessionId, editing, onToggle }: PlayerPaymentRowProps) {
   const net = (player.cashout || 0) - (player.buyin || 0);
   return (
-    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+  <div className="flex items-center justify-between p-3 bg-muted rounded-lg border border-border/40">
       <div className="flex-1">
         <span className="font-medium">{player.name}</span>
         <div className="text-sm space-x-4 mt-1">
@@ -32,7 +32,7 @@ export function PlayerPaymentRow({ player, index, sessionId, editing, onToggle }
         </div>
       </div>
       <div className="flex gap-4">
-        <div className="flex items-center gap-2">
+  <div className="flex items-center gap-2">
           <input
             type="checkbox"
             id={`session_paid_${sessionId}_${index}`}
@@ -46,7 +46,7 @@ export function PlayerPaymentRow({ player, index, sessionId, editing, onToggle }
             Sessão
           </label>
         </div>
-        <div className="flex items-center gap-2">
+  <div className="flex items-center gap-2">
           <input
             type="checkbox"
             id={`janta_paid_${sessionId}_${index}`}
