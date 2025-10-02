@@ -57,7 +57,7 @@ export default function DashboardLayout({
   return (
   <div className="flex min-h-screen bg-page text-page-foreground">
       {/* Mobile Menu Button */}
-      <div className="fixed left-0 right-0 top-0 z-50 flex items-center justify-between border-b border-border bg-surface/95 px-4 py-3 shadow-[var(--shadow-soft)] backdrop-blur md:hidden">
+  <div className="fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-surface/95 px-4 shadow-[var(--shadow-soft)] backdrop-blur md:hidden">
         <h1 className="text-base font-semibold">🎯 Poker Manager</h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -144,7 +144,7 @@ export default function DashboardLayout({
       {/* Main Content */}
       <main className="flex-1 bg-page text-page-foreground overflow-hidden">
         {/* Wrapper que garante que em mobile o topo do conteúdo não fique atrás do header fixo */}
-        <div className="h-full w-full overflow-y-auto pt-16 md:pt-0 space-y-6 p-4 md:p-8">
+        <div className="h-full w-full overflow-y-auto pt-14 md:pt-0 space-y-6 p-4 md:p-8">
           {children}
         </div>
       </main>

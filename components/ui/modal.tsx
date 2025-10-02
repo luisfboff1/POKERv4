@@ -47,7 +47,7 @@ export function Modal({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
       onClick={handleOverlayClick}
     >
       <div
@@ -55,13 +55,13 @@ export function Modal({
           text-card-foreground border border-border rounded-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col
           animate-in fade-in-0 zoom-in-95 duration-300
           ${variant === 'glass'
-            ? 'bg-card supports-[backdrop-filter]:bg-card/95 backdrop-blur-sm'
+            ? 'bg-card/80 supports-[backdrop-filter]:bg-card/70 backdrop-blur'
             : 'bg-background'}
         `}
       >
         {/* Header */}
         {showHeader && (title || showCloseButton) && (
-          <div className={`flex items-center justify-between p-4 md:p-6 border-b border-border sticky top-0 z-10 ${variant === 'glass' ? 'bg-card/80 backdrop-blur-sm' : 'bg-background'}`}> 
+          <div className={`flex items-center justify-between p-4 md:p-6 border-b border-border sticky top-0 z-10 ${variant === 'glass' ? 'bg-card/70 backdrop-blur' : 'bg-background'}`}> 
             <div className="flex-1 min-w-0">
               {title && (
                 <h2 className="text-lg font-semibold truncate">
