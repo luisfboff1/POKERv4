@@ -60,16 +60,28 @@ jobs:
 
           echo "🔧 Criando arquivo .env..."
           {
+            echo "# Configurações de Banco de Dados"
             echo "DB_HOST=${{ secrets.DB_HOST }}"
             echo "DB_NAME=${{ secrets.DB_NAME }}"
             echo "DB_USER=${{ secrets.DB_USER }}"
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}"
+            echo ""
+            echo "# Configurações de Autenticação"
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}"
+            echo ""
+            echo "# Configurações de Email (SMTP)"
             echo "SMTP_HOST=${{ secrets.SMTP_HOST }}"
             echo "SMTP_PORT=${{ secrets.SMTP_PORT }}"
             echo "SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}"
             echo "SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}"
             echo "SMTP_ENCRYPTION=${{ secrets.SMTP_ENCRYPTION }}"
+            echo ""
+            echo "# Configurações da Aplicação"
+            echo "APP_ENV=production"
+            echo "BASE_URL=https://luisfboff.com"
+            echo "APP_BASE_PATH=/poker"
+            echo ""
+            echo "# Outras Configurações"
             echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}"
           } > dist/api/.env
 
@@ -101,7 +113,10 @@ jobs:
           port: 21
           protocol: ftp
           local-dir: ./dist/
-          server-dir: /poker/
+          # ⚠️ CONFIGURAÇÃO: Diretório de destino no servidor
+          # Para mudar, adicione HOSTINGER_DEPLOY_PATH nos GitHub Secrets
+          # Padrão: /poker/
+          server-dir: ${{ secrets.HOSTINGER_DEPLOY_PATH || '/poker/' }}
           state-name: .ftp-deploy-sync-state-nextjs.json
           exclude: |
             **/.git*
