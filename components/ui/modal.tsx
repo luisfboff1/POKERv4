@@ -60,6 +60,7 @@ export function Modal({
             ? 'bg-background'
             : 'bg-card/80 supports-[backdrop-filter]:bg-card/70 backdrop-blur'}
         `}
+        style={{ backgroundColor: '#fff', opacity: 1 }}
       >
         {/* Header */}
         {showHeader && (title || showCloseButton) && (
