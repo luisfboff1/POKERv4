@@ -49,18 +49,15 @@ export function Modal({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
       onClick={handleOverlayClick}
     >
       <div
         className={`relative w-full ${sizeClasses[size]}
           text-card-foreground border border-border rounded-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col
           animate-in fade-in-0 zoom-in-95 duration-300
-          ${forceOpaque || variant === 'solid'
-            ? 'bg-background'
-            : 'bg-card/80 supports-[backdrop-filter]:bg-card/70 backdrop-blur'}
+          bg-background
         `}
-        style={{ backgroundColor: '#fff', opacity: 1 }}
       >
         {/* Header */}
         {showHeader && (title || showCloseButton) && (
@@ -92,7 +89,7 @@ export function Modal({
         )}
 
         {/* Content */}
-        <div className={`flex-1 overflow-y-auto ${variant === 'glass' && !forceOpaque ? 'bg-card/60' : 'bg-background'} text-card-foreground p-4 md:p-6`}>{children}</div>
+  <div className="flex-1 overflow-y-auto bg-background text-card-foreground p-4 md:p-6">{children}</div>
       </div>
     </div>
   );
