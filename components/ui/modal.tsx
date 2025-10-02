@@ -27,7 +27,7 @@ export function Modal({
   showHeader = true,
   showCloseButton = true,
   closeOnOverlayClick = true,
-  variant = 'glass',
+  variant = 'solid',
 }: ModalProps) {
   if (!isOpen) return null;
 
