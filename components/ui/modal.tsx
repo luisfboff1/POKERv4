@@ -56,7 +56,7 @@ export function Modal({
         className={`relative w-full ${sizeClasses[size]}
           text-card-foreground border border-border rounded-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col
           animate-in fade-in-0 zoom-in-95 duration-300
-          ${variant === 'glass' && !forceOpaque
+          ${variant === 'solid' && !forceOpaque
             ? 'bg-card/80 supports-[backdrop-filter]:bg-card/70 backdrop-blur'
             : 'bg-background'}
         `}
