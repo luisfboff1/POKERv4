@@ -214,13 +214,17 @@ function buildNextJs() {
   console.log('🏗️  Executando build do Next.js...');
   
   try {
-    // Executar next build (que exporta para dist/ via config)
+    // Executar next build (que cria o dist/ do zero)
     execSync('npx next build', {
       cwd: rootDir,
       stdio: 'inherit'
     });
     
     console.log('✅ Build do Next.js concluído');
+    
+    // Criar pasta dist/api/ após o Next.js build
+    mkdirSync(distApiDir, { recursive: true });
+    
   } catch (error) {
     console.error('❌ Erro no build do Next.js:', error.message);
     process.exit(1);
@@ -273,21 +277,19 @@ async function main() {
     // 2. Carregar variáveis
     const envVars = loadEnvironmentVariables(isLocal);
     
-    // 3. Preparar diretórios
-    prepareDirectories();
-    
-    // 4. Gerar configurações
-    generatePhpEnv(envVars);
+    // 3. Gerar .env.local para Next.js (necessário antes do build)
     generateNextEnv(envVars);
     
-    // 5. Copiar arquivos
-    copyApiFiles();
-    copyHtaccess();
-    
-    // 6. Build Next.js
+    // 4. Limpar dist/ e fazer build Next.js primeiro
+    prepareDirectories();
     buildNextJs();
     
-    // 7. Verificar resultado
+    // 5. Agora adicionar as APIs e configurações ao dist/ já criado
+    copyApiFiles();
+    generatePhpEnv(envVars);
+    copyHtaccess();
+    
+    // 6. Verificar resultado
     verifyBuild();
     
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
