@@ -3,6 +3,12 @@
 # Enable RewriteEngine
 <IfModule mod_rewrite.c>
   RewriteEngine On
+  
+  # ⚠️ CONFIGURAÇÃO DE BASE PATH
+  # Produção Hostinger: /poker/
+  # Dev Local: / (comentar a linha abaixo)
+  # Staging: /staging/ ou outro path
+  # Para detectar automaticamente, comente a linha RewriteBase
   RewriteBase /poker/
 
   # Redirect to HTTPS

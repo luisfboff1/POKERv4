@@ -5,6 +5,7 @@
  */
 
 require_once 'config.php';
+require_once 'app_config.php';
 
 $token = $_GET['token'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -344,6 +345,8 @@ function processInvite($token) {
  * MOSTRAR PÁGINA DE SUCESSO
  */
 function showSuccess($tenant_name, $email, $role) {
+    // Usar app_path() para gerar link correto independente do ambiente
+    $loginPath = app_path('login');
     ?>
     <!DOCTYPE html>
     <html lang="pt-BR">
@@ -413,7 +416,7 @@ function showSuccess($tenant_name, $email, $role) {
                 <p><strong>🔐 Senha:</strong> A que você acabou de criar</p>
             </div>
             
-            <a href="/login" class="btn">🚀 Fazer Login</a>
+            <a href="<?php echo htmlspecialchars($loginPath); ?>" class="btn">🚀 Fazer Login</a>
             
             <p><small>Agora você pode fazer login e começar a usar o sistema!</small></p>
         </div>
