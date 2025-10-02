@@ -1,14 +1,24 @@
-import { useEffect, useState } from 'react';
+
+"use client";
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
-export default function AcceptInvitePage() {
+
+type InviteData = {
+  email: string;
+  tenant_name: string;
+  invited_by_name: string;
+  expires_at: string;
+} | null;
+
+function AcceptInviteClient() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const [loading, setLoading] = useState(true);
-  const [invite, setInvite] = useState<any>(null);
+  const [invite, setInvite] = useState<InviteData>(null);
   const [error, setError] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -93,5 +103,13 @@ export default function AcceptInvitePage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function AcceptInvitePage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Carregando...</div>}>
+      <AcceptInviteClient />
+    </Suspense>
   );
 }
