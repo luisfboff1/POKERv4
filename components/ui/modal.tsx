@@ -128,7 +128,9 @@ interface ModalFooterProps {
 
 export function ModalFooter({ children, className = "" }: ModalFooterProps) {
   return (
-    <div className={`flex justify-end gap-2 p-6 pt-0 border-t border-border bg-background ${className}`}>
+    <div
+      className={`flex flex-col-reverse sm:flex-row justify-end gap-2 p-6 pt-0 border-t border-border bg-background ${className}`}
+    >
       {children}
     </div>
   );

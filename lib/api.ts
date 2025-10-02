@@ -162,9 +162,8 @@ export const api = {
       }),
     
     delete: (id: number) =>
-      fetchAPI('/invite.php', {
-        method: 'POST',
-        body: JSON.stringify({ action: 'delete', id }),
+      fetchAPI(`/invite.php?action=cancel&id=${id}`, {
+        method: 'DELETE',
       }),
   },
 
