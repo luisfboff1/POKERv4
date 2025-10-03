@@ -218,7 +218,7 @@ export default function DashboardPage() {
                 </p>
               </div>
               {(user?.role === 'admin' || user?.role === 'super_admin') && (
-                <Button asChild variant="secondary">
+                <Button asChild variant="outline">
                   <Link href="/dashboard/new">
                     <Plus className="mr-2 h-4 w-4" />
                     Criar primeira sessão

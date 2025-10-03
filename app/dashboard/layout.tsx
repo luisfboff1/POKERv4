@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+'use client';
+
 import { useAuth } from '@/contexts/auth-context';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { ThemeToggle } from '@/components/theme-toggle';
-import Link from 'next/link';
+import { Sidebar } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
@@ -13,7 +15,6 @@ import {
   Trophy,
   Users,
   Shield,
-  LogOut,
   Menu,
   X
 } from 'lucide-react';
@@ -50,14 +51,20 @@ export default function DashboardLayout({
     { name: 'Admin', href: '/dashboard/admin', icon: Shield, roles: ['super_admin'] },
   ];
 
-  const filteredNavigation = navigation.filter((item) =>
-    item.roles.includes(user.role)
-  );
+  // ...existing code...
 
   return (
-  <div className={`flex min-h-screen bg-page text-page-foreground ${sidebarOpen ? 'overflow-hidden touch-none' : ''}`}> 
+    <div
+      className={`flex min-h-screen text-page-foreground ${sidebarOpen ? 'overflow-hidden touch-none' : ''}`}
+      style={{
+        backgroundColor: '#25422f', // verde escuro
+        backgroundImage: `url('/poker-suits-bg.svg')`,
+        backgroundRepeat: 'repeat',
+        backgroundSize: '300px',
+      }}
+    >
       {/* Mobile Menu Button */}
-  <div className="fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-surface/95 px-4 shadow-[var(--shadow-soft)] backdrop-blur md:hidden">
+      <div className="fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-surface/95 px-4 shadow-[var(--shadow-soft)] backdrop-blur md:hidden">
         <h1 className="text-base font-semibold">🎯 Poker Manager</h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -71,67 +78,14 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      {/* Sidebar - Responsiva */}
-      <aside className={`
-        fixed md:static
-        inset-y-0 left-0
-        z-[70]
-        w-64
-        bg-surface text-surface-foreground
-        border-r border-border
-        transform transition-transform duration-300 ease-in-out
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        md:translate-x-0
-        flex flex-col
-      `}>
-        {/* Header da Sidebar (desktop) */}
-        <div className="hidden items-center justify-between border-b border-border px-4 py-4 md:flex">
-          <div className="space-y-1">
-            <h1 className="text-lg font-semibold">🎯 Poker Manager</h1>
-            <p className="text-xs text-muted-foreground">
-              {user.team_name || 'Time'}
-            </p>
-          </div>
-          <ThemeToggle />
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-6 text-sm">
-          {filteredNavigation.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 rounded-lg px-3 py-2 font-medium text-foreground/90 transition-all hover:bg-accent hover:text-accent-foreground"
-              >
-                <Icon className="w-5 h-5" />
-                <span>{item.name}</span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* User Info + Logout */}
-        <div className="border-t border-border px-4 py-4">
-          <div className="mb-3 space-y-1 rounded-md border border-border/60 bg-page px-3 py-3">
-            <p className="text-sm font-semibold leading-tight text-foreground">{user.name}</p>
-            <p className="text-xs text-muted-foreground">{user.email}</p>
-            <p className="text-xs text-muted-foreground">
-              {user.role === 'super_admin' ? 'Super Admin' : user.role === 'admin' ? 'Administrador' : 'Jogador'}
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={logout}
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair
-          </Button>
-        </div>
-      </aside>
+      {/* Sidebar UI Component */}
+      <Sidebar
+        user={user}
+        navigation={navigation}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        logout={logout}
+      />
 
       {/* Overlay (mobile) */}
       {sidebarOpen && (
@@ -142,8 +96,7 @@ export default function DashboardLayout({
       )}
 
       {/* Main Content */}
-      <main className="flex-1 bg-page text-page-foreground overflow-hidden">
-        {/* Wrapper que garante que em mobile o topo do conteúdo não fique atrás do header fixo */}
+      <main className="flex-1 text-page-foreground overflow-hidden">
         <div className="h-full w-full overflow-y-auto pt-14 md:pt-0 space-y-6 p-4 md:p-8">
           {children}
         </div>

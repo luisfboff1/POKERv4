@@ -1,3 +1,29 @@
+﻿/* Fallback para tokens do tema caso Tailwind não gere as classes */
+.bg-modal { background-color: #232326 !important; }
+.bg-card { background-color: #232326 !important; }
+.bg-modal-header { background-color: #232326 !important; }
+.bg-modal-content { background-color: #232326 !important; }
+.bg-modal-footer { background-color: #232326 !important; }
+.bg-sidebar { background-color: #18181b !important; }
+.bg-table { background-color: #232326 !important; }
+.bg-button { background-color: #27272a !important; }
+.bg-badge { background-color: #27272a !important; }
+.bg-input { background-color: #232326 !important; }
+@layer components {
+  .neon-poker {
+    text-shadow:
+      0 0 2px #222,
+      0 0 6px #38e07d,
+      0 0 12px #38e07d,
+      0 0 18px #38e07d;
+    color: #38e07d !important;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    padding: 0 6px;
+    border-radius: 6px;
+  background: none;
+  }
+}
 @import "tailwindcss";
 
 @theme {
@@ -53,7 +79,7 @@
   }
 
   :root {
-    color-scheme: light;
+    color-scheme: light dark;
     background-color: hsl(var(--color-background));
     color: hsl(var(--color-foreground));
   }
@@ -61,11 +87,12 @@
   html {
     min-height: 100%;
     scroll-behavior: smooth;
+    font-family: 'Segoe UI', Arial, sans-serif;
   }
 
   body {
     min-height: 100vh;
-    font-family: var(--font-sans);
+    font-family: 'Segoe UI', Arial, sans-serif;
     background-color: hsl(var(--color-background));
     color: hsl(var(--color-foreground));
     -webkit-font-smoothing: antialiased;

@@ -104,8 +104,8 @@ function RegisterForm() {
       </div>
 
       <div className="flex min-h-screen flex-col lg:flex-row">
-        <div className="relative hidden min-h-screen flex-1 flex-col justify-center overflow-hidden bg-gradient-to-br from-primary/15 via-primary/5 to-transparent px-12 py-24 text-foreground lg:flex">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/5 to-transparent" aria-hidden />
+        <div className="relative hidden min-h-screen flex-1 flex-col justify-center overflow-hidden bg-gradient-to-b from-[#2c4d3b]/60 via-[#3a6b4d]/40 to-[#e6f4ea]/80 dark:from-[#1a2a1f]/80 dark:to-black/0 px-12 py-24 text-foreground lg:flex">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#2c4d3b]/60 via-[#3a6b4d]/40 to-[#e6f4ea]/80 dark:from-[#1a2a1f]/80 dark:to-black/0" aria-hidden />
           <div className="relative z-10 max-w-lg space-y-10">
             <div className="space-y-3">
               <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
@@ -260,7 +260,7 @@ function RegisterForm() {
                     />
                   </div>
 
-                  <Button type="submit" disabled={loading || !formData.email || !formData.password || !formData.name} className="w-full">
+                  <Button variant="outline" type="submit" disabled={loading || !formData.email || !formData.password || !formData.name} className="w-full">
                     {loading ? (
                       <div className="flex items-center justify-center gap-2">
                         <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-current" />

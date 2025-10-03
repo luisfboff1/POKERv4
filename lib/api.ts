@@ -160,7 +160,7 @@ export const api = {
         name,
         ...(playerData || {})
       };
-      console.log('DEBUG api.ts - Enviando payload:', payload);
+        // console.log removido para evitar warnings
       return fetchAPI('/invite.php?action=send', {
         method: 'POST',
         body: JSON.stringify(payload),

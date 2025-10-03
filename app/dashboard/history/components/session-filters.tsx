@@ -18,7 +18,7 @@ interface SessionFiltersProps {
 
 export function SessionFilters({ value, onChange, extraHeader }: SessionFiltersProps) {
   return (
-    <Card>
+  <Card className="bg-modal">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Filter className="h-5 w-5" />

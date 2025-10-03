@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+// ...existing code...
 import type { ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { Button } from './button';
@@ -29,8 +30,7 @@ export function Modal({
   showHeader = true,
   showCloseButton = true,
   closeOnOverlayClick = true,
-  variant = 'solid',
-  forceOpaque = false,
+// ...existing code...
 }: ModalProps) {
   if (!isOpen) return null;
 
@@ -49,28 +49,28 @@ export function Modal({
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-modal-overlay bg-repeat bg-[url('/poker-suits-bg.svg')] bg-cover"
       onClick={handleOverlayClick}
     >
       <div
         className={`relative w-full ${sizeClasses[size]}
           text-card-foreground border border-border rounded-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col
           animate-in fade-in-0 zoom-in-95 duration-300
-          bg-background
+          bg-modal
         `}
       >
         {/* Header */}
         {showHeader && (title || showCloseButton) && (
-          <div className={`flex items-center justify-between p-4 md:p-6 border-b border-border sticky top-0 z-10 ${variant === 'glass' && !forceOpaque ? 'bg-card/70 backdrop-blur' : 'bg-background'}`}> 
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border sticky top-0 z-10 bg-modal-header">
             <div className="flex-1 min-w-0">
               {title && (
-                <h2 className="text-lg font-semibold truncate">
+                <h2 className="text-lg font-bold tracking-tight truncate text-modal-header-foreground">
                   {title}
                 </h2>
               )}
               {description && (
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 text-sm text-modal-header-foreground/80">
                   {description}
                 </p>
               )}
@@ -80,7 +80,7 @@ export function Modal({
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="ml-4 h-8 w-8 p-0 text-muted-foreground"
+                className="ml-4 h-8 w-8 p-0 text-modal-header-foreground hover:bg-white/10"
               >
                 <X className="h-4 w-4" />
                 <span className="sr-only">Fechar</span>
@@ -90,7 +90,9 @@ export function Modal({
         )}
 
         {/* Content */}
-  <div className="flex-1 overflow-y-auto bg-background text-card-foreground p-4 md:p-6">{children}</div>
+        <div className="flex-1 overflow-y-auto text-card-foreground p-4 md:p-6 bg-modal-content">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -115,7 +117,7 @@ interface ModalContentProps {
 
 export function ModalContent({ children, className = "" }: ModalContentProps) {
   return (
-    <div className={`p-6 bg-background text-foreground ${className}`}>
+    <div className={`p-6 text-foreground bg-modal-content ${className}`}>
       {children}
     </div>
   );
@@ -128,9 +130,7 @@ interface ModalFooterProps {
 
 export function ModalFooter({ children, className = "" }: ModalFooterProps) {
   return (
-    <div
-      className={`flex flex-col-reverse sm:flex-row justify-end gap-2 p-6 pt-0 border-t border-border bg-background ${className}`}
-    >
+    <div className={`flex flex-col-reverse sm:flex-row justify-end gap-2 p-6 pt-0 border-t border-border bg-modal-footer ${className}`}>
       {children}
     </div>
   );

@@ -153,14 +153,21 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
                 <h4 className="font-medium mb-3">Jogadores</h4>
                 <div className="space-y-2">
                   {session.players_data.map((player, index) => (
-                    <PlayerPaymentRow
+                    <div
                       key={index}
-                      player={player}
-                      index={index}
-                      sessionId={session.id}
-                      editing={editing}
-                      onToggle={(field, value) => updatePlayerPayment(index, field, value)}
-                    />
+                      className="rounded-lg border border-border bg-[#25422f] text-white shadow-sm transition-all"
+                      style={{
+                        boxShadow: '0 2px 8px 0 rgba(0,0,0,0.12)',
+                      }}
+                    >
+                      <PlayerPaymentRow
+                        player={player}
+                        index={index}
+                        sessionId={session.id}
+                        editing={editing}
+                        onToggle={(field, value) => updatePlayerPayment(index, field, value)}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
@@ -170,7 +177,7 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
                 <h4 className="font-medium mb-3">Transferências</h4>
                 <div className="space-y-2">
                   {session.recommendations.map((rec, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-card rounded-lg border border-border shadow-sm">
+                    <div key={index} className="flex items-center justify-between p-3 rounded-lg border border-border shadow-sm bg-modal">
                       <span className="text-sm">
                         <span className="font-medium">{rec.from}</span> → <span className="font-medium">{rec.to}</span>
                       </span>

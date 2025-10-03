@@ -29,7 +29,7 @@ export function TableBody({ className, ...props }: React.HTMLAttributes<HTMLTabl
 export function TableFooter({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
   return (
     <tfoot
-      className={cn('bg-muted/50 font-medium [&>tr]:last:border-b-0', className)}
+      className={cn('bg-table-footer font-medium [&>tr]:last:border-b-0', className)}
       {...props}
     />
   );
@@ -39,7 +39,7 @@ export function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTable
   return (
     <tr
       className={cn(
-        'border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
+        'border-b transition-colors hover:bg-table-row-hover data-[state=selected]:bg-table-row-selected',
         className
       )}
       {...props}
