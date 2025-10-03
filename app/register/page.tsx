@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import type { FormEvent } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
@@ -11,17 +11,29 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    company: '',
+    phone: '',
+    plan: 'free' // default plan
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Pre-select plan from URL parameter
+  useEffect(() => {
+    const planParam = searchParams.get('plan');
+    if (planParam && ['free', 'pro', 'premium'].includes(planParam)) {
+      setFormData(prev => ({ ...prev, plan: planParam }));
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -40,10 +52,20 @@ export default function RegisterPage() {
     setLoading(true);
     
     try {
+      // Map UI plan names to backend plan names
+      const planMapping: Record<string, string> = {
+        'free': 'basic',
+        'pro': 'premium',
+        'premium': 'enterprise'
+      };
+
       const response = await api.auth.register({
         name: formData.name,
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        company: formData.company,
+        phone: formData.phone,
+        plan: planMapping[formData.plan] || 'basic'
       });
 
       if (response.success) {
@@ -57,6 +79,12 @@ export default function RegisterPage() {
       setLoading(false);
     }
   };
+
+  const plans = [
+    { id: 'free', name: 'Free', description: 'Até 1 sessão/mês' },
+    { id: 'pro', name: 'Pro', description: 'Até 10 sessões/mês' },
+    { id: 'premium', name: 'Premium', description: 'Sessões ilimitadas + PokerBot' },
+  ];
 
   return (
     <div className="relative min-h-screen bg-page text-page-foreground">
@@ -127,6 +155,23 @@ export default function RegisterPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-2">
+                    <Label htmlFor="plan">Plano</Label>
+                    <select
+                      id="plan"
+                      value={formData.plan}
+                      onChange={(e) => setFormData({ ...formData, plan: e.target.value })}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={loading}
+                    >
+                      {plans.map((plan) => (
+                        <option key={plan.id} value={plan.id}>
+                          {plan.name} - {plan.description}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="space-y-2">
                     <Label htmlFor="name">Nome completo</Label>
                     <Input
                       type="text"
@@ -134,6 +179,32 @@ export default function RegisterPage() {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="Seu nome"
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="company">Nome do clube/organização</Label>
+                    <Input
+                      type="text"
+                      id="company"
+                      value={formData.company}
+                      onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                      placeholder="Nome do seu clube de poker"
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Telefone</Label>
+                    <Input
+                      type="tel"
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="(00) 00000-0000"
                       required
                       disabled={loading}
                     />
@@ -215,6 +286,18 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   );
 }
 
