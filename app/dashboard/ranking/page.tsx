@@ -186,9 +186,9 @@ export default function RankingPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {playerStats.slice(0, 3).map((player, index) => (
           <Card key={player.name} className={`${
-            index === 0 ? 'ring-2 ring-yellow-500/20 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20' :
-            index === 1 ? 'ring-2 ring-gray-400/20 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-800/20' :
-            'ring-2 ring-orange-600/20 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20'
+            index === 0 ? 'ring-2 ring-yellow-500/20 bg-linear-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20' :
+            index === 1 ? 'ring-2 ring-gray-400/20 bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-800/20' :
+            'ring-2 ring-orange-600/20 bg-linear-to-br from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20'
           }`}>
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">

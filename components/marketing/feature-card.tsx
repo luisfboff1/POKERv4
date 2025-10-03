@@ -9,12 +9,12 @@ export function FeatureCard({ feature }: FeatureCardProps) {
   const Icon = feature.icon;
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-border/70 bg-card/95 p-6 shadow-[var(--shadow-soft)] transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover">
+    <div className="group relative overflow-hidden rounded-2xl border border-border/70 bg-card/95 p-6 shadow-(--shadow-soft) transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover">
       <div
         aria-hidden
         className={cn(
           'absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100',
-          'bg-gradient-to-br',
+          'bg-linear-to-br',
           feature.accent
         )}
       />

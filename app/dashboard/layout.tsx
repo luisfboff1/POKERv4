@@ -64,7 +64,7 @@ export default function DashboardLayout({
       }}
     >
       {/* Mobile Menu Button */}
-      <div className="fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-surface/95 px-4 shadow-[var(--shadow-soft)] backdrop-blur md:hidden">
+      <div className="fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-surface/95 px-4 shadow-(--shadow-soft) backdrop-blur md:hidden">
         <h1 className="text-base font-semibold">🎯 Poker Manager</h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -90,7 +90,7 @@ export default function DashboardLayout({
       {/* Overlay (mobile) */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-60 bg-black/60 backdrop-blur-sm md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}

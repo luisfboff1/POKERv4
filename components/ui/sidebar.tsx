@@ -33,7 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, navigation, sidebarOpen,
       className={
         [
           'fixed md:static',
-          'inset-y-0 left-0 z-[70]',
+          'inset-y-0 left-0 z-70',
           collapsed ? 'w-16' : 'w-64',
           'bg-sidebar text-sidebar-foreground',
           'border-r border-border',

@@ -29,7 +29,7 @@ export function Sidebar({ user, navigation, sidebarOpen, setSidebarOpen, logout 
       className={
         [
           'fixed md:static',
-          'inset-y-0 left-0 z-[70]',
+          'inset-y-0 left-0 z-70',
           collapsed ? 'w-16' : 'w-64',
           'bg-sidebar text-sidebar-foreground',
           'border-r border-border',
@@ -69,7 +69,7 @@ export function Sidebar({ user, navigation, sidebarOpen, setSidebarOpen, logout 
               className={`flex items-center rounded-lg px-3 py-2 font-medium text-foreground/90 transition-all hover:bg-accent hover:text-accent-foreground ${collapsed ? 'justify-center' : 'gap-3'}`}
               title={collapsed ? item.name : undefined}
             >
-              <Icon className="w-5 h-5 flex-shrink-0" />
+              <Icon className="w-5 h-5 shrink-0" />
               {!collapsed && <span className="transition-opacity duration-300">{item.name}</span>}
             </Link>
           );

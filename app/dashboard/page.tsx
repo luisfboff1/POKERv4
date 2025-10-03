@@ -115,7 +115,7 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
         {(user?.role === 'admin' || user?.role === 'super_admin') && (
-          <Card className="transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]">
+          <Card className="transition-all hover:-translate-y-1 hover:shadow-(--shadow-soft)">
             <Link href="/dashboard/new" className="block">
               <CardHeader className="space-y-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -132,7 +132,7 @@ export default function DashboardPage() {
           </Card>
         )}
 
-        <Card className="transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]">
+        <Card className="transition-all hover:-translate-y-1 hover:shadow-(--shadow-soft)">
           <Link href="/dashboard/history" className="block">
             <CardHeader className="space-y-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -148,7 +148,7 @@ export default function DashboardPage() {
           </Link>
         </Card>
 
-        <Card className="transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]">
+        <Card className="transition-all hover:-translate-y-1 hover:shadow-(--shadow-soft)">
           <Link href="/dashboard/ranking" className="block">
             <CardHeader className="space-y-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -165,7 +165,7 @@ export default function DashboardPage() {
         </Card>
 
         {(user?.role === 'admin' || user?.role === 'super_admin') && (
-          <Card className="transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]">
+          <Card className="transition-all hover:-translate-y-1 hover:shadow-(--shadow-soft)">
             <Link href="/dashboard/invites" className="block">
               <CardHeader className="space-y-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">

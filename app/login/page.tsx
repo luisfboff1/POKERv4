@@ -53,7 +53,7 @@ export default function LoginPage() {
       </div>
 
       <div className="flex min-h-screen flex-col lg:flex-row">
-        <div className="relative hidden min-h-screen flex-1 flex-col justify-center overflow-hidden bg-gradient-to-br from-emerald-800/90 via-emerald-700/70 to-emerald-600/50 dark:from-emerald-900/80 dark:via-emerald-800/60 dark:to-emerald-700/40 px-12 py-24 text-white lg:flex">
+        <div className="relative hidden min-h-screen flex-1 flex-col justify-center overflow-hidden bg-linear-to-br from-emerald-800/90 via-emerald-700/70 to-emerald-600/50 dark:from-emerald-900/80 dark:via-emerald-800/60 dark:to-emerald-700/40 px-12 py-24 text-white lg:flex">
           <div className="relative z-10 max-w-lg space-y-10">
             <div className="space-y-3">
               <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">

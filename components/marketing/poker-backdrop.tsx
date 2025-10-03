@@ -23,12 +23,12 @@ const chips = [
   },
   {
     key: 'chip-2',
-    wrapper: 'bottom-[-3rem] right-[10%] h-32 w-32 rotate-6',
+    wrapper: '-bottom-12 right-[10%] h-32 w-32 rotate-6',
     gradient: 'from-sky-500/65 via-indigo-500/50 to-indigo-600/40',
   },
   {
     key: 'chip-3',
-    wrapper: 'bottom-[-2rem] left-[32%] h-24 w-24 rotate-2',
+    wrapper: '-bottom-8 left-[32%] h-24 w-24 rotate-2',
     gradient: 'from-emerald-500/65 via-emerald-400/50 to-emerald-600/38',
   },
 ];
@@ -37,7 +37,7 @@ const suits = [
   {
     key: 'spade',
     symbol: '♠',
-    className: 'top-16 right-[18%] text-[96px] text-white/18 rotate-[10deg] dark:text-white/12',
+    className: 'top-16 right-[18%] text-[96px] text-white/18 rotate-10 dark:text-white/12',
   },
   {
     key: 'heart',
@@ -52,7 +52,7 @@ const suits = [
   {
     key: 'diamond',
     symbol: '♦',
-    className: 'bottom-20 right-[32%] text-[84px] text-rose-300/20 rotate-[14deg] dark:text-rose-300/16',
+    className: 'bottom-20 right-[32%] text-[84px] text-rose-300/20 rotate-14 dark:text-rose-300/16',
   },
 ];
 
@@ -61,7 +61,7 @@ export function PokerBackdrop({ variant = 'felt', className }: PokerBackdropProp
     <div aria-hidden className={cn('pointer-events-none absolute inset-0 overflow-hidden', className)}>
       <div
         className={cn(
-          'absolute inset-0 bg-gradient-to-br opacity-[0.55] dark:opacity-[0.92] transition-opacity duration-500',
+          'absolute inset-0 bg-linear-to-br opacity-[0.55] dark:opacity-[0.92] transition-opacity duration-500',
           variantBackground[variant]
         )}
       />
@@ -82,14 +82,14 @@ export function PokerBackdrop({ variant = 'felt', className }: PokerBackdropProp
         }}
       />
 
-      <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/30 dark:via-black/40" />
+      <div className="absolute inset-0 bg-linear-to-b from-black/0 via-black/0 to-black/30 dark:via-black/40" />
 
       {chips.map((chip) => (
         <div
           key={chip.key}
           className={cn('absolute rounded-full opacity-60 dark:opacity-75 blur-[0.4px]', chip.wrapper)}
         >
-          <div className={cn('absolute inset-0 rounded-full bg-gradient-to-br', chip.gradient)} />
+          <div className={cn('absolute inset-0 rounded-full bg-linear-to-br', chip.gradient)} />
           <div className="absolute inset-0 rounded-full opacity-45 [background:repeating-conic-gradient(from_0deg,rgba(255,255,255,0.85)_0deg_18deg,transparent_18deg_36deg)]" />
           <div className="absolute inset-[22%] rounded-full border border-white/45" />
           <div className="absolute inset-[38%] rounded-full bg-slate-900/30" />

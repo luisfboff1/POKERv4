@@ -28,7 +28,7 @@ export function PricingCard({ plan }: PricingCardProps) {
       )}
     >
       <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/12 via-primary/5 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-br from-primary/12 via-primary/5 to-transparent" />
       </div>
 
       {isHighlighted && (

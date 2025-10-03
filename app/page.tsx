@@ -41,7 +41,7 @@ export default function HomePage() {
       {/* Poker Background */}
   {/* Poker Background com ajuste de contraste para light/dark */}
   <PokerBackdrop variant="felt" className="z-0" />
-  <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-[#2c4d3b]/60 via-[#3a6b4d]/40 to-[#e6f4ea]/80 dark:from-[#1a2a1f]/80 dark:to-black/0" />
+  <div className="pointer-events-none absolute inset-0 z-0 bg-linear-to-b from-[#2c4d3b]/60 via-[#3a6b4d]/40 to-[#e6f4ea]/80 dark:from-[#1a2a1f]/80 dark:to-black/0" />
 
       {/* Header */}
       <div className="sticky top-0 z-50 border-b border-border bg-surface/80 backdrop-blur supports-[backdrop-filter]:bg-surface/60">
@@ -108,7 +108,7 @@ export default function HomePage() {
 
       {/* CTA Section */}
       <div className="relative z-10 px-6 py-20">
-        <div className="mx-auto max-w-4xl rounded-2xl bg-gradient-to-br from-primary/15 via-primary/10 to-primary/5 p-12 text-center shadow-lg">
+        <div className="mx-auto max-w-4xl rounded-2xl bg-linear-to-br from-primary/15 via-primary/10 to-primary/5 p-12 text-center shadow-lg">
           <SectionHeading
             title="Pronto para começar?"
             description="Crie sua conta gratuitamente e comece a organizar suas sessões de poker hoje mesmo."

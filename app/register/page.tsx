@@ -104,8 +104,8 @@ function RegisterForm() {
       </div>
 
       <div className="flex min-h-screen flex-col lg:flex-row">
-        <div className="relative hidden min-h-screen flex-1 flex-col justify-center overflow-hidden bg-gradient-to-b from-[#2c4d3b]/60 via-[#3a6b4d]/40 to-[#e6f4ea]/80 dark:from-[#1a2a1f]/80 dark:to-black/0 px-12 py-24 text-foreground lg:flex">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#2c4d3b]/60 via-[#3a6b4d]/40 to-[#e6f4ea]/80 dark:from-[#1a2a1f]/80 dark:to-black/0" aria-hidden />
+        <div className="relative hidden min-h-screen flex-1 flex-col justify-center overflow-hidden bg-linear-to-b from-[#2c4d3b]/60 via-[#3a6b4d]/40 to-[#e6f4ea]/80 dark:from-[#1a2a1f]/80 dark:to-black/0 px-12 py-24 text-foreground lg:flex">
+          <div className="absolute inset-0 bg-linear-to-b from-[#2c4d3b]/60 via-[#3a6b4d]/40 to-[#e6f4ea]/80 dark:from-[#1a2a1f]/80 dark:to-black/0" aria-hidden />
           <div className="relative z-10 max-w-lg space-y-10">
             <div className="space-y-3">
               <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
@@ -137,7 +137,7 @@ function RegisterForm() {
 
         <div className="flex w-full flex-1 items-center justify-center bg-surface px-6 py-24 shadow-inner lg:bg-transparent">
           <div className="w-full max-w-md">
-            <Card className="border-none bg-surface text-surface-foreground shadow-[var(--shadow-soft)]">
+            <Card className="border-none bg-surface text-surface-foreground shadow-(--shadow-soft)">
               <CardHeader className="space-y-3 text-center">
                 <CardTitle className="text-2xl font-semibold">Criar conta</CardTitle>
                 <CardDescription className="text-sm text-muted-foreground">
