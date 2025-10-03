@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/contexts/auth-context';
+import { Providers } from '@/src/components/providers';
+import { ModalProvider } from '@/src/components/providers/modal-provider';
 
 export const metadata: Metadata = {
   title: 'Poker Manager - Sistema de Gestão de Partidas',
@@ -15,9 +17,13 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <Providers>
+          <ModalProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </ModalProvider>
+        </Providers>
       </body>
     </html>
   );
