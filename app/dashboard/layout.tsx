@@ -34,9 +34,16 @@ export default function DashboardLayout({
   }, [isAuthenticated, loading, router]);
 
   if (loading || !isAuthenticated || !user) {
+    // Use refactored LoadingSpinner for modern visual
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-page">
+        <div className="flex flex-col items-center gap-4">
+          <span className="text-lg font-semibold text-muted-foreground animate-pulse">Carregando...</span>
+          <div className="">
+            {/* Refactored loading spinner */}
+            <div className="animate-spin rounded-full border-2 border-border border-t-primary bg-white/30 backdrop-blur-md shadow-lg h-12 w-12 transition-all duration-300" aria-label="Carregando" role="status" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -77,12 +84,13 @@ export default function DashboardLayout({
         inset-y-0 left-0
         z-[70]
         w-64
-        bg-surface text-surface-foreground
+        bg-white/70 backdrop-blur-xl shadow-xl text-surface-foreground
         border-r border-border
         transform transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0
         flex flex-col
+        transition-all duration-300
       `}>
         {/* Header da Sidebar (desktop) */}
         <div className="hidden items-center justify-between border-b border-border px-4 py-4 md:flex">
@@ -115,7 +123,7 @@ export default function DashboardLayout({
 
         {/* User Info + Logout */}
         <div className="border-t border-border px-4 py-4">
-          <div className="mb-3 space-y-1 rounded-md border border-border/60 bg-page px-3 py-3">
+          <div className="mb-3 space-y-1 rounded-xl border border-border/40 bg-white/60 backdrop-blur px-3 py-3 shadow-sm">
             <p className="text-sm font-semibold leading-tight text-foreground">{user.name}</p>
             <p className="text-xs text-muted-foreground">{user.email}</p>
             <p className="text-xs text-muted-foreground">
@@ -124,7 +132,7 @@ export default function DashboardLayout({
           </div>
           <Button
             variant="outline"
-            className="w-full"
+            className="w-full bg-white/80 backdrop-blur shadow transition-all duration-200"
             onClick={logout}
           >
             <LogOut className="w-4 h-4 mr-2" />

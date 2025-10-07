@@ -8,8 +8,8 @@ interface TableProps {
 
 export function Table({ children, className }: TableProps) {
   return (
-    <div className="relative w-full overflow-auto">
-      <table className={cn('w-full caption-bottom text-sm', className)}>
+    <div className="relative w-full overflow-auto rounded-xl shadow-lg bg-card/80 backdrop-blur-lg animate-fade-in">
+      <table className={cn('w-full caption-bottom text-sm border border-border rounded-xl overflow-hidden', className)}>
         {children}
       </table>
     </div>

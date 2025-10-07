@@ -292,8 +292,14 @@ function RegisterForm() {
 export default function RegisterPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-page">
+        <div className="flex flex-col items-center gap-4">
+          <span className="text-lg font-semibold text-muted-foreground animate-pulse">Carregando...</span>
+          <div className="">
+            {/* Refactored loading spinner */}
+            <div className="animate-spin rounded-full border-2 border-border border-t-primary bg-white/30 backdrop-blur-md shadow-lg h-12 w-12 transition-all duration-300" aria-label="Carregando" role="status" />
+          </div>
+        </div>
       </div>
     }>
       <RegisterForm />

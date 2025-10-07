@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check } from 'lucide-react';
+import { Check, DollarSign, BarChart, Bot as LucideBot, Mail, Smartphone, Palette } from 'lucide-react';
 
 export default function HomePage() {
   const router = useRouter();
@@ -21,8 +21,14 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-page">
+        <div className="flex flex-col items-center gap-4">
+          <span className="text-lg font-semibold text-muted-foreground animate-pulse">Carregando...</span>
+          <div className="">
+            {/* Refactored loading spinner */}
+            <div className="animate-spin rounded-full border-2 border-border border-t-primary bg-white/30 backdrop-blur-md shadow-lg h-12 w-12 transition-all duration-300" aria-label="Carregando" role="status" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -88,16 +94,16 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="relative min-h-screen bg-page text-page-foreground">
+  <div className="relative min-h-screen bg-gradient-to-br from-primary/5 via-surface/10 to-accent/5 text-page-foreground">
       {/* Header */}
-      <div className="sticky top-0 z-50 border-b border-border bg-surface/80 backdrop-blur supports-[backdrop-filter]:bg-surface/60">
+  <div className="sticky top-0 z-50 border-b border-border bg-gradient-to-r from-primary/20 via-surface/80 to-accent/20 backdrop-blur supports-[backdrop-filter]:bg-surface/60">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="text-lg font-semibold tracking-tight text-foreground">🎯 Poker Manager</div>
           <div className="flex items-center gap-4 text-sm">
             <ThemeToggle />
-            <Link href="/login" className="text-muted-foreground hover:text-foreground">
-              Login
-            </Link>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/login">Login</Link>
+            </Button>
             <Button asChild size="sm">
               <Link href="/register">Começar agora</Link>
             </Button>
@@ -106,7 +112,7 @@ export default function HomePage() {
       </div>
 
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 py-20">
+  <div className="relative overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-accent/5 px-6 py-20">
         <div className="mx-auto max-w-4xl text-center">
           <span className="inline-flex items-center rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary">
             Sistema completo de gestão de poker
@@ -131,7 +137,7 @@ export default function HomePage() {
       </div>
 
       {/* Pricing Section */}
-      <div className="mx-auto max-w-7xl px-6 py-20">
+  <div className="mx-auto max-w-7xl px-6 py-20">
         <div className="text-center">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
             Escolha o plano ideal para você
@@ -141,24 +147,21 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="mt-16 grid gap-8 lg:grid-cols-3">
+  <div className="mt-16 grid gap-8 lg:grid-cols-3">
           {plans.map((plan) => (
             <Card
               key={plan.id}
-              className={`relative flex flex-col ${
-                plan.highlighted
-                  ? 'border-primary shadow-lg ring-2 ring-primary/20'
-                  : 'border-border'
-              }`}
+              className={`relative flex flex-col rounded-2xl border border-border shadow-lg bg-gradient-to-br from-surface/60 via-white/80 to-accent/10 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${plan.highlighted ? 'ring-2 ring-primary/30' : ''}`}
             >
+              {/* Frase "Mais popular" dentro do card, responsiva */}
               {plan.highlighted && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <span className="inline-flex items-center rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground">
+                <div className="flex w-full justify-center">
+                  <span className="inline-flex items-center rounded-full bg-primary px-4 py-1 text-xs font-semibold text-primary-foreground shadow-lg absolute left-1/2 -translate-x-1/2 -top-6 sm:static sm:translate-x-0 sm:top-0">
                     Mais popular
                   </span>
                 </div>
               )}
-              
+
               <CardHeader className="space-y-4 pb-8">
                 <div>
                   <CardTitle className="text-2xl">{plan.name}</CardTitle>
@@ -173,17 +176,28 @@ export default function HomePage() {
 
               <CardContent className="flex flex-1 flex-col justify-between space-y-6">
                 <ul className="space-y-3">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-start gap-3">
-                      <Check className="mt-0.5 h-5 w-5 flex-none text-primary" />
-                      <span className="text-sm text-foreground/90">{feature}</span>
-                    </li>
-                  ))}
+                  {plan.features.map((feature, index) => {
+                    let icon = <Check className="mt-0.5 h-5 w-5 flex-none text-primary" />;
+                    if (feature.includes('buy-ins')) icon = <DollarSign className="mt-0.5 h-5 w-5 flex-none text-primary" />;
+                    if (feature.includes('Rankings')) icon = <BarChart className="mt-0.5 h-5 w-5 flex-none text-primary" />;
+                    if (feature.includes('PokerBot')) icon = <LucideBot className="mt-0.5 h-5 w-5 flex-none text-primary" />;
+                    if (feature.includes('convites')) icon = <Mail className="mt-0.5 h-5 w-5 flex-none text-primary" />;
+                    if (feature.includes('performance')) icon = <BarChart className="mt-0.5 h-5 w-5 flex-none text-primary" />;
+                    if (feature.includes('tendências')) icon = <BarChart className="mt-0.5 h-5 w-5 flex-none text-primary" />;
+                    if (feature.includes('temas')) icon = <Palette className="mt-0.5 h-5 w-5 flex-none text-primary" />;
+                    if (feature.includes('sessões')) icon = <Smartphone className="mt-0.5 h-5 w-5 flex-none text-primary" />;
+                    return (
+                      <li key={index} className="flex items-start gap-3">
+                        {icon}
+                        <span className="text-sm text-foreground/90">{feature.replace('🤖 ', '').replace('📊 ', '').replace('💰 ', '').replace('✉️ ', '').replace('📱 ', '').replace('🎨 ', '')}</span>
+                      </li>
+                    );
+                  })}
                 </ul>
 
                 <Button
                   asChild
-                  variant={plan.highlighted ? 'default' : 'outline'}
+                  variant={plan.highlighted ? 'outline' : 'outline'}
                   className="w-full"
                   size="lg"
                 >
@@ -196,7 +210,7 @@ export default function HomePage() {
       </div>
 
       {/* Features Section */}
-      <div className="border-t border-border bg-surface/50 px-6 py-20">
+  <div className="border-t border-border bg-gradient-to-br from-primary/10 via-surface/30 to-accent/10 px-6 py-20">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
@@ -207,37 +221,37 @@ export default function HomePage() {
           <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {[
               {
-                icon: '💰',
+                icon: <DollarSign className="h-8 w-8 text-primary mx-auto" />,
                 title: 'Controle financeiro completo',
                 description:
                   'Acompanhe buy-ins, cash-outs e balanços de cada jogador com precisão.',
               },
               {
-                icon: '📊',
+                icon: <BarChart className="h-8 w-8 text-primary mx-auto" />,
                 title: 'Rankings automáticos',
                 description:
                   'Visualize estatísticas e gráficos de performance atualizados em tempo real.',
               },
               {
-                icon: '🤖',
+                icon: <LucideBot className="h-8 w-8 text-primary mx-auto" />,
                 title: 'PokerBot inteligente',
                 description:
                   'Análises estratégicas e recomendações personalizadas para otimizar seus resultados.',
               },
               {
-                icon: '✉️',
+                icon: <Mail className="h-8 w-8 text-primary mx-auto" />,
                 title: 'Sistema de convites',
                 description:
                   'Convide jogadores por email com aprovação automática ou manual.',
               },
               {
-                icon: '📱',
+                icon: <Smartphone className="h-8 w-8 text-primary mx-auto" />,
                 title: 'Design responsivo',
                 description:
                   'Interface moderna que funciona perfeitamente em celulares, tablets e desktop.',
               },
               {
-                icon: '🎨',
+                icon: <Palette className="h-8 w-8 text-primary mx-auto" />,
                 title: 'Temas personalizáveis',
                 description:
                   'Escolha entre modo claro e escuro para melhor conforto visual.',
@@ -245,9 +259,9 @@ export default function HomePage() {
             ].map((feature, index) => (
               <div
                 key={index}
-                className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-md"
+                className="rounded-lg border border-border bg-gradient-to-br from-surface/60 via-white/80 to-accent/10 p-6 transition-all hover:shadow-md"
               >
-                <div className="text-4xl">{feature.icon}</div>
+                <div className="flex justify-center">{feature.icon}</div>
                 <h3 className="mt-4 text-lg font-semibold">{feature.title}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">{feature.description}</p>
               </div>
@@ -257,7 +271,7 @@ export default function HomePage() {
       </div>
 
       {/* CTA Section */}
-      <div className="px-6 py-20">
+  <div className="px-6 py-20 bg-gradient-to-br from-primary/10 via-surface/20 to-accent/10">
         <div className="mx-auto max-w-4xl rounded-2xl bg-gradient-to-br from-primary/15 via-primary/10 to-primary/5 p-12 text-center">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
             Pronto para começar?
@@ -277,7 +291,7 @@ export default function HomePage() {
       </div>
 
       {/* Footer */}
-      <div className="border-t border-border px-6 py-8">
+  <div className="border-t border-border bg-gradient-to-r from-primary/10 via-surface/30 to-accent/10 px-6 py-8">
         <div className="mx-auto max-w-7xl text-center text-sm text-muted-foreground">
           <p>© 2024 Poker Manager. Todos os direitos reservados.</p>
         </div>

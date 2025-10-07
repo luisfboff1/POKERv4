@@ -205,8 +205,10 @@ export default function DashboardPage() {
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <span className="ml-3 text-muted-foreground">Carregando sessões...</span>
+              <div className="flex flex-col items-center gap-2">
+                <div className="animate-spin rounded-full border-2 border-border border-t-primary bg-white/30 backdrop-blur-md shadow-lg h-8 w-8 transition-all duration-300" aria-label="Carregando" role="status" />
+                <span className="ml-3 text-muted-foreground animate-pulse" aria-live="polite">Carregando sessões...</span>
+              </div>
             </div>
           ) : stats.recentSessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border/80 bg-surface py-12 text-center text-sm text-muted-foreground">
