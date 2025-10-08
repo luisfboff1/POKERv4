@@ -92,7 +92,7 @@ jobs:
           port: 21
           protocol: ftp
           local-dir: ./dist/
-          server-dir: /poker/
+          server-dir: /public_html/poker/
           state-name: .ftp-deploy-sync-state-unified.json
           exclude: |
             **/.git*
