@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { trackPokerEvent } from '@/lib/analytics';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -28,6 +29,8 @@ export default function LoginPage() {
     
     try {
       await login(formData);
+      // Rastrear login bem-sucedido
+      trackPokerEvent.login();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao fazer login');
     } finally {

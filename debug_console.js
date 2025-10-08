@@ -2,7 +2,8 @@
 // COLE NO CONSOLE F12 - TESTE SIMPLES
 // ====================================
 
-console.log("🚀 TESTE RÁPIDO DO SISTEMA");
+console.log("🚀 NOVO SISTEMA - RANKING DINÂMICO");
+console.log("📊 Agora o ranking é calculado em tempo real das sessões!");
 
 // Função simples
 async function test(endpoint, method = 'GET', data = null) {
@@ -44,8 +45,8 @@ async function testar() {
         console.log("\n4️⃣ TESTANDO SESSIONS...");
         await test('session.php');
         
-        console.log("\n5️⃣ SINCRONIZAR...");
-        await test('sync_players_stats.php', 'POST', { action: 'sync_all' });
+        console.log("\n5️⃣ LIMPANDO DADOS DUPLICADOS...");
+        await test('cleanup_players.php');
         
     } else {
         console.log("❌ Erro no login!");
@@ -59,7 +60,7 @@ testar();
 window.login = () => test('auth.php', 'POST', {action: 'login', email: 'luisfboff@hotmail.com', password: 'password'});
 window.players = () => test('players.php');
 window.sessions = () => test('session.php');
-window.sync = () => test('sync_players_stats.php', 'POST', {action: 'sync_all'});
-window.reset = () => test('sync_players_stats.php', 'POST', {action: 'reset_all'});
+window.cleanup = () => test('cleanup_players.php');
 
-console.log("\n🔧 Funções: login(), players(), sessions(), sync(), reset()");
+console.log("\n🔧 Funções: login(), players(), sessions(), cleanup()");
+console.log("🎯 NOVA LÓGICA: Não precisa mais sincronizar! Ranking calculado automaticamente!");
