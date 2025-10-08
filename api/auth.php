@@ -68,7 +68,7 @@ function handleLogin() {
         // Buscar usuário com dados do tenant
         $sql = "SELECT 
                     u.id, u.tenant_id, u.name, u.email, u.password_hash, u.role, u.is_active,
-                    u.login_attempts, u.locked_until, u.last_login, u.player_id,
+                    u.last_login, u.player_id,
                     t.name as tenant_name, t.status as tenant_status, t.plan as tenant_plan
                 FROM users u 
                 JOIN tenants t ON u.tenant_id = t.id 
@@ -84,11 +84,6 @@ function handleLogin() {
             error('Credenciais inválidas', 401);
         }
         
-        // Verificar se conta está bloqueada
-        if ($user['locked_until'] && strtotime($user['locked_until']) > time()) {
-            error('Conta temporariamente bloqueada. Tente novamente mais tarde.', 423);
-        }
-        
         // Verificar se tenant está ativo
         if ($user['tenant_status'] !== 'active') {
             error('Conta pendente de aprovação ou suspensa', 403);
@@ -96,28 +91,15 @@ function handleLogin() {
         
         // Verificar senha
         if (!password_verify($password, $user['password_hash'])) {
-            // Incrementar tentativas de login
-            $attempts = $user['login_attempts'] + 1;
-            $locked_until = null;
-            
-            // Bloquear após 5 tentativas por 30 minutos
-            if ($attempts >= 5) {
-                $locked_until = date('Y-m-d H:i:s', time() + (30 * 60));
-            }
-            
-            $updateSql = "UPDATE users SET login_attempts = ?, locked_until = ? WHERE id = ?";
-            $updateStmt = $pdo->prepare($updateSql);
-            $updateStmt->execute([$attempts, $locked_until, $user['id']]);
-            
             // Log tentativa inválida
             logAuditAction($user['tenant_id'], $user['id'], 'failed_login', null, null, null, 
-                ['email' => $email, 'reason' => 'wrong_password', 'attempts' => $attempts]);
+                ['email' => $email, 'reason' => 'wrong_password']);
             
             error('Credenciais inválidas', 401);
         }
         
-        // Login bem-sucedido - resetar tentativas
-        $updateSql = "UPDATE users SET login_attempts = 0, locked_until = NULL, last_login = NOW() WHERE id = ?";
+        // Login bem-sucedido - atualizar último login
+        $updateSql = "UPDATE users SET last_login = NOW() WHERE id = ?";
         $updateStmt = $pdo->prepare($updateSql);
         $updateStmt->execute([$user['id']]);
         

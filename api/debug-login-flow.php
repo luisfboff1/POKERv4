@@ -31,7 +31,7 @@ try {
     $email = 'luisfboff@hotmail.com';
     $sql = "SELECT 
                 u.id, u.tenant_id, u.name, u.email, u.password_hash, u.role, u.is_active,
-                u.login_attempts, u.locked_until, u.last_login, u.player_id,
+                u.last_login, u.player_id,
                 t.name as tenant_name, t.status as tenant_status, t.plan as tenant_plan
             FROM users u 
             JOIN tenants t ON u.tenant_id = t.id 
@@ -54,8 +54,6 @@ try {
             'is_active' => $user['is_active'],
             'tenant_name' => $user['tenant_name'],
             'tenant_status' => $user['tenant_status'],
-            'login_attempts' => $user['login_attempts'],
-            'locked_until' => $user['locked_until'],
         ];
     }
 
