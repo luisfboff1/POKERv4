@@ -10,7 +10,6 @@ import type { SessionPlayerData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { useState } from 'react';
-import PlayerStatsSyncManager from '@/components/PlayerStatsSyncManager';
 
 interface PlayerStats {
   id: number;
@@ -112,6 +111,34 @@ export default function RankingPage() {
     }
   };
 
+  const handleRecalculateStats = async () => {
+    try {
+      setSyncingStats(true);
+      
+      // Fazer chamada direta para recalcular
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/sync_players_stats.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ action: 'reset_all' })
+      });
+
+      if (response.ok) {
+        await refetchPlayers(); // Recarregar dados após recalcular
+        console.log('Estatísticas recalculadas com sucesso!');
+      } else {
+        console.error('Erro ao recalcular estatísticas');
+      }
+    } catch (error) {
+      console.error('Erro ao recalcular estatísticas:', error);
+    } finally {
+      setSyncingStats(false);
+    }
+  };
+
   const getRankIcon = (position: number) => {
     switch (position) {
       case 1:
@@ -172,19 +199,27 @@ export default function RankingPage() {
             Estatísticas consolidadas de {players.length} jogadores cadastrados com {sessions.length} sessões registradas
           </p>
         </div>
-        <Button 
-          onClick={handleSyncStats}
-          disabled={syncingStats}
-          variant="outline"
-          size="sm"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${syncingStats ? 'animate-spin' : ''}`} />
-          {syncingStats ? 'Sincronizando...' : 'Sincronizar'}
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleSyncStats}
+            disabled={syncingStats}
+            variant="outline"
+            size="sm"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${syncingStats ? 'animate-spin' : ''}`} />
+            {syncingStats ? 'Sincronizando...' : 'Sincronizar'}
+          </Button>
+          <Button 
+            onClick={handleRecalculateStats}
+            disabled={syncingStats}
+            variant="outline"
+            size="sm"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${syncingStats ? 'animate-spin' : ''}`} />
+            Recalcular
+          </Button>
+        </div>
       </div>
-
-      {/* Gerenciador de Sincronização */}
-      <PlayerStatsSyncManager />
 
       {/* Cards de destaque */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

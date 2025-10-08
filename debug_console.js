@@ -1,123 +1,65 @@
-// ==============================================
-// COLE ESTE CÓDIGO NO CONSOLE F12 (DevTools)
-// ==============================================
+// ====================================
+// COLE NO CONSOLE F12 - TESTE SIMPLES
+// ====================================
 
-console.log("🔥 DIAGNÓSTICO COMPLETO - PROBLEMA DO RANKING");
-console.log("📋 Este script vai testar tudo e mostrar por que o ranking não atualiza");
+console.log("🚀 TESTE RÁPIDO DO SISTEMA");
 
-// Função para fazer requisições com debug detalhado
-async function testAPI(endpoint, method = 'GET', data = null) {
-    console.log(`\n🚀 TESTANDO: ${method} /${endpoint}`);
+// Função simples
+async function test(endpoint, method = 'GET', data = null) {
+    const token = localStorage.getItem('token');
+    const options = { method, headers: { 'Content-Type': 'application/json' }};
+    if (token) options.headers.Authorization = `Bearer ${token}`;
+    if (data && method !== 'GET') options.body = JSON.stringify(data);
     
     try {
-        const options = {
-            method: method,
-            headers: { 'Content-Type': 'application/json' }
-        };
-        
-        const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-        if (token) {
-            options.headers['Authorization'] = `Bearer ${token}`;
-            console.log("🔑 Token encontrado:", token.substring(0, 20) + "...");
-        } else {
-            console.log("⚠️  Nenhum token encontrado!");
-        }
-        
-        if (data && method !== 'GET') {
-            options.body = JSON.stringify(data);
-        }
-        
-        const API_BASE = window.location.origin + '/api';
-        const response = await fetch(`${API_BASE}/${endpoint}`, options);
-        
-        console.log(`� Status: ${response.status} ${response.statusText}`);
-        
+        const response = await fetch(`/api/${endpoint}`, options);
         const result = await response.json();
-        console.log("📊 Resposta:", result);
-        
-        return { status: response.status, data: result, ok: response.ok };
-    } catch (error) {
-        console.error(`❌ ERRO em /${endpoint}:`, error);
-        return { error: error.message };
+        console.log(`${method} /${endpoint}:`, {status: response.status, data: result});
+        return result;
+    } catch (e) {
+        console.error(`❌ ${endpoint}:`, e.message);
+        return {error: e.message};
     }
 }
 
-// DIAGNÓSTICO COMPLETO
-async function diagnosticoCompleto() {
-    console.log("\n🎯 INICIANDO DIAGNÓSTICO FOCADO NO PROBLEMA DO RANKING");
-    
-    // 1. Login
-    console.log("=" .repeat(50));
-    console.log("1️⃣ FAZENDO LOGIN");
-    const login = await testAPI('auth.php', 'POST', {
+// Teste automatico
+async function testar() {
+    console.log("\n1️⃣ LOGIN...");
+    const login = await test('auth.php', 'POST', {
         action: 'login',
         email: 'luisfboff@hotmail.com',
         password: 'password'
     });
     
-    if (login.ok && login.data?.token) {
-        localStorage.setItem('token', login.data.token);
-        console.log("✅ Login OK - Token salvo");
+    if (login.token) {
+        localStorage.setItem('token', login.token);
+        console.log("✅ Logado!");
+        
+        console.log("\n2️⃣ CONTANDO REGISTROS...");
+        await test('debug.php?action=tables');
+        
+        console.log("\n3️⃣ TESTANDO PLAYERS...");
+        await test('players.php');
+        
+        console.log("\n4️⃣ TESTANDO SESSIONS...");
+        await test('session.php');
+        
+        console.log("\n5️⃣ SINCRONIZAR...");
+        await test('sync_players_stats.php', 'POST', { action: 'sync_all' });
+        
     } else {
-        console.log("❌ Falha no login!", login);
-        return;
+        console.log("❌ Erro no login!");
     }
-    
-    // 2. Testar Players API
-    console.log("=" .repeat(50));
-    console.log("2️⃣ TESTANDO API DE PLAYERS");
-    const players = await testAPI('players.php');
-    console.log(`📈 Players encontrados: ${players.data?.length || 0}`);
-    
-    // 3. Testar Sessions API
-    console.log("=" .repeat(50));
-    console.log("3️⃣ TESTANDO API DE SESSÕES");
-    const sessions = await testAPI('session.php');
-    console.log(`📊 Sessões encontradas: ${sessions.data?.length || 0}`);
-    
-    // 4. Debug do banco - Contadores
-    console.log("=" .repeat(50));
-    console.log("4️⃣ VERIFICANDO CONTADORES DO BANCO");
-    const tables = await testAPI('debug.php?action=tables');
-    
-    // 5. Ver dados específicos
-    console.log("=" .repeat(50));
-    console.log("5️⃣ DADOS ESPECÍFICOS");
-    await testAPI('debug.php?action=players');
-    await testAPI('debug.php?action=sessions');
-    
-    // 6. Testar sincronização
-    console.log("=" .repeat(50));
-    console.log("6️⃣ TESTANDO SINCRONIZAÇÃO");
-    const sync = await testAPI('sync_players_stats.php', 'POST', { action: 'sync_all' });
-    
-    console.log("\n🏁 DIAGNÓSTICO CONCLUÍDO!");
-    console.log("📋 PRÓXIMO PASSO: Se houver dados nas tabelas mas o ranking não aparece,");
-    console.log("   use a sincronização para recalcular as estatísticas!");
 }
 
-// EXECUTAR DIAGNÓSTICO AUTOMATICAMENTE
-diagnosticoCompleto();
+// Executar
+testar();
 
-// FUNÇÕES DE TESTE INDIVIDUAL
-window.testLogin = () => testAPI('auth.php', 'POST', {
-    action: 'login', email: 'luisfboff@hotmail.com', password: 'password'
-});
-window.testPlayers = () => testAPI('players.php');
-window.testSessions = () => testAPI('session.php');
-window.syncStats = () => testAPI('sync_players_stats.php', 'POST', { action: 'sync_all' });
-window.resetStats = () => testAPI('sync_players_stats.php', 'POST', { action: 'reset_all' });
-window.clearAuth = () => { localStorage.clear(); console.log("🧹 Auth limpo!"); };
+// Funções disponíveis
+window.login = () => test('auth.php', 'POST', {action: 'login', email: 'luisfboff@hotmail.com', password: 'password'});
+window.players = () => test('players.php');
+window.sessions = () => test('session.php');
+window.sync = () => test('sync_players_stats.php', 'POST', {action: 'sync_all'});
+window.reset = () => test('sync_players_stats.php', 'POST', {action: 'reset_all'});
 
-console.log(`
-� FUNÇÕES DISPONÍVEIS NO CONSOLE:
-• testLogin() - Fazer login
-• testPlayers() - Listar players  
-• testSessions() - Listar sessões
-• syncStats() - Sincronizar estatísticas ⭐
-• resetStats() - Resetar e recalcular tudo ⭐
-• clearAuth() - Limpar autenticação
-• diagnosticoCompleto() - Executar tudo novamente
-
-⭐ Use syncStats() se o ranking não atualiza após excluir sessões!
-`);
+console.log("\n🔧 Funções: login(), players(), sessions(), sync(), reset()");
