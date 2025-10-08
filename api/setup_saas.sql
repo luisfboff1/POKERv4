@@ -107,10 +107,18 @@ CREATE TABLE IF NOT EXISTS players (
 -- ========================================
 -- 4. MODIFICAR TABELA SESSIONS EXISTENTE
 -- ========================================
--- Primeiro, vamos adicionar a coluna tenant_id
-ALTER TABLE sessions 
-ADD COLUMN tenant_id INT NOT NULL AFTER id,
-ADD FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE;
+
+-- Adicionar coluna tenant_id apenas se não existir
+SET @col_exists := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sessions' AND COLUMN_NAME = 'tenant_id');
+SET @fk_exists := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sessions' AND COLUMN_NAME = 'tenant_id' AND REFERENCED_TABLE_NAME = 'tenants');
+
+-- Adicionar coluna se não existir
+SET @sql := IF(@col_exists = 0, 'ALTER TABLE sessions ADD COLUMN tenant_id INT NOT NULL AFTER id;', 'SELECT "Coluna tenant_id já existe";');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- Adicionar chave estrangeira se não existir
+SET @sql := IF(@fk_exists = 0, 'ALTER TABLE sessions ADD FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE;', 'SELECT "Chave estrangeira já existe";');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- Adicionar índice para performance
 ALTER TABLE sessions ADD INDEX idx_tenant_id (tenant_id);
