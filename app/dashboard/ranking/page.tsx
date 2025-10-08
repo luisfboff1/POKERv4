@@ -10,6 +10,7 @@ import type { SessionPlayerData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { useState } from 'react';
+import PlayerStatsSyncManager from '@/components/PlayerStatsSyncManager';
 
 interface PlayerStats {
   id: number;
@@ -181,6 +182,9 @@ export default function RankingPage() {
           {syncingStats ? 'Sincronizando...' : 'Sincronizar'}
         </Button>
       </div>
+
+      {/* Gerenciador de Sincronização */}
+      <PlayerStatsSyncManager />
 
       {/* Cards de destaque */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
