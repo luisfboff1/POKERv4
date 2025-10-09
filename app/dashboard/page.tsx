@@ -2,12 +2,13 @@
 
 import { useAuth } from '@/contexts/auth-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { useSessions, usePlayers } from '@/hooks/useApi';
 import type { Session, SessionPlayerData } from '@/lib/types';
 import Link from 'next/link';
 import { Plus, History, Trophy, Users } from 'lucide-react';
 import PlayerDashboard from '@/components/PlayerDashboard';
+import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -194,11 +195,9 @@ export default function DashboardPage() {
               </CardDescription>
             </div>
             {(user?.role === 'admin' || user?.role === 'super_admin') && (
-              <Button asChild variant="outline" size="sm">
-                <Link href="/dashboard/new">
-                  <Plus className="mr-2 h-4 w-4" />Nova sessão
-                </Link>
-              </Button>
+              <Link href="/dashboard/new" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                <Plus className="mr-2 h-4 w-4" />Nova sessão
+              </Link>
             )}
           </div>
         </CardHeader>
@@ -220,12 +219,10 @@ export default function DashboardPage() {
                 </p>
               </div>
               {(user?.role === 'admin' || user?.role === 'super_admin') && (
-                <Button asChild variant="secondary">
-                  <Link href="/dashboard/new">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Criar primeira sessão
-                  </Link>
-                </Button>
+                <Link href="/dashboard/new" className={cn(buttonVariants({ variant: "secondary" }))}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Criar primeira sessão
+                </Link>
               )}
             </div>
           ) : (
@@ -262,11 +259,9 @@ export default function DashboardPage() {
               })}
               
               <div className="pt-4 border-t">
-                <Button asChild variant="outline" className="w-full">
-                  <Link href="/dashboard/history">
-                    Ver todas as sessões
-                  </Link>
-                </Button>
+                <Link href="/dashboard/history" className={cn(buttonVariants({ variant: "outline" }), "w-full")}>
+                  Ver todas as sessões
+                </Link>
               </div>
             </div>
           )}

@@ -99,6 +99,7 @@ export interface TransferRecommendation {
   from: string;
   to: string;
   amount: number;
+  isPaid?: boolean; // Status de pagamento da transferência
 }
 
 export interface PlayerBalance {
@@ -165,5 +166,6 @@ export interface CreateSessionPayload {
   location: string;
   players_data?: SessionPlayerData[];
   recommendations?: TransferRecommendation[];
+  paid_transfers?: Record<string, boolean>;
 }
 

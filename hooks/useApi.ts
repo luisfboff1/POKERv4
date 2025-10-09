@@ -71,9 +71,9 @@ export function useSessions() {
     }
   };
 
-  const updateSessionPayments = async (id: number, playersData: Pick<SessionPlayerData,'id'|'name'|'session_paid'|'janta_paid'>[]) => {
+  const updateSessionPayments = async (id: number, playersData: Pick<SessionPlayerData,'id'|'name'|'janta_paid'>[], paidTransfers?: Record<string, boolean>) => {
     try {
-      await api.sessions.updatePayments(id, playersData);
+      await api.sessions.updatePayments(id, playersData, paidTransfers);
       await refetch();
       return true;
     } catch (err) {

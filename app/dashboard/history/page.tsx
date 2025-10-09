@@ -106,7 +106,10 @@ export default function HistoryPage() {
         isOpen={sessionDetailsModal.isOpen}
         onClose={() => { sessionDetailsModal.close(); setSelectedSession(null); }}
   onUpdateSessionPlayers={setSelectedSession}
-        onSave={async (id, payload) => { await updateSessionPayments(id, payload); await refetch(); }}
+        onSave={async (id, payload, paidTransfers) => { 
+          await updateSessionPayments(id, payload, paidTransfers); 
+          await refetch(); 
+        }}
       />
 
       {/* Modal de Confirmação */}

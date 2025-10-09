@@ -5,7 +5,6 @@ interface PlayerPaymentRowPlayer {
   name: string;
   buyin?: number;
   cashout?: number;
-  session_paid?: boolean;
   janta_paid?: boolean;
 }
 
@@ -14,7 +13,7 @@ interface PlayerPaymentRowProps {
   index: number;
   sessionId: number;
   editing: boolean;
-  onToggle(field: 'session_paid' | 'janta_paid', value: boolean): void;
+  onToggle(field: 'janta_paid', value: boolean): void;
 }
 
 export function PlayerPaymentRow({ player, index, sessionId, editing, onToggle }: PlayerPaymentRowProps) {
@@ -32,21 +31,7 @@ export function PlayerPaymentRow({ player, index, sessionId, editing, onToggle }
         </div>
       </div>
       <div className="flex gap-4">
-  <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id={`session_paid_${sessionId}_${index}`}
-            checked={!!player.session_paid}
-            disabled={!editing}
-            onChange={(e) => onToggle('session_paid', e.target.checked)}
-            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 disabled:opacity-50"
-          />
-          <label htmlFor={`session_paid_${sessionId}_${index}`} className="text-xs flex items-center gap-1">
-            <CreditCard className="h-3 w-3" />
-            Sessão
-          </label>
-        </div>
-  <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <input
             type="checkbox"
             id={`janta_paid_${sessionId}_${index}`}

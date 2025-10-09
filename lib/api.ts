@@ -90,7 +90,7 @@ export const api = {
     // GET individual (usa ?id=) agora suportado
     get: (id: number) => fetchAPI(`/session.php?id=${id}`),
     
-    create: (data: { date: string; location: string; players_data?: SessionPlayerData[] }) =>
+    create: (data: { date: string; location: string; players_data?: SessionPlayerData[]; recommendations?: any[]; paid_transfers?: Record<string, boolean> }) =>
       fetchAPI('/session.php', {
         method: 'POST',
         body: JSON.stringify({ action: 'create', ...data }),
@@ -102,10 +102,15 @@ export const api = {
         body: JSON.stringify({ action: 'update', id, ...data }),
       }),
     // Atualização específica de pagamentos (session_paid / janta_paid)
-    updatePayments: (id: number, playersData: Pick<SessionPlayerData, 'id' | 'name' | 'session_paid' | 'janta_paid'>[]) =>
+    updatePayments: (id: number, playersData: Pick<SessionPlayerData, 'id' | 'name' | 'janta_paid'>[], paidTransfers?: Record<string, boolean>) =>
       fetchAPI('/session.php', {
         method: 'POST',
-        body: JSON.stringify({ action: 'update_payments', id, players_data: playersData }),
+        body: JSON.stringify({ 
+          action: 'update_payments', 
+          id, 
+          players_data: playersData,
+          paid_transfers: paidTransfers 
+        }),
       }),
     
     delete: (id: number) =>

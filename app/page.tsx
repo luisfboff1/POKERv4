@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, DollarSign, BarChart, Bot as LucideBot, Mail, Smartphone, Palette } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function HomePage() {
   const router = useRouter();
@@ -101,12 +102,12 @@ export default function HomePage() {
           <div className="text-lg font-semibold tracking-tight text-foreground">🎯 Poker Manager</div>
           <div className="flex items-center gap-4 text-sm">
             <ThemeToggle />
-            <Button asChild variant="outline" size="sm">
-              <Link href="/login">Login</Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/register">Começar agora</Link>
-            </Button>
+            <Link href="/login" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+              Login
+            </Link>
+            <Link href="/register" className={cn(buttonVariants({ size: "sm" }))}>
+              Começar agora
+            </Link>
           </div>
         </div>
       </div>
@@ -126,12 +127,12 @@ export default function HomePage() {
             Tudo em uma plataforma moderna e responsiva.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Button asChild size="lg">
-              <Link href="/register">Começar gratuitamente</Link>
-            </Button>
-            <Button asChild variant="outline" size="lg">
-              <Link href="/login">Já tenho conta</Link>
-            </Button>
+            <Link href="/register" className={cn(buttonVariants({ size: "lg" }))}>
+              Começar gratuitamente
+            </Link>
+            <Link href="/login" className={cn(buttonVariants({ variant: "outline", size: "lg" }))}>
+              Já tenho conta
+            </Link>
           </div>
         </div>
       </div>
@@ -195,14 +196,12 @@ export default function HomePage() {
                   })}
                 </ul>
 
-                <Button
-                  asChild
-                  variant={plan.highlighted ? 'outline' : 'outline'}
-                  className="w-full"
-                  size="lg"
+                <Link 
+                  href={`/register?plan=${plan.id}`}
+                  className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full")}
                 >
-                  <Link href={`/register?plan=${plan.id}`}>{plan.cta}</Link>
-                </Button>
+                  {plan.cta}
+                </Link>
               </CardContent>
             </Card>
           ))}
@@ -280,12 +279,12 @@ export default function HomePage() {
             Crie sua conta gratuitamente e comece a organizar suas sessões de poker hoje mesmo.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Button asChild size="lg">
-              <Link href="/register?plan=free">Começar gratuitamente</Link>
-            </Button>
-            <Button asChild variant="outline" size="lg">
-              <Link href="/register?plan=premium">Experimentar Premium</Link>
-            </Button>
+            <Link href="/register?plan=free" className={cn(buttonVariants({ size: "lg" }))}>
+              Começar gratuitamente
+            </Link>
+            <Link href="/register?plan=premium" className={cn(buttonVariants({ variant: "outline", size: "lg" }))}>
+              Experimentar Premium
+            </Link>
           </div>
         </div>
       </div>

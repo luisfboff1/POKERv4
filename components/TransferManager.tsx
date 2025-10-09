@@ -24,18 +24,32 @@ interface Player {
 
 interface TransferManagerProps {
   players: Player[];
+  existingTransfers?: Transfer[]; // Transferências já salvas na base
+  paidTransfers?: Record<string, boolean>; // Status de pagamento {from_to: boolean}
   onTransferUpdate?: (transfers: Transfer[]) => void;
   onStatusChange?: (status: 'pending' | 'partial' | 'completed') => void;
+  disabled?: boolean; // Desabilitar checkboxes quando não está editando
 }
 
 const TransferManager: React.FC<TransferManagerProps> = ({
   players,
+  existingTransfers,
+  paidTransfers = {},
   onTransferUpdate,
-  onStatusChange
+  onStatusChange,
+  disabled = false
 }) => {
-  const [transfers, setTransfers] = useState<Transfer[]>(() => 
-    calculateOptimalTransfers(players)
-  );
+  const [transfers, setTransfers] = useState<Transfer[]>(() => {
+    // Se há transferências existentes na base, usar elas
+    if (existingTransfers && existingTransfers.length > 0) {
+      return existingTransfers.map(t => ({
+        ...t,
+        isPaid: paidTransfers[`${t.from}_${t.to}`] || false
+      }));
+    }
+    // Senão, calcular dinamicamente
+    return calculateOptimalTransfers(players);
+  });
 
   const summary = getPaymentSummary(transfers);
   const status = getSessionStatus(transfers);
@@ -167,7 +181,10 @@ const TransferManager: React.FC<TransferManagerProps> = ({
                   onChange={(e) => 
                     handleTransferToggle(transfer.id, e.target.checked)
                   }
-                  className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                  disabled={disabled}
+                  className={`w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2 ${
+                    disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                  }`}
                 />
                 
                 <div className="flex items-center space-x-3">

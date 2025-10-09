@@ -9,7 +9,6 @@ import type { Dispatch, SetStateAction } from 'react';
 
 interface PlayerStateSnapshot {
   id: string | number;
-  session_paid: boolean;
   janta_paid: boolean;
 }
 
@@ -18,44 +17,78 @@ interface SessionPlayer {
   name: string;
   buyin?: number;
   cashout?: number;
-  session_paid?: boolean;
   janta_paid?: boolean;
 }
 
 // Mantém sessão genérica; status opcional para permitir reuso
 // Reusa LocalSession porém garantindo players tipados detalhados
-type SessionLike = LocalSession & { players_data?: SessionPlayer[] };
+type SessionLike = LocalSession & { 
+  players_data?: SessionPlayer[];
+  paid_transfers?: Record<string, boolean>;
+};
 
 interface SessionDetailsModalProps {
   session: SessionLike | null;
   isOpen: boolean;
   onClose(): void;
   onUpdateSessionPlayers: Dispatch<SetStateAction<SessionLike | null>>;
-  onSave(sessionId: number, playersPayload: SessionPlayer[]): Promise<void>;
+  onSave(sessionId: number, playersPayload: SessionPlayer[], paidTransfers?: Record<string, boolean>): Promise<void>;
 }
 
 export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionPlayers, onSave }: SessionDetailsModalProps) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [currentTransfers, setCurrentTransfers] = useState<any[]>([]);
   
   // Configurar auto-aprovação para esta sessão
   const { onTransferUpdate, checkAndApprove } = useSessionAutoApproval(session?.id || 0);
 
   // Snapshot somente quando entra em modo edição
   const originalPlayersRef = useRef<PlayerStateSnapshot[] | null>(null);
+  const originalTransfersRef = useRef<Record<string, boolean> | null>(null);
   const hasPaymentChanges = useMemo(() => {
     if (!editing) return false;
     if (!session?.players_data) return false;
+    
+    // Verificar mudanças nos pagamentos de janta
     const snapshot = originalPlayersRef.current;
-    if (!snapshot) return false;
-    return session.players_data.some((p) => {
-      const orig = snapshot.find((o) => o.id === (p.id ?? p.name));
-      if (!orig) return true; // novo jogador improvável aqui
-      return orig.session_paid !== !!p.session_paid || orig.janta_paid !== !!p.janta_paid;
-    });
-  }, [editing, session?.players_data]);
+    if (snapshot) {
+      const hasJantaChanges = session.players_data.some((p) => {
+        const orig = snapshot.find((o) => o.id === (p.id ?? p.name));
+        if (!orig) return true; // novo jogador improvável aqui
+        return orig.janta_paid !== !!p.janta_paid;
+      });
+      if (hasJantaChanges) return true;
+    }
+    
+    // Verificar mudanças nas transferências
+    const transferSnapshot = originalTransfersRef.current;
+    if (transferSnapshot && currentTransfers.length > 0) {
+      const currentPaidTransfers: Record<string, boolean> = {};
+      currentTransfers.forEach(transfer => {
+        const key = `${transfer.from}_${transfer.to}`;
+        currentPaidTransfers[key] = transfer.isPaid || false;
+      });
+      
+      // Comparar com snapshot original
+      for (const key in currentPaidTransfers) {
+        if ((transferSnapshot[key] || false) !== currentPaidTransfers[key]) {
+          return true;
+        }
+      }
+      
+      // Verificar se há novas transferências
+      for (const key in transferSnapshot) {
+        if (!(key in currentPaidTransfers)) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  }, [editing, session?.players_data, currentTransfers]);
 
-  const updatePlayerPayment = (playerIndex: number, field: 'session_paid' | 'janta_paid', value: boolean) => {
+  const updatePlayerPayment = (playerIndex: number, field: 'janta_paid', value: boolean) => {
     if (!editing) return;
     onUpdateSessionPlayers((prev: SessionLike | null) => {
       if (!prev) return prev;
@@ -74,10 +107,17 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
       const payload: SessionPlayer[] = session.players_data.map((p) => ({
         id: p.id,
         name: p.name || 'Sem nome',
-        session_paid: !!p.session_paid,
         janta_paid: !!p.janta_paid,
       }));
-      await onSave(session.id, payload);
+      
+      // Converter transferências para formato paid_transfers
+      const paidTransfers: Record<string, boolean> = {};
+      currentTransfers.forEach(transfer => {
+        const key = `${transfer.from}_${transfer.to}`;
+        paidTransfers[key] = transfer.isPaid || false;
+      });
+      
+      await onSave(session.id, payload, paidTransfers);
       setEditing(false);
     } finally {
       setSaving(false);
@@ -107,12 +147,19 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
                     if (session?.players_data) {
                       originalPlayersRef.current = session.players_data.map((p) => ({
                         id: (p.id ?? p.name) as string | number,
-                        session_paid: !!p.session_paid,
                         janta_paid: !!p.janta_paid,
                       }));
                     } else {
                       originalPlayersRef.current = [];
                     }
+                    
+                    // Criar snapshot das transferências
+                    if (session?.paid_transfers) {
+                      originalTransfersRef.current = { ...session.paid_transfers };
+                    } else {
+                      originalTransfersRef.current = {};
+                    }
+                    
                     setEditing(true);
                   }}
                 >
@@ -132,13 +179,19 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
                           const restored = prev.players_data?.map((p) => {
                             const snap = originalPlayersRef.current!.find((s) => s.id === (p.id ?? p.name));
                             if (!snap) return p;
-                            return { ...p, session_paid: snap.session_paid, janta_paid: snap.janta_paid };
+                            return { ...p, janta_paid: snap.janta_paid };
                           });
-                          return { ...prev, players_data: restored };
+                          return { 
+                            ...prev, 
+                            players_data: restored,
+                            paid_transfers: originalTransfersRef.current || {}
+                          };
                         });
                       }
+                      
                       setEditing(false);
                       originalPlayersRef.current = null;
+                      originalTransfersRef.current = null;
                     }}
                   >
                     Cancelar
@@ -180,8 +233,19 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
                     cashout: p.cashout || 0,
                     profit: (p.cashout || 0) - (p.buyin || 0)
                   }))}
+                  existingTransfers={session.recommendations?.map(rec => ({
+                    id: `${rec.from}_${rec.to}`,
+                    from: rec.from,
+                    to: rec.to,
+                    amount: rec.amount,
+                    isPaid: false, // será definido pelo paidTransfers
+                    createdAt: new Date().toISOString()
+                  }))}
+                  paidTransfers={session.paid_transfers || {}}
+                  disabled={!editing}
                   onTransferUpdate={async (transfers) => {
                     console.log('🔄 Transferências atualizadas:', transfers);
+                    setCurrentTransfers(transfers);
                     
                     // Sistema de auto-aprovação: verifica se pode aprovar automaticamente
                     try {

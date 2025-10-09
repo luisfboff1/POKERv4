@@ -92,11 +92,19 @@ export default function CurrentSessionPage() {
         ...p,
         balance: p.cashout - p.totalBuyin
       }));
+      // Inicializar todas as transferências como não pagas
+      const initialPaidTransfers: Record<string, boolean> = {};
+      recommendations.forEach(rec => {
+        const key = `${rec.from}_${rec.to}`;
+        initialPaidTransfers[key] = false;
+      });
+
       await createSession({
         date: currentSession.date,
         location: currentSession.location,
         players_data: finalPlayers,
-        recommendations
+        recommendations,
+        paid_transfers: initialPaidTransfers
       });
       clearCache();
       setCurrentSession(null);

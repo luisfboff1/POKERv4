@@ -25,6 +25,7 @@ try {
                 if (!$session) error('Sessão não encontrada', 404);
                 $session['players_data'] = json_decode($session['players_data'] ?? '[]', true);
                 $session['recommendations'] = json_decode($session['recommendations'] ?? '[]', true);
+                $session['paid_transfers'] = json_decode($session['paid_transfers'] ?? '{}', true);
                 success($session);
                 break;
             }
@@ -36,6 +37,7 @@ try {
             foreach ($sessions as &$session) {
                 $session['players_data'] = json_decode($session['players_data'] ?? '[]', true);
                 $session['recommendations'] = json_decode($session['recommendations'] ?? '[]', true);
+                $session['paid_transfers'] = json_decode($session['paid_transfers'] ?? '{}', true);
             }
             success($sessions);
             break;
@@ -91,21 +93,60 @@ try {
                     $key = isset($upd['id']) ? (string)$upd['id'] : strtolower($upd['name'] ?? '');
                     if (isset($index[$key])) {
                         $idx = $index[$key];
-                        // Atualizar apenas flags permitidas
-                        if (isset($upd['session_paid'])) $current_players[$idx]['session_paid'] = (bool)$upd['session_paid'];
+                        // Atualizar apenas flags permitidas (removido session_paid)
                         if (isset($upd['janta_paid'])) $current_players[$idx]['janta_paid'] = (bool)$upd['janta_paid'];
                     }
                 }
-                $stmt = $pdo->prepare("UPDATE sessions SET players_data = ? WHERE id = ? AND tenant_id = ?");
-                $stmt->execute([
-                    json_encode($current_players),
-                    $id,
-                    $tenant_id
-                ]);
+                
+                // Atualizar transferências pagas se fornecidas
+                $paid_transfers = $input['paid_transfers'] ?? null;
+                
+                // Debug: log do que está sendo recebido
+                error_log("DEBUG: paid_transfers recebido = " . json_encode($paid_transfers));
+                error_log("DEBUG: input completo = " . json_encode($input));
+                
+                if ($paid_transfers !== null) {
+                    $stmt = $pdo->prepare("UPDATE sessions SET players_data = ?, paid_transfers = ? WHERE id = ? AND tenant_id = ?");
+                    $result = $stmt->execute([
+                        json_encode($current_players),
+                        json_encode($paid_transfers),
+                        $id,
+                        $tenant_id
+                    ]);
+                    error_log("DEBUG: UPDATE result = " . ($result ? 'SUCCESS' : 'FAILED'));
+                    error_log("DEBUG: Rows affected = " . $stmt->rowCount());
+                } else {
+                    $stmt = $pdo->prepare("UPDATE sessions SET players_data = ? WHERE id = ? AND tenant_id = ?");
+                    $stmt->execute([
+                        json_encode($current_players),
+                        $id,
+                        $tenant_id
+                    ]);
+                }
                 // Atualizar estatísticas (opcional — pagamentos não influenciam buyin/cashout, mas mantemos consistência)
                 updatePlayersStats($pdo, $tenant_id);
                 AuthMiddleware::logAction($pdo, 'update_session_payments', 'sessions', $id, $existing_session, ['players_data' => $updates]);
                 success(['updated' => true, 'players_data' => $current_players]);
+                break;
+            }
+
+            if ($action === 'approve') {
+                $session_id = $input['session_id'] ?? null;
+                if (!$session_id) error('session_id required', 400);
+                
+                // Verificar se a sessão pertence ao tenant atual
+                $checkStmt = $pdo->prepare("SELECT * FROM sessions WHERE id = ? AND tenant_id = ?");
+                $checkStmt->execute([$session_id, $tenant_id]);
+                $existing_session = $checkStmt->fetch();
+                if (!$existing_session) error('Sessão não encontrada ou acesso negado', 404);
+                
+                // Atualizar status para approved (assumindo que há uma coluna status)
+                // Se não houver coluna status, você pode adicionar ou usar outro campo
+                $stmt = $pdo->prepare("UPDATE sessions SET status = 'approved' WHERE id = ? AND tenant_id = ?");
+                $stmt->execute([$session_id, $tenant_id]);
+                
+                AuthMiddleware::logAction($pdo, 'approve_session', 'sessions', $session_id, $existing_session, ['status' => 'approved']);
+                success(['approved' => true, 'session_id' => $session_id]);
                 break;
             }
             
@@ -116,12 +157,13 @@ try {
             }
             
             // Criar nova sessão
-            $stmt = $pdo->prepare("INSERT INTO sessions (tenant_id, date, players_data, recommendations) VALUES (?, ?, ?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO sessions (tenant_id, date, players_data, recommendations, paid_transfers) VALUES (?, ?, ?, ?, ?)");
             $stmt->execute([
                 $tenant_id,
                 $input['date'] ?? date('Y-m-d'),
                 json_encode($input['players_data'] ?? []),
-                json_encode($input['recommendations'] ?? [])
+                json_encode($input['recommendations'] ?? []),
+                json_encode($input['paid_transfers'] ?? (object)[])
             ]);
             
             $session_id = $pdo->lastInsertId();
@@ -154,10 +196,11 @@ try {
             
             $input = json_decode(file_get_contents('php://input'), true);
             
-            $stmt = $pdo->prepare("UPDATE sessions SET players_data = ?, recommendations = ?, date = ? WHERE id = ? AND tenant_id = ?");
+            $stmt = $pdo->prepare("UPDATE sessions SET players_data = ?, recommendations = ?, paid_transfers = ?, date = ? WHERE id = ? AND tenant_id = ?");
             $stmt->execute([
                 json_encode($input['players_data'] ?? []),
                 json_encode($input['recommendations'] ?? []),
+                json_encode($input['paid_transfers'] ?? (object)[]),
                 $input['date'] ?? date('Y-m-d'),
                 $id,
                 $tenant_id
