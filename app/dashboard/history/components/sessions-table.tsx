@@ -21,11 +21,10 @@ interface SessionsTableProps {
   isPendingAction: boolean;
   canModerate: boolean;
   onView(session: LocalSession): void;
-  onApprove(id: number): void;
   onDelete(id: number): void;
 }
 
-export function SessionsTable({ sessions, totalSessions, isPendingAction, canModerate, onView, onApprove, onDelete }: SessionsTableProps) {
+export function SessionsTable({ sessions, totalSessions, isPendingAction, canModerate, onView, onDelete }: SessionsTableProps) {
   return (
     <Card>
       <CardHeader>
@@ -86,36 +85,19 @@ export function SessionsTable({ sessions, totalSessions, isPendingAction, canMod
                           <Eye className="h-4 w-4" />
                         </Button>
                         {canModerate && (
-                          <>
-                            {session.status === 'pending' && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => onApprove(session.id)}
-                                disabled={isPendingAction}
-                                className="text-green-600 hover:text-green-700"
-                              >
-                                {isPendingAction ? (
-                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-green-600 border-t-transparent" />
-                                ) : (
-                                  <CheckCircle className="h-4 w-4" />
-                                )}
-                              </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onDelete(session.id)}
+                            disabled={isPendingAction}
+                            className="text-destructive hover:text-destructive/80"
+                          >
+                            {isPendingAction ? (
+                              <div className="h-4 w-4 animate-spin rounded-full border-2 border-destructive border-t-transparent" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
                             )}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => onDelete(session.id)}
-                              disabled={isPendingAction}
-                              className="text-destructive hover:text-destructive/80"
-                            >
-                              {isPendingAction ? (
-                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-destructive border-t-transparent" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </>
+                          </Button>
                         )}
                       </div>
                     </TableCell>

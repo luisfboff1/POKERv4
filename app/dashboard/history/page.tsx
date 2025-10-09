@@ -23,7 +23,7 @@ type HistoricSessionMinimal = LocalSession;
 export default function HistoryPage() {
   const { user } = useAuth();
   const [isPending, startTransition] = useTransition();
-  const { sessions, loading, error, refetch, deleteSession, approveSession, updateSessionPayments } = useSessions();
+  const { sessions, loading, error, refetch, deleteSession, updateSessionPayments } = useSessions();
   const [filters, setFilters] = useState<SessionFiltersState>({
     search: '',
     status: 'all',
@@ -71,18 +71,7 @@ export default function HistoryPage() {
     });
   };
 
-  const handleApproveSession = async (id: number) => {
-    startTransition(async () => {
-      try {
-        await approveSession(id);
-        // Recarregar a lista de sessões após aprovação bem-sucedida
-        await refetch();
-      } catch (err) {
-        alert('Erro ao aprovar sessão');
-        console.error('Erro ao aprovar:', err);
-      }
-    });
-  };
+
 
   if (loading) {
     return <LoadingState text="Carregando histórico..." />;
@@ -108,8 +97,7 @@ export default function HistoryPage() {
         totalSessions={sessions.length}
         isPendingAction={isPending}
         canModerate={user?.role === 'admin' || user?.role === 'super_admin'}
-  onView={(s) => { setSelectedSession(s); sessionDetailsModal.open(); }}
-        onApprove={handleApproveSession}
+        onView={(s) => { setSelectedSession(s); sessionDetailsModal.open(); }}
         onDelete={handleDeleteSession}
       />
 

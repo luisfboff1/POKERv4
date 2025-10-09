@@ -55,9 +55,9 @@ export default function RankingPage() {
       });
     });
 
-    // Calcular estatísticas baseadas apenas nas sessões aprovadas
+    // Calcular estatísticas baseadas em TODAS as sessões (não só aprovadas)
     sessions.forEach(session => {
-      if (session.status !== 'approved' || !session.players_data || !Array.isArray(session.players_data)) {
+      if (!session.players_data || !Array.isArray(session.players_data)) {
         return;
       }
 

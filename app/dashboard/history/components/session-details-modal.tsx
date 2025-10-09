@@ -1,6 +1,8 @@
 import { Modal, ModalContent } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { PlayerPaymentRow } from './player-payment-row';
+import TransferManager from '@/components/TransferManager';
+import { useSessionAutoApproval } from '@/lib/sessionAutoApproval';
 import type { LocalSession } from './sessions-table';
 import { useMemo, useState, useRef } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
@@ -35,6 +37,9 @@ interface SessionDetailsModalProps {
 export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionPlayers, onSave }: SessionDetailsModalProps) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  
+  // Configurar auto-aprovação para esta sessão
+  const { onTransferUpdate, checkAndApprove } = useSessionAutoApproval(session?.id || 0);
 
   // Snapshot somente quando entra em modo edição
   const originalPlayersRef = useRef<PlayerStateSnapshot[] | null>(null);
@@ -165,19 +170,33 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
                 </div>
               </div>
             )}
-            {session.recommendations && session.recommendations.length > 0 && (
+            {session.players_data && session.players_data.length > 0 && (
               <div>
                 <h4 className="font-medium mb-3">Transferências</h4>
-                <div className="space-y-2">
-                  {session.recommendations.map((rec, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-card rounded-lg border border-border shadow-sm">
-                      <span className="text-sm">
-                        <span className="font-medium">{rec.from}</span> → <span className="font-medium">{rec.to}</span>
-                      </span>
-                      <span className="font-medium text-primary">R$ {rec.amount}</span>
-                    </div>
-                  ))}
-                </div>
+                <TransferManager
+                  players={session.players_data.map(p => ({
+                    name: p.name,
+                    buyin: p.buyin || 0,
+                    cashout: p.cashout || 0,
+                    profit: (p.cashout || 0) - (p.buyin || 0)
+                  }))}
+                  onTransferUpdate={async (transfers) => {
+                    console.log('🔄 Transferências atualizadas:', transfers);
+                    
+                    // Sistema de auto-aprovação: verifica se pode aprovar automaticamente
+                    try {
+                      await onTransferUpdate(transfers);
+                    } catch (error) {
+                      console.error('Erro na auto-aprovação:', error);
+                    }
+                  }}
+                  onStatusChange={(status) => {
+                    console.log('📊 Status da sessão mudou para:', status);
+                    if (status === 'completed') {
+                      console.log('🎯 Todos os pagamentos completos! Sessão será aprovada automaticamente.');
+                    }
+                  }}
+                />
               </div>
             )}
           </div>

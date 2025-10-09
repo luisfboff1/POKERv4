@@ -45,8 +45,8 @@ async function testar() {
         console.log("\n4️⃣ TESTANDO SESSIONS...");
         await test('session.php');
         
-        console.log("\n5️⃣ LIMPANDO DADOS DUPLICADOS...");
-        await test('cleanup_players.php');
+        console.log("\n5️⃣ AUTO-APROVANDO SESSÕES...");
+        await test('auto_approve_sessions.php');
         
     } else {
         console.log("❌ Erro no login!");
@@ -60,7 +60,10 @@ testar();
 window.login = () => test('auth.php', 'POST', {action: 'login', email: 'luisfboff@hotmail.com', password: 'password'});
 window.players = () => test('players.php');
 window.sessions = () => test('session.php');
-window.cleanup = () => test('cleanup_players.php');
+window.autoApprove = () => test('auto_approve_sessions.php');
 
-console.log("\n🔧 Funções: login(), players(), sessions(), cleanup()");
-console.log("🎯 NOVA LÓGICA: Não precisa mais sincronizar! Ranking calculado automaticamente!");
+console.log("\n🔧 Funções: login(), players(), sessions(), autoApprove()");
+console.log("🎯 NOVA LÓGICA:");
+console.log("   ✅ Ranking calculado dinamicamente");  
+console.log("   ✅ Sessões aprovadas automaticamente");
+console.log("   ✅ Status baseado em pagamentos");
