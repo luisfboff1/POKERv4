@@ -18,6 +18,8 @@ out/
 .env.test.local
 .env.production.local
 .env*.local
+.env.example
+
 
 # IDE
 .vscode/
@@ -76,3 +78,14 @@ composer.lock
 
 # MySQL
 *.sql.backup
+
+# Claude
+*.claude    
+install-twin-agents.sh  
+install-twin-agents.bat
+install-twin-agents.ps1
+CLAUDE.md
+MIGRATION_PLAN.md
+PHASE1*
+PHASE*
+$null

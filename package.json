@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/build.js",
-    "build:next-only": "next build",
+    "dev:quiet": "next dev 2>$null",
+    "build": "next build",
+    "build:quiet": "next build 2>$null",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "type-check": "tsc --noEmit"
@@ -18,6 +19,8 @@
     "@radix-ui/react-slot": "^1.1.1",
     "@radix-ui/react-tabs": "^1.1.1",
     "@radix-ui/react-toast": "^1.2.2",
+    "@supabase/supabase-js": "^2.75.1",
+    "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "jose": "^5.9.6",
@@ -29,6 +32,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.5",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.8",

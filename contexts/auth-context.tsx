@@ -61,12 +61,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
-    removeToken();
-    localStorage.removeItem('user');
-    setUser(null);
-    api.auth.logout();
-    router.push('/login');
+  const logout = async () => {
+    try {
+      await api.auth.logout();
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      removeToken();
+      localStorage.removeItem('user');
+      setUser(null);
+      router.push('/login');
+    }
   };
 
   const hasRole = (role: string | string[]) => {

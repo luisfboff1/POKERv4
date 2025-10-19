@@ -63,7 +63,7 @@ async function fetchAPI<T>(
 export const api = {
   auth: {
     login: (email: string, password: string) =>
-      fetchAPI('/auth.php?action=login', {
+      fetchAPI('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       }),
@@ -74,51 +74,46 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
-    verify: () => fetchAPI('/auth.php?action=verify'),
+    verify: () => fetchAPI('/auth/verify'),
 
-    logout: () => {
-      // Remove token do localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-      }
-    },
+    logout: () =>
+      fetchAPI('/auth/logout', {
+        method: 'POST',
+      }),
   },
 
   // ===== SESSIONS =====
   sessions: {
-    list: () => fetchAPI('/session.php?action=list'),
-    // GET individual (usa ?id=) agora suportado
-    get: (id: number) => fetchAPI(`/session.php?id=${id}`),
-    
+    list: () => fetchAPI('/sessions'),
+
+    get: (id: number) => fetchAPI(`/sessions/${id}`),
+
     create: (data: { date: string; location: string; players_data?: SessionPlayerData[]; recommendations?: any[]; paid_transfers?: Record<string, boolean> }) =>
-      fetchAPI('/session.php', {
+      fetchAPI('/sessions', {
         method: 'POST',
-        body: JSON.stringify({ action: 'create', ...data }),
+        body: JSON.stringify(data),
       }),
-    
+
     update: (id: number, data: Partial<{ date: string; location: string; players_data: SessionPlayerData[] }>) =>
-      fetchAPI('/session.php', {
-        method: 'POST',
-        body: JSON.stringify({ action: 'update', id, ...data }),
+      fetchAPI(`/sessions/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
       }),
-    // Atualização específica de pagamentos (session_paid / janta_paid)
+
     updatePayments: (id: number, playersData: Pick<SessionPlayerData, 'id' | 'name' | 'janta_paid'>[], paidTransfers?: Record<string, boolean>) =>
-      fetchAPI('/session.php', {
+      fetchAPI(`/sessions/${id}/payments`, {
         method: 'POST',
-        body: JSON.stringify({ 
-          action: 'update_payments', 
-          id, 
+        body: JSON.stringify({
           players_data: playersData,
-          paid_transfers: paidTransfers 
+          paid_transfers: paidTransfers
         }),
       }),
-    
+
     delete: (id: number) =>
-      fetchAPI('/session.php', {
-        method: 'POST',
-        body: JSON.stringify({ action: 'delete', id }),
+      fetchAPI(`/sessions/${id}`, {
+        method: 'DELETE',
       }),
-    
+
     approve: (id: number) =>
       fetchAPI('/approve.php', {
         method: 'POST',
@@ -128,20 +123,20 @@ export const api = {
 
   // ===== PLAYERS =====
   players: {
-    list: () => fetchAPI('/players.php?action=list'),
-    
-    get: (id: number) => fetchAPI(`/players.php?action=get&id=${id}`),
-    
+    list: () => fetchAPI('/players'),
+
+    get: (id: number) => fetchAPI(`/players/${id}`),
+
     create: (name: string, email?: string) =>
-      fetchAPI('/players.php', {
+      fetchAPI('/players', {
         method: 'POST',
-        body: JSON.stringify({ action: 'create', name, email }),
+        body: JSON.stringify({ name, email }),
       }),
-    
+
     update: (id: number, data: Record<string, unknown>) =>
-      fetchAPI('/players.php', {
-        method: 'POST',
-        body: JSON.stringify({ action: 'update', id, ...data }),
+      fetchAPI(`/players/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
       }),
 
     syncStats: () =>
@@ -152,7 +147,7 @@ export const api = {
 
   // ===== INVITES =====
   invites: {
-    list: () => fetchAPI('/invite.php?action=list'),
+    list: () => fetchAPI('/api/invites'),
     
     create: (email: string, role: string, name?: string, playerData?: {
       playerLinkType?: string;
@@ -166,20 +161,20 @@ export const api = {
         ...(playerData || {})
       };
       console.log('DEBUG api.ts - Enviando payload:', payload);
-      return fetchAPI('/invite.php?action=send', {
+      return fetchAPI('/api/invites', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
     },
     
     accept: (token: string, password: string, name: string) =>
-      fetchAPI('/accept_invite.php', {
+      fetchAPI('/api/invites/accept', {
         method: 'POST',
         body: JSON.stringify({ token, password, name }),
       }),
     
     delete: (id: number) =>
-      fetchAPI(`/invite.php?action=cancel&id=${id}`, {
+      fetchAPI(`/api/invites/${id}`, {
         method: 'DELETE',
       }),
   },
