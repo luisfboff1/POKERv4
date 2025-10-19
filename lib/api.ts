@@ -1,5 +1,5 @@
 import { getToken } from './auth';
-import type { ApiResponse, SessionPlayerData } from './types';
+import type { ApiResponse, SessionPlayerData, TransferRecommendation } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
@@ -88,7 +88,7 @@ export const api = {
 
     get: (id: number) => fetchAPI(`/sessions/${id}`),
 
-    create: (data: { date: string; location: string; players_data?: SessionPlayerData[]; recommendations?: any[]; paid_transfers?: Record<string, boolean> }) =>
+    create: (data: { date: string; location: string; players_data?: SessionPlayerData[]; recommendations?: TransferRecommendation[]; paid_transfers?: Record<string, boolean> }) =>
       fetchAPI('/sessions', {
         method: 'POST',
         body: JSON.stringify(data),

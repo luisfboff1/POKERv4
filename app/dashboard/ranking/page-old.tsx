@@ -8,7 +8,6 @@ import { usePlayers, useSessions } from '@/hooks/useApi';
 import { Trophy, Medal, Award, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
 import type { SessionPlayerData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { api } from '@/lib/api';
 import { useState } from 'react';
 
 interface PlayerStats {

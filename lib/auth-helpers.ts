@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { headers } from 'next/headers';
-import { NextRequest } from 'next/server';
-import { supabaseServer, getUserByEmail } from './supabaseServer';
+import type { NextRequest } from 'next/server';
+import { supabaseServer } from './supabaseServer';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'poker_jwt_secret_2025_super_secure_key_luisfboff_production';
 const JWT_EXPIRY = '24h';

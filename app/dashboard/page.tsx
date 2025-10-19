@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/auth-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { useSessions, usePlayers } from '@/hooks/useApi';
 import type { Session, SessionPlayerData } from '@/lib/types';
 import Link from 'next/link';

@@ -139,15 +139,15 @@ const updatePlayersStats = async (tenantId: number): Promise<void> => {
       { name: string; sessions: number; buyin: number; cashout: number }
     > = {};
 
-    sessions.forEach((session: Record<string, unknown>) => {
-      const playersData = session.players_data as SessionPlayerData[];
+      sessions.forEach((session: Record<string, unknown>) => {
+        const playersData = session.players_data as SessionPlayerData[];
 
-      if (Array.isArray(playersData)) {
-        playersData.forEach((player) => {
-          const playerName = player.name;
-          const normalizedName = normalizePlayerName(playerName);
+        if (Array.isArray(playersData)) {
+          playersData.forEach((player) => {
+            const playerName = player.name;
+            const normalizedName = normalizePlayerName(playerName);
 
-          if (!playerStats[normalizedName]) {
+            if (!playerStats[normalizedName]) {
             playerStats[normalizedName] = {
               name: playerName,
               sessions: 0,
@@ -163,10 +163,8 @@ const updatePlayersStats = async (tenantId: number): Promise<void> => {
       }
     });
 
-    const upsertPromises = Object.values(playerStats).map((stats) => {
-      const normalizedName = normalizePlayerName(stats.name);
-
-      return supabaseServer
+    const upsertPromises = Object.values(playerStats).map((stats) =>
+      supabaseServer
         .from('players')
         .upsert(
           {
@@ -181,8 +179,8 @@ const updatePlayersStats = async (tenantId: number): Promise<void> => {
           {
             onConflict: 'tenant_id,name',
           }
-        );
-    });
+        )
+    );
 
     await Promise.all(upsertPromises);
   } catch (error) {

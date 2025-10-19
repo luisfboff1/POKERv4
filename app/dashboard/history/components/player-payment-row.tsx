@@ -1,4 +1,4 @@
-import { CreditCard, Utensils } from 'lucide-react';
+import { Utensils } from 'lucide-react';
 
 interface PlayerPaymentRowPlayer {
   id?: number | string;

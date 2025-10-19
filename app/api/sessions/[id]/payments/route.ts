@@ -75,15 +75,6 @@ export async function POST(req: NextRequest, props: RouteParams) {
     // Check if all payments are completed and update status accordingly
     const recommendations = (existingSession.recommendations as TransferRecommendation[]) || [];
     const paidTransfers = body.paid_transfers || (existingSession.paid_transfers as Record<string, boolean>) || {};
-    
-    console.log('🔍 DEBUG - Verificando status de pagamentos:');
-    console.log('  - Current status:', existingSession.status);
-    console.log('  - Recommendations:', JSON.stringify(recommendations, null, 2));
-    console.log('  - Paid transfers:', JSON.stringify(paidTransfers, null, 2));
-    console.log('  - Players data:', JSON.stringify(currentPlayers.map(p => ({
-      name: p.name,
-      janta_paid: p.janta_paid
-    })), null, 2));
 
     const newStatus = checkSessionPaymentStatus(
       currentPlayers,
@@ -91,14 +82,8 @@ export async function POST(req: NextRequest, props: RouteParams) {
       paidTransfers
     );
 
-    console.log('  - New status calculated:', newStatus);
-    console.log('  - Will update status?', newStatus !== existingSession.status);
-
     if (newStatus !== existingSession.status) {
       updateData.status = newStatus;
-      console.log('✅ Status will be updated to:', newStatus);
-    } else {
-      console.log('⏭️  Status unchanged:', existingSession.status);
     }
 
     const { error: updateError } = await supabaseServer
@@ -225,48 +210,31 @@ const checkSessionPaymentStatus = (
   recommendations: TransferRecommendation[],
   paidTransfers: Record<string, boolean>
 ): string => {
-  console.log('🔍 checkSessionPaymentStatus - Starting verification...');
-  
   // If there are no recommendations, status is completed
   if (!recommendations || recommendations.length === 0) {
-    console.log('  ✅ No recommendations, returning completed');
     return 'completed';
   }
-
-  console.log(`  📋 Checking ${recommendations.length} transfer(s)...`);
   
   // Check if all transfers are paid
-  const allTransfersPaid = recommendations.every((rec, index) => {
-    const transferKey = `${rec.from}_${rec.to}`;  // ✅ Usando underscore para consistência com frontend
-    const isPaid = paidTransfers[transferKey] === true;
-    console.log(`    ${index + 1}. ${transferKey}: ${isPaid ? '✅ PAID' : '❌ NOT PAID'} (value: ${paidTransfers[transferKey]})`);
-    return isPaid;
+  const allTransfersPaid = recommendations.every((rec) => {
+    const transferKey = `${rec.from}_${rec.to}`;
+    return paidTransfers[transferKey] === true;
   });
-
-  console.log(`  📊 All transfers paid? ${allTransfersPaid ? '✅ YES' : '❌ NO'}`);
 
   // Check if all jantas are paid (if applicable)
-  const jantaChecks = playersData.map((player) => {
+  const allJantasPaid = playersData.every((player) => {
     // If player doesn't need to pay janta, skip
     if (player.janta_paid === undefined || player.janta_paid === null) {
-      console.log(`    🍽️  ${player.name}: N/A (not required)`);
       return true;
     }
-    const isPaid = player.janta_paid === true;
-    console.log(`    🍽️  ${player.name}: ${isPaid ? '✅ PAID' : '❌ NOT PAID'}`);
-    return isPaid;
+    return player.janta_paid === true;
   });
-
-  const allJantasPaid = jantaChecks.every(check => check === true);
-  console.log(`  📊 All jantas paid? ${allJantasPaid ? '✅ YES' : '❌ NO'}`);
 
   // If both transfers and jantas are paid, mark as completed
   if (allTransfersPaid && allJantasPaid) {
-    console.log('  🎉 RESULT: completed');
     return 'completed';
   }
 
   // Otherwise, keep as pending
-  console.log('  ⏳ RESULT: pending');
   return 'pending';
 };

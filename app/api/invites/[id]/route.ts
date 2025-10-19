@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth-helpers';
 import { supabaseServer } from '@/lib/supabaseServer';
 
+interface RouteParams {
+  params: Promise<{
+    id: string;
+  }>;
+}
+
 /**
  * DELETE /api/invites/[id] - Cancel/delete an invite
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  props: RouteParams
 ) {
   try {
     const user = await requireAuth(req);
@@ -20,6 +26,7 @@ export async function DELETE(
       );
     }
 
+    const params = await props.params;
     const inviteId = parseInt(params.id);
 
     if (isNaN(inviteId)) {

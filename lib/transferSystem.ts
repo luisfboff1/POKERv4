@@ -16,12 +16,6 @@ export interface Transfer {
   createdAt: string;
 }
 
-interface TransferSystem {
-  players: Player[];
-  transfers: Transfer[];
-  allPaid: boolean;
-}
-
 // Calcular transferências necessárias
 export function calculateOptimalTransfers(players: Player[]): Transfer[] {
   // 1. Separar quem deve pagar e quem deve receber

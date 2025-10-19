@@ -30,7 +30,7 @@ export const supabase = createClient(
 
 export const checkSupabaseConnection = async (): Promise<boolean> => {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('tenants')
       .select('count')
       .limit(1);

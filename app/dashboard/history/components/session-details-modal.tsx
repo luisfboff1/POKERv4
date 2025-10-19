@@ -6,6 +6,7 @@ import { useSessionAutoApproval } from '@/lib/sessionAutoApproval';
 import type { LocalSession } from './sessions-table';
 import { useMemo, useState, useRef } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
+import type { Transfer } from '@/lib/transferSystem';
 
 interface PlayerStateSnapshot {
   id: string | number;
@@ -38,10 +39,10 @@ interface SessionDetailsModalProps {
 export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionPlayers, onSave }: SessionDetailsModalProps) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [currentTransfers, setCurrentTransfers] = useState<any[]>([]);
+  const [currentTransfers, setCurrentTransfers] = useState<Transfer[]>([]);
   
   // Configurar auto-aprovação para esta sessão
-  const { onTransferUpdate, checkAndApprove } = useSessionAutoApproval(session?.id || 0);
+  const { onTransferUpdate } = useSessionAutoApproval(session?.id || 0);
 
   // Snapshot somente quando entra em modo edição
   const originalPlayersRef = useRef<PlayerStateSnapshot[] | null>(null);

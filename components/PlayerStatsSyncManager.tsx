@@ -4,7 +4,7 @@ import { Loader2, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
 interface SyncResult {
   success: boolean;
   message: string;
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 const PlayerStatsSyncManager: React.FC = () => {
@@ -46,10 +46,11 @@ const PlayerStatsSyncManager: React.FC = () => {
       } else {
         throw new Error(data.error || 'Erro desconhecido');
       }
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao sincronizar estatísticas';
       setResult({
         success: false,
-        message: error.message || 'Erro ao sincronizar estatísticas'
+        message: errorMessage
       });
     } finally {
       setIsLoading(false);

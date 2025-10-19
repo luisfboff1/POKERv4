@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, DollarSign, BarChart, Bot as LucideBot, Mail, Smartphone, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';

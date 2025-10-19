@@ -2,7 +2,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/loading';
-import { History as HistoryIcon, Eye, CheckCircle, Trash2 } from 'lucide-react';
+import { History as HistoryIcon, Eye, Trash2 } from 'lucide-react';
 import { getStatusIcon, getStatusText, calculateSessionTotals } from './helpers';
 
 export interface LocalSessionPlayer { id?: number | string; name: string; buyin?: number; cashout?: number; session_paid?: boolean; janta_paid?: boolean; }

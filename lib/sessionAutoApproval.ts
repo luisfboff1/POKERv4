@@ -79,7 +79,7 @@ export function createSessionAutoApproval(
  * ⚠️ DEPRECADO: Não chama mais a API, apenas notifica status local
  */
 export function useSessionAutoApproval(sessionId: number) {
-  const approveSession = async (id: number) => {
+  const approveSession = async (_id: number) => {
     // Não faz nada - API já atualiza automaticamente
     console.log('ℹ️ approveSession: Status é atualizado automaticamente pela API ao marcar pagamentos');
   };

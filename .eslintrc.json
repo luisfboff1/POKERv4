@@ -8,6 +8,6 @@
     "react/react-in-jsx-scope": "off",
     "@typescript-eslint/no-explicit-any": "error",
     "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
-    "no-console": ["warn", { "allow": ["error", "warn"] }]
+    "no-console": "off"
   }
 }
