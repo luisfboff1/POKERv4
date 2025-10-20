@@ -6,7 +6,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { useSessions, usePlayers } from '@/hooks/useApi';
 import type { Session, SessionPlayerData } from '@/lib/types';
 import Link from 'next/link';
-import { Plus, History, Trophy, Users, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, History, Trophy, Users, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import PlayerDashboard from '@/components/PlayerDashboard';
 import { cn } from '@/lib/utils';
 
@@ -97,19 +97,30 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Balanceamento</CardTitle>
-            <Plus className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Pendências</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2">
-              {financialStats.totalBuyin === financialStats.totalCashout ? (
-                <CheckCircle className="h-8 w-8 text-green-600" />
-              ) : (
-                <AlertCircle className="h-8 w-8 text-yellow-600" />
-              )}
+            <div className="text-2xl font-bold">
+              {stats.pendingSessions}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {financialStats.totalBuyin === financialStats.totalCashout ? 'Perfeito' : 'Verificar'}
+            <p className="text-xs text-muted-foreground mt-1">
+              {stats.pendingSessions === 0 ? (
+                <span className="flex items-center gap-1 text-green-600">
+                  <CheckCircle className="h-3 w-3" />
+                  Tudo em dia
+                </span>
+              ) : stats.pendingSessions === 1 ? (
+                <span className="flex items-center gap-1 text-yellow-600">
+                  <AlertCircle className="h-3 w-3" />
+                  1 sessão pendente
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-yellow-600">
+                  <AlertCircle className="h-3 w-3" />
+                  {stats.pendingSessions} sessões pendentes
+                </span>
+              )}
             </p>
           </CardContent>
         </Card>
