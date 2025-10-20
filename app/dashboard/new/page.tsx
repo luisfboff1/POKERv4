@@ -19,6 +19,7 @@ import { SessionPlayersStep } from './steps/SessionPlayersStep';
 import { SessionActiveStep } from './steps/SessionActiveStep';
 import { SessionCashoutStep } from './steps/SessionCashoutStep';
 import { SessionTransfersStep } from './steps/SessionTransfersStep';
+import { WizardProgress } from './components/WizardProgress';
 
 // Modais
 import { AddPlayerModal } from './modals/AddPlayerModal';
@@ -191,11 +192,36 @@ export default function CurrentSessionPage() {
     );
   }
 
+  // Determinar passos completados para o indicador de progresso
+  const getCompletedSteps = (): SessionStep[] => {
+    const stepOrder: SessionStep[] = ['create', 'players', 'active', 'cashout', 'transfers'];
+    const currentIndex = stepOrder.indexOf(step);
+    return stepOrder.slice(0, currentIndex);
+  };
+
+  // Handler para navegação do wizard (permitir voltar)
+  const handleStepNavigation = (targetStep: SessionStep) => {
+    const stepOrder: SessionStep[] = ['create', 'players', 'active', 'cashout', 'transfers'];
+    const currentIndex = stepOrder.indexOf(step);
+    const targetIndex = stepOrder.indexOf(targetStep);
+
+    // Só permitir voltar (não avançar através do indicador)
+    if (targetIndex < currentIndex) {
+      setStep(targetStep);
+    }
+  };
+
   // Escolher etapa
   let content: React.ReactNode = null;
   if (step === 'create') {
     content = (
-      <SessionCreateStep
+      <>
+        <WizardProgress
+          currentStep={step}
+          completedSteps={getCompletedSteps()}
+          onStepClick={handleStepNavigation}
+        />
+        <SessionCreateStep
         currentSession={currentSession}
         defaultBuyin={defaultBuyin}
         loading={loading}
@@ -205,10 +231,17 @@ export default function CurrentSessionPage() {
         startSession={startSession}
         setCurrentSessionNull={() => setCurrentSession(null)}
       />
+      </>
     );
   } else if (step === 'players') {
     content = (
-      <SessionPlayersStep
+      <>
+        <WizardProgress
+          currentStep={step}
+          completedSteps={getCompletedSteps()}
+          onStepClick={handleStepNavigation}
+        />
+        <SessionPlayersStep
         currentSession={currentSession}
         defaultBuyin={defaultBuyin}
         error={error || playerError}
@@ -222,10 +255,17 @@ export default function CurrentSessionPage() {
         totals={totals}
         setStep={setStep as (s: SessionStep) => void}
       />
+      </>
     );
   } else if (step === 'active') {
     content = (
-      <SessionActiveStep
+      <>
+        <WizardProgress
+          currentStep={step}
+          completedSteps={getCompletedSteps()}
+          onStepClick={handleStepNavigation}
+        />
+        <SessionActiveStep
         currentSession={currentSession}
         totals={totals}
         addPlayerModal={addPlayerModal}
@@ -233,10 +273,17 @@ export default function CurrentSessionPage() {
         updatePlayerField={updatePlayerField}
         addRebuy={addRebuy}
       />
+      </>
     );
   } else if (step === 'cashout') {
     content = (
-      <SessionCashoutStep
+      <>
+        <WizardProgress
+          currentStep={step}
+          completedSteps={getCompletedSteps()}
+          onStepClick={handleStepNavigation}
+        />
+        <SessionCashoutStep
         currentSession={currentSession}
         totals={totals}
         isBalanced={isBalanced}
@@ -244,10 +291,17 @@ export default function CurrentSessionPage() {
         setStep={setStep as (s: SessionStep) => void}
         calculateRecommendations={recompute}
       />
+      </>
     );
   } else if (step === 'transfers') {
     content = (
-      <SessionTransfersStep
+      <>
+        <WizardProgress
+          currentStep={step}
+          completedSteps={getCompletedSteps()}
+          onStepClick={handleStepNavigation}
+        />
+        <SessionTransfersStep
         currentSession={currentSession}
         totals={totals}
         recommendations={recommendations}
@@ -260,6 +314,7 @@ export default function CurrentSessionPage() {
         recompute={recompute}
         needsRecalc={needsRecalc}
       />
+      </>
     );
   }
 

@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { ThemeToggle } from '@/components/theme-toggle';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { ErrorBoundary } from '@/components/error-boundary';
 import {
   LayoutDashboard,
   Plus,
@@ -15,7 +16,8 @@ import {
   Shield,
   LogOut,
   Menu,
-  X
+  X,
+  Target
 } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -25,6 +27,7 @@ export default function DashboardLayout({
 }) {
   const { user, logout, loading, isAuthenticated } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -62,10 +65,13 @@ export default function DashboardLayout({
   );
 
   return (
-  <div className={`flex min-h-screen bg-page text-page-foreground ${sidebarOpen ? 'overflow-hidden touch-none' : ''}`}> 
+  <div className={`flex min-h-screen bg-page text-page-foreground ${sidebarOpen ? 'overflow-hidden touch-none' : ''}`}>
       {/* Mobile Menu Button */}
   <div className="fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-surface/95 px-4 shadow-[var(--shadow-soft)] backdrop-blur md:hidden">
-        <h1 className="text-base font-semibold">🎯 Poker Manager</h1>
+        <h1 className="text-base font-semibold flex items-center gap-2">
+          <Target className="h-5 w-5 text-primary" />
+          Poker Manager
+        </h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Button
@@ -95,7 +101,10 @@ export default function DashboardLayout({
         {/* Header da Sidebar (desktop) */}
         <div className="hidden items-center justify-between border-b border-border px-4 py-4 md:flex">
           <div className="space-y-1">
-            <h1 className="text-lg font-semibold">🎯 Poker Manager</h1>
+            <h1 className="text-lg font-semibold flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" />
+              Poker Manager
+            </h1>
             <p className="text-xs text-muted-foreground">
               {user.team_name || 'Time'}
             </p>
@@ -107,12 +116,17 @@ export default function DashboardLayout({
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-6 text-sm">
           {filteredNavigation.map((item) => {
             const Icon = item.icon;
+            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href));
             return (
               <Link
                 key={item.name}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 rounded-lg px-3 py-2 font-medium text-foreground/90 transition-all hover:bg-accent hover:text-accent-foreground"
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 font-medium transition-all ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-foreground/90 hover:bg-accent hover:text-accent-foreground'
+                }`}
               >
                 <Icon className="w-5 h-5" />
                 <span>{item.name}</span>
@@ -153,7 +167,9 @@ export default function DashboardLayout({
       <main className="flex-1 bg-page text-page-foreground overflow-hidden">
         {/* Wrapper que garante que em mobile o topo do conteúdo não fique atrás do header fixo */}
         <div className="h-full w-full overflow-y-auto pt-14 md:pt-0 space-y-6 p-4 md:p-8">
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </div>
       </main>
     </div>

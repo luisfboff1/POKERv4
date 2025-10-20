@@ -204,17 +204,18 @@ const normalizePlayerName = (name: string): string => {
 
 /**
  * Check if all payments are completed and return appropriate status
+ * Valid statuses: 'pending', 'approved', 'closed'
  */
 const checkSessionPaymentStatus = (
   playersData: SessionPlayerData[],
   recommendations: TransferRecommendation[],
   paidTransfers: Record<string, boolean>
-): string => {
-  // If there are no recommendations, status is completed
+): 'pending' | 'approved' | 'closed' => {
+  // If there are no recommendations, status is closed
   if (!recommendations || recommendations.length === 0) {
-    return 'completed';
+    return 'closed';
   }
-  
+
   // Check if all transfers are paid
   const allTransfersPaid = recommendations.every((rec) => {
     const transferKey = `${rec.from}_${rec.to}`;
@@ -230,11 +231,11 @@ const checkSessionPaymentStatus = (
     return player.janta_paid === true;
   });
 
-  // If both transfers and jantas are paid, mark as completed
+  // If both transfers and jantas are paid, mark as closed
   if (allTransfersPaid && allJantasPaid) {
-    return 'completed';
+    return 'closed';
   }
 
-  // Otherwise, keep as pending
-  return 'pending';
+  // Otherwise, keep as approved (session was approved but payments pending)
+  return 'approved';
 };

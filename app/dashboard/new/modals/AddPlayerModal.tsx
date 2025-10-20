@@ -21,19 +21,44 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
   setSearchPlayer,
   filteredExistingPlayers,
   addPlayerToSession
-}) => (
-  <Modal isOpen={isOpen} onClose={onClose} title="Adicionar Jogador" description="Novo jogador chegou durante o jogo" size="md">
-    <ModalContent>
-      <div className="space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar ou digitar nome..."
-            value={searchPlayer}
-            onChange={e => setSearchPlayer(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+}) => {
+  const handleAddPlayer = () => {
+    if (!searchPlayer.trim()) return;
+
+    if (filteredExistingPlayers.length > 0) {
+      // Adicionar primeiro jogador correspondente
+      addPlayerToSession(filteredExistingPlayers[0], true);
+    } else {
+      // Criar novo jogador
+      addPlayerToSession(searchPlayer.trim(), false);
+    }
+
+    setSearchPlayer('');
+    onClose();
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && searchPlayer.trim()) {
+      e.preventDefault();
+      handleAddPlayer();
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Adicionar Jogador" description="Novo jogador chegou durante o jogo" size="md">
+      <ModalContent>
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar ou digitar nome... (Enter para adicionar)"
+              value={searchPlayer}
+              onChange={e => setSearchPlayer(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="pl-10"
+              autoFocus
+            />
+          </div>
         {filteredExistingPlayers.length > 0 && (
           <div>
             <div className="mt-2 border rounded-lg p-2 bg-muted/30 max-h-40 overflow-y-auto">
@@ -54,9 +79,9 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
         )}
         {searchPlayer.trim() && (
           <div className="flex gap-2">
-            <Button onClick={() => addPlayerToSession(searchPlayer, false)} className="flex-1">
+            <Button onClick={handleAddPlayer} className="flex-1">
               <Plus className="h-4 w-4 mr-2" />
-              Adicionar &quot;{searchPlayer.trim()}&quot;
+              Adicionar {filteredExistingPlayers.length > 0 ? filteredExistingPlayers[0].name : `"${searchPlayer.trim()}"`}
             </Button>
           </div>
         )}
@@ -68,4 +93,5 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
       </div>
     </ModalContent>
   </Modal>
-);
+  );
+};

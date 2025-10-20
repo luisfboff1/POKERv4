@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,7 @@ import type { LiveSession, LivePlayer } from '@/lib/types';
 import type { UpdateLivePlayerField } from './types';
 import type { SessionStep } from './SessionCreateStep';
 import { formatCurrency } from '@/lib/format';
+import { RebuyModal } from '../modals/RebuyModal';
 
 interface SessionActiveStepProps {
   currentSession: LiveSession;
@@ -25,22 +26,47 @@ export const SessionActiveStep: React.FC<SessionActiveStepProps> = ({
   setStep,
   updatePlayerField,
   addRebuy
-}) => (
-  <div className="space-y-6">
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-3">
-          <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-          {currentSession.location}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {new Date(currentSession.date).toLocaleDateString('pt-BR')} • Sessão em andamento
-        </p>
-      </div>
-      <Button onClick={() => setStep('cashout')} variant="outline">
-        Finalizar Sessão
-      </Button>
-    </div>
+}) => {
+  const [rebuyModal, setRebuyModal] = useState<{ isOpen: boolean; playerId: string; playerName: string }>({
+    isOpen: false,
+    playerId: '',
+    playerName: ''
+  });
+
+  const openRebuyModal = (playerId: string, playerName: string) => {
+    setRebuyModal({ isOpen: true, playerId, playerName });
+  };
+
+  const closeRebuyModal = () => {
+    setRebuyModal({ isOpen: false, playerId: '', playerName: '' });
+  };
+
+  const handleRebuyConfirm = (amount: number) => {
+    addRebuy(rebuyModal.playerId, amount);
+  };
+
+  // Calcular o buy-in padrão da sessão (média dos buy-ins iniciais)
+  const defaultBuyin = currentSession.players.length > 0
+    ? Math.round(currentSession.players.reduce((sum, p) => sum + p.buyin, 0) / currentSession.players.length)
+    : 50;
+
+  return (
+    <>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-3">
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+              {currentSession.location}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {new Date(currentSession.date).toLocaleDateString('pt-BR')} • Sessão em andamento
+            </p>
+          </div>
+          <Button onClick={() => setStep('cashout')} variant="outline">
+            Finalizar Sessão
+          </Button>
+        </div>
 
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <Card>
@@ -108,13 +134,7 @@ export const SessionActiveStep: React.FC<SessionActiveStepProps> = ({
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => {
-                      const amount = prompt('Valor do rebuy:');
-                      if (amount) {
-                        const n = Number(amount);
-                        if (!isNaN(n) && n > 0) addRebuy(player.id, n);
-                      }
-                    }}
+                    onClick={() => openRebuyModal(player.id, player.name)}
                   >
                     <Plus className="h-3 w-3 mr-1" /> Rebuy
                   </Button>
@@ -125,5 +145,15 @@ export const SessionActiveStep: React.FC<SessionActiveStepProps> = ({
         </div>
       </CardContent>
     </Card>
-  </div>
-);
+      </div>
+
+      <RebuyModal
+        isOpen={rebuyModal.isOpen}
+        onClose={closeRebuyModal}
+        playerName={rebuyModal.playerName}
+        onConfirm={handleRebuyConfirm}
+        defaultBuyin={defaultBuyin}
+      />
+    </>
+  );
+};

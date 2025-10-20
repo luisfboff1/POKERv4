@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { trackPokerEvent } from '@/lib/analytics';
+import { Target, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -42,7 +43,10 @@ export default function LoginPage() {
     <div className="relative min-h-screen bg-page text-page-foreground">
       <div className="absolute inset-x-0 top-0 z-10 border-b border-border bg-surface/80 backdrop-blur supports-[backdrop-filter]:bg-surface/60">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-          <div className="text-lg font-semibold tracking-tight text-foreground">🎯 Poker Manager</div>
+          <div className="text-lg font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <Target className="h-5 w-5 text-primary" />
+            Poker Manager
+          </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <ThemeToggle />
             <span>
@@ -100,7 +104,7 @@ export default function LoginPage() {
               <CardContent className="space-y-6">
                 {error && (
                   <div className="flex items-center gap-3 rounded-md border border-destructive/50 bg-destructive/15 px-4 py-3 text-sm text-destructive">
-                    <span className="text-lg leading-none">⚠️</span>
+                    <AlertCircle className="h-5 w-5 flex-shrink-0" />
                     <span>{error}</span>
                   </div>
                 )}
@@ -137,8 +141,9 @@ export default function LoginPage() {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute inset-y-0 right-3 flex items-center text-muted-foreground transition-colors hover:text-foreground"
                         disabled={loading}
+                        aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                       >
-                        {showPassword ? '🙈' : '👁️'}
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
                   </div>
@@ -158,9 +163,9 @@ export default function LoginPage() {
                 <div className="space-y-4 pt-2 text-center text-sm text-muted-foreground">
                   <p>
                     Esqueceu sua senha?{' '}
-                    <a href="#" className="font-medium text-primary">
+                    <Link href="/forgot-password" className="font-medium text-primary">
                       Recuperar acesso
-                    </a>
+                    </Link>
                   </p>
 
                   <div className="border-t border-border pt-4">

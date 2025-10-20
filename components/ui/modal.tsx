@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { Button } from './button';
@@ -32,6 +32,63 @@ export function Modal({
   variant = 'solid',
   forceOpaque = false,
 }: ModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Handle ESC key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, onClose]);
+
+  // Focus trap
+  useEffect(() => {
+    if (!isOpen || !modalRef.current) return;
+
+    const modal = modalRef.current;
+    const focusableElements = modal.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    };
+
+    modal.addEventListener('keydown', handleTab);
+    firstElement?.focus();
+
+    return () => {
+      modal.removeEventListener('keydown', handleTab);
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const sizeClasses = {
@@ -49,11 +106,15 @@ export function Modal({
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl transition-all duration-300 animate-fade-in"
       onClick={handleOverlayClick}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={title ? 'modal-title' : undefined}
     >
       <div
+        ref={modalRef}
         className={`relative w-full ${sizeClasses[size]} text-card-foreground border border-border rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in-0 zoom-in-95 duration-300 bg-white/70 backdrop-blur-xl glass-card`}
         style={{
           background: variant === 'glass' && !forceOpaque
@@ -64,14 +125,14 @@ export function Modal({
       >
         {showHeader && (title || showCloseButton) && (
           <div className="flex items-center justify-between p-4 md:p-6 border-b border-border sticky top-0 z-10 bg-white/80 backdrop-blur-xl shadow-sm">
-            {title && <div className="font-semibold text-lg tracking-tight animate-fade-in-up text-foreground">{title}</div>}
+            {title && <div id="modal-title" className="font-semibold text-lg tracking-tight animate-fade-in-up text-foreground">{title}</div>}
             {showCloseButton && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={onClose}
                 className="ml-2"
-                aria-label="Fechar"
+                aria-label="Fechar modal"
               >
                 <X className="h-5 w-5" />
               </Button>

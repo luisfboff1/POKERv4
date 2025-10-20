@@ -84,9 +84,21 @@ export const SessionPlayersStep: React.FC<SessionPlayersStepProps> = ({
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar jogador existente..."
+              placeholder="Buscar jogador existente ou criar novo (Enter para adicionar)..."
               value={searchPlayer}
               onChange={(e) => setSearchPlayer(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchPlayer.trim()) {
+                  e.preventDefault();
+                  const matchingPlayer = filteredExistingPlayers[0];
+                  if (matchingPlayer) {
+                    addPlayerToSession(matchingPlayer, true);
+                  } else {
+                    addPlayerToSession(searchPlayer.trim(), false);
+                  }
+                  setSearchPlayer('');
+                }
+              }}
               className="pl-10"
             />
           </div>

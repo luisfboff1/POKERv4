@@ -6,7 +6,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { useSessions, usePlayers } from '@/hooks/useApi';
 import type { Session, SessionPlayerData } from '@/lib/types';
 import Link from 'next/link';
-import { Plus, History, Trophy, Users } from 'lucide-react';
+import { Plus, History, Trophy, Users, CheckCircle, AlertCircle } from 'lucide-react';
 import PlayerDashboard from '@/components/PlayerDashboard';
 import { cn } from '@/lib/utils';
 
@@ -101,12 +101,14 @@ export default function DashboardPage() {
             <Plus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${
-              financialStats.totalBuyin === financialStats.totalCashout ? 'text-green-600' : 'text-yellow-600'
-            }`}>
-              {financialStats.totalBuyin === financialStats.totalCashout ? '✓' : '⚠'}
+            <div className="flex items-center gap-2">
+              {financialStats.totalBuyin === financialStats.totalCashout ? (
+                <CheckCircle className="h-8 w-8 text-green-600" />
+              ) : (
+                <AlertCircle className="h-8 w-8 text-yellow-600" />
+              )}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-2">
               {financialStats.totalBuyin === financialStats.totalCashout ? 'Perfeito' : 'Verificar'}
             </p>
           </CardContent>

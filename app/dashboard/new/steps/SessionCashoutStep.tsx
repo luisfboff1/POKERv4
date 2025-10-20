@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CreditCard, Utensils } from 'lucide-react';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 import type { LiveSession, LivePlayer } from '@/lib/types';
 import type { UpdateLivePlayerField } from './types';
 import type { SessionStep } from './SessionCreateStep';
@@ -39,15 +39,15 @@ export const SessionCashoutStep: React.FC<SessionCashoutStepProps> = ({
       <CardContent>
         <div className="space-y-4">
           {currentSession.players.map((player: LivePlayer) => (
-            <div key={player.id} className="flex items-center gap-4 p-4 border rounded-lg">
-              <div className="flex-1">
+            <div key={player.id} className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-4 p-4 border rounded-lg items-center">
+              <div>
                 <p className="font-medium">{player.name}</p>
                 <p className="text-sm text-muted-foreground">
                   Buy-in total: {formatCurrency(player.totalBuyin)} • Janta: {formatCurrency(player.janta)}
                 </p>
               </div>
-              <div className="w-32">
-                <Label>Cash-out</Label>
+              <div className="w-full md:w-32">
+                <Label>Cash-out (R$)</Label>
                 <Input
                   type="number"
                   placeholder="0"
@@ -55,39 +55,13 @@ export const SessionCashoutStep: React.FC<SessionCashoutStepProps> = ({
                   onChange={(e) => updatePlayerField(player.id, 'cashout', Number(e.target.value) || 0)}
                 />
               </div>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id={`session_paid_${player.id}`}
-                    checked={player.session_paid || false}
-                    onChange={(e) => updatePlayerField(player.id, 'session_paid', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <label htmlFor={`session_paid_${player.id}`} className="text-sm flex items-center gap-1">
-                    <CreditCard className="h-3 w-3" /> Sessão
-                  </label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id={`janta_paid_${player.id}`}
-                    checked={player.janta_paid || false}
-                    onChange={(e) => updatePlayerField(player.id, 'janta_paid', e.target.checked)}
-                    className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
-                  />
-                  <label htmlFor={`janta_paid_${player.id}`} className="text-sm flex items-center gap-1">
-                    <Utensils className="h-3 w-3" /> Janta
-                  </label>
-                </div>
-              </div>
-              <div className="w-24 text-center">
+              <div className="w-full md:w-32 text-center md:text-right">
                 <Label>Resultado</Label>
                 {(() => {
                   const result = player.cashout - player.totalBuyin;
                   const positive = result >= 0;
                   return (
-                    <div className={`text-sm font-medium ${positive ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className={`text-lg font-semibold ${positive ? 'text-green-600' : 'text-red-600'}`}>
                       {positive ? '+' : ''}{formatCurrency(result)}
                     </div>
                   );
@@ -106,8 +80,18 @@ export const SessionCashoutStep: React.FC<SessionCashoutStepProps> = ({
                 <div className="text-sm text-muted-foreground">Total Cash-out</div>
               </div>
               <div>
-                <div className={`text-xl font-bold ${isBalanced ? 'text-green-600' : 'text-red-600'}`}>
-                  {isBalanced ? '✓ Balanceado' : `⚠ Diferença: ${formatCurrency(Math.abs(totals.totalBuyin - totals.totalCashout))}`}
+                <div className={`text-xl font-bold flex items-center justify-center gap-2 ${isBalanced ? 'text-green-600' : 'text-red-600'}`}>
+                  {isBalanced ? (
+                    <>
+                      <CheckCircle className="h-5 w-5" />
+                      Balanceado
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="h-5 w-5" />
+                      Diferença: {formatCurrency(Math.abs(totals.totalBuyin - totals.totalCashout))}
+                    </>
+                  )}
                 </div>
                 <div className="text-sm text-muted-foreground">Status</div>
               </div>
@@ -115,10 +99,15 @@ export const SessionCashoutStep: React.FC<SessionCashoutStepProps> = ({
           </div>
         </div>
         <div className="flex gap-3 pt-6">
-          <Button onClick={calculateRecommendations} disabled={totals.totalCashout === 0} variant="outline">
-            Calcular Transferências
+          <Button
+            onClick={() => {
+              calculateRecommendations();
+              setStep('transfers');
+            }}
+            disabled={!isBalanced}
+          >
+            Continuar para Transferências
           </Button>
-          <Button onClick={() => setStep('transfers')} disabled={!isBalanced}>Continuar</Button>
           <Button variant="ghost" onClick={() => setStep('active')}>Voltar</Button>
         </div>
       </CardContent>
