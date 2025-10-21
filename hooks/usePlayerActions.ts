@@ -4,7 +4,7 @@ import type { UpdateLivePlayerField, LivePlayerEditableField } from '@/app/dashb
 
 export function usePlayerActions(
   currentSession: LiveSession | null,
-  setCurrentSession: (s: LiveSession | null) => void,
+  setCurrentSession: (s: LiveSession | null | ((prev: LiveSession | null) => LiveSession | null)) => void,
   defaultBuyin: number,
   createPlayer: (name: string, email?: string) => Promise<any>
 ) {
@@ -44,9 +44,12 @@ export function usePlayerActions(
         session_paid: false,
         janta_paid: false
       };
-      setCurrentSession({
-        ...currentSession,
-        players: [...currentSession.players, newPlayer]
+      setCurrentSession((prev: LiveSession | null) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          players: [...prev.players, newPlayer]
+        };
       });
       setError('');
     } catch (err: unknown) {
@@ -57,36 +60,88 @@ export function usePlayerActions(
     }
   };
   const updatePlayerField: UpdateLivePlayerField = (playerId, field, value) => {
-    if (!currentSession) return;
-    setCurrentSession({
-      ...currentSession,
-      players: currentSession.players.map((p: LivePlayer) => {
-        if (p.id === playerId) {
-          const updated = { ...p, [field]: value };
-          if (field === 'buyin' || field === 'rebuys') {
-            updated.totalBuyin = updated.buyin + updated.rebuys.reduce((sum: number, rebuy: number) => sum + rebuy, 0);
+    setCurrentSession((prev: LiveSession | null) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        players: prev.players.map((p: LivePlayer) => {
+          if (p.id === playerId) {
+            const updated: LivePlayer = { ...p, [field]: value } as LivePlayer;
+            if (field === 'buyin' || field === 'rebuys') {
+              updated.totalBuyin = updated.buyin + updated.rebuys.reduce((sum: number, rebuy: number) => sum + rebuy, 0);
+            }
+            return updated;
           }
-          return updated;
-        }
-        return p;
-      })
+          return p;
+        })
+      };
     });
   };
 
   const addRebuy = (playerId: string, amount: number) => {
-    if (!currentSession) return;
-    const player = currentSession.players.find((p: LivePlayer) => p.id === playerId);
-    if (player) {
-      const newRebuys = [...player.rebuys, amount];
-      updatePlayerField(playerId, 'rebuys', newRebuys);
-    }
+    setCurrentSession((prev: LiveSession | null) => {
+      if (!prev) return prev;
+      const player = prev.players.find((p: LivePlayer) => p.id === playerId);
+      if (player) {
+        const newRebuys = [...player.rebuys, amount];
+        return {
+          ...prev,
+          players: prev.players.map((p: LivePlayer) =>
+            p.id === playerId
+              ? { ...p, rebuys: newRebuys, totalBuyin: p.buyin + newRebuys.reduce((s, n) => s + n, 0) }
+              : p
+          )
+        };
+      }
+      return prev;
+    });
+  };
+
+  const removeRebuy = (playerId: string, index: number) => {
+    setCurrentSession((prev: LiveSession | null) => {
+      if (!prev) return prev;
+      const player = prev.players.find((p: LivePlayer) => p.id === playerId);
+      if (player) {
+        const newRebuys = player.rebuys.filter((_, i) => i !== index);
+        return {
+          ...prev,
+          players: prev.players.map((p: LivePlayer) =>
+            p.id === playerId
+              ? { ...p, rebuys: newRebuys, totalBuyin: p.buyin + newRebuys.reduce((s, n) => s + n, 0) }
+              : p
+          )
+        };
+      }
+      return prev;
+    });
+  };
+
+  const editRebuy = (playerId: string, index: number, amount: number) => {
+    setCurrentSession((prev: LiveSession | null) => {
+      if (!prev) return prev;
+      const player = prev.players.find((p: LivePlayer) => p.id === playerId);
+      if (player) {
+        const newRebuys = player.rebuys.map((r, i) => (i === index ? amount : r));
+        return {
+          ...prev,
+          players: prev.players.map((p: LivePlayer) =>
+            p.id === playerId
+              ? { ...p, rebuys: newRebuys, totalBuyin: p.buyin + newRebuys.reduce((s, n) => s + n, 0) }
+              : p
+          )
+        };
+      }
+      return prev;
+    });
   };
 
   const removePlayer = (playerId: string) => {
-    if (!currentSession) return;
-    setCurrentSession({
-      ...currentSession,
-      players: currentSession.players.filter((p: LivePlayer) => p.id !== playerId)
+    setCurrentSession((prev: LiveSession | null) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        players: prev.players.filter((p: LivePlayer) => p.id !== playerId)
+      };
     });
   };
 
@@ -94,6 +149,8 @@ export function usePlayerActions(
     addPlayerToSession,
     updatePlayerField,
     addRebuy,
+    removeRebuy,
+    editRebuy,
     removePlayer,
     loading,
     error,

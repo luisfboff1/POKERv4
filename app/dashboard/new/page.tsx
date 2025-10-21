@@ -44,6 +44,8 @@ export default function CurrentSessionPage() {
     addPlayerToSession,
     updatePlayerField,
     addRebuy,
+    removeRebuy,
+    editRebuy,
     removePlayer,
     error: playerError
   } = usePlayerActions(currentSession, setCurrentSession, defaultBuyin, createPlayer);
@@ -272,6 +274,8 @@ export default function CurrentSessionPage() {
         setStep={setStep as (s: SessionStep) => void}
         updatePlayerField={updatePlayerField}
         addRebuy={addRebuy}
+        removeRebuy={removeRebuy}
+        editRebuy={editRebuy}
       />
       </>
     );

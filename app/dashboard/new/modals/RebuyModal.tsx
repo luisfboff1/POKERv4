@@ -11,6 +11,7 @@ interface RebuyModalProps {
   playerName: string;
   onConfirm: (amount: number) => void;
   defaultBuyin?: number;
+  initialAmount?: number;
 }
 
 export const RebuyModal: React.FC<RebuyModalProps> = ({
@@ -19,6 +20,7 @@ export const RebuyModal: React.FC<RebuyModalProps> = ({
   playerName,
   onConfirm,
   defaultBuyin = 50
+  , initialAmount
 }) => {
   const [amount, setAmount] = useState(defaultBuyin.toString());
   const [error, setError] = useState('');
@@ -26,10 +28,10 @@ export const RebuyModal: React.FC<RebuyModalProps> = ({
   // Reset amount when modal opens
   useEffect(() => {
     if (isOpen) {
-      setAmount(defaultBuyin.toString());
+      setAmount((initialAmount !== undefined ? initialAmount : defaultBuyin).toString());
       setError('');
     }
-  }, [isOpen, defaultBuyin]);
+  }, [isOpen, defaultBuyin, initialAmount]);
 
   const handleSubmit = () => {
     const numAmount = Number(amount);
