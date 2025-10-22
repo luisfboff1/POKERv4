@@ -29,8 +29,8 @@ export function Modal({
   showHeader = true,
   showCloseButton = true,
   closeOnOverlayClick = true,
-  variant = 'solid',
-  forceOpaque = false,
+  variant: _variant = 'solid',
+  forceOpaque: _forceOpaque = false,
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
 

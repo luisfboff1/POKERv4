@@ -8,6 +8,7 @@ import type { UpdateLivePlayerField } from './types';
 import type { SessionStep } from './SessionCreateStep';
 import { formatCurrency } from '@/lib/format';
 import { RebuyModal } from '../modals/RebuyModal';
+import { useConfirmModal } from '@/components/ui/modal';
 
 interface SessionActiveStepProps {
   currentSession: LiveSession;
@@ -38,6 +39,7 @@ export const SessionActiveStep: React.FC<SessionActiveStepProps> = ({
     }
   );
   const [initialRebuyAmount, setInitialRebuyAmount] = useState<number | undefined>(undefined);
+  const { confirm, ConfirmModalComponent: _ConfirmModalComponent } = useConfirmModal();
 
   const openRebuyModal = (playerId: string, playerName: string, index?: number) => {
     // if editing, try to get current amount
@@ -151,11 +153,14 @@ export const SessionActiveStep: React.FC<SessionActiveStepProps> = ({
                                 )}
                                 {typeof removeRebuy === 'function' && (
                                   <Button size="sm" variant="ghost" onClick={() => {
-                                    // confirm before removing
-                                    // eslint-disable-next-line no-restricted-globals
-                                    if (confirm(`Remover rebuy de ${player.name} R$ ${r.toLocaleString('pt-BR')} ?`)) {
-                                      removeRebuy(player.id, i);
-                                    }
+                                    confirm({
+                                      title: 'Remover Rebuy',
+                                      message: `Remover rebuy de ${player.name} R$ ${r.toLocaleString('pt-BR')}?`,
+                                      onConfirm: () => removeRebuy(player.id, i),
+                                      confirmText: 'Remover',
+                                      cancelText: 'Cancelar',
+                                      variant: 'destructive'
+                                    });
                                   }} title="Remover rebuy">
                                     <Trash2 className="h-3 w-3" />
                                   </Button>

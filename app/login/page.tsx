@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,6 @@ import { trackPokerEvent } from '@/lib/analytics';
 import { Target, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
-  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -27,10 +25,15 @@ export default function LoginPage() {
   const { login } = useAuth();
 
   useEffect(() => {
-    if (searchParams.get('expired') === 'true') {
-      setExpiredWarning(true);
+    try {
+      if (typeof window !== 'undefined') {
+        const sp = new URLSearchParams(window.location.search);
+        if (sp.get('expired') === 'true') setExpiredWarning(true);
+      }
+    } catch {
+      // ignore
     }
-  }, [searchParams]);
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

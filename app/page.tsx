@@ -27,7 +27,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { designTokens } from '@/lib/design-tokens';
-import PlasmaWrapper from '@/components/PlasmaWrapper';
 import { Analytics } from '@vercel/analytics/next';
 import { motion } from 'framer-motion';
 
@@ -160,17 +159,7 @@ export default function HomePage() {
     <>
       <Analytics />
       <div className="relative min-h-screen bg-background text-foreground">
-        {/* Plasma Background - Global para toda a página */}
-        <div className="fixed inset-0 z-0 pointer-events-none">
-          <PlasmaWrapper
-            color="#3b82f6"
-            speed={0.6}
-            direction="forward"
-            scale={1.1}
-            opacity={0.15}
-            mouseInteractive={false}
-          />
-        </div>
+        {/* Plasma Background removed */}
 
         {/* Header */}
         <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">

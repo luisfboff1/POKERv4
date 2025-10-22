@@ -97,7 +97,7 @@ export async function PUT(
     }
 
     // Verificar se o jogador existe e pertence ao tenant do usuário
-    const { data: existingPlayer, error: checkError } = await supabaseServer
+    const { data: _existingPlayer, error: checkError } = await supabaseServer
       .from('players')
       .select('*')
       .eq('id', playerId)
@@ -182,7 +182,7 @@ export async function DELETE(
     }
 
     // Verificar se o jogador existe e pertence ao tenant do usuário
-    const { data: existingPlayer, error: checkError } = await supabaseServer
+    const { data: _existingPlayer, error: checkError } = await supabaseServer
       .from('players')
       .select('*')
       .eq('id', playerId)
