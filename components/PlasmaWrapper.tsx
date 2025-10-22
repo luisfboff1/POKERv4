@@ -1,10 +1,10 @@
 'use client';
 
-import { Component, ReactNode } from 'react';
+import { Component, ReactNode, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 
 // Importa Plasma dinamicamente (client-side only)
-const Plasma = dynamic(() => import('./Plasma'), { 
+const Plasma = dynamic(() => import('./Plasma'), {
   ssr: false,
   loading: () => (
     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-transparent animate-gradient-slow" />
@@ -50,6 +50,20 @@ class PlasmaErrorBoundary extends Component<{ children: ReactNode }, State> {
 }
 
 export default function PlasmaWrapper(props: PlasmaWrapperProps) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    setIsMobile(checkMobile);
+  }, []);
+
+  // Show gradient fallback on mobile instead of WebGL
+  if (isMobile) {
+    return (
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-transparent" />
+    );
+  }
+
   return (
     <PlasmaErrorBoundary>
       <Plasma {...props} />

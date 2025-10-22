@@ -115,16 +115,10 @@ export function Modal({
     >
       <div
         ref={modalRef}
-        className={`relative w-full ${sizeClasses[size]} text-card-foreground border border-border rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in-0 zoom-in-95 duration-300 bg-white/70 backdrop-blur-xl glass-card`}
-        style={{
-          background: variant === 'glass' && !forceOpaque
-            ? 'rgba(255,255,255,0.85)'
-            : 'rgba(255,255,255,0.70)',
-          backdropFilter: 'blur(16px)',
-        }}
+        className={`relative w-full ${sizeClasses[size]} bg-card/95 backdrop-blur-xl text-card-foreground border border-border rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in-0 zoom-in-95 duration-300`}
       >
         {showHeader && (title || showCloseButton) && (
-          <div className="flex items-center justify-between p-4 md:p-6 border-b border-border sticky top-0 z-10 bg-white/80 backdrop-blur-xl shadow-sm">
+          <div className="flex items-center justify-between p-4 md:p-6 border-b border-border sticky top-0 z-10 bg-card/80 backdrop-blur-xl shadow-sm">
             {title && <div id="modal-title" className="font-semibold text-lg tracking-tight animate-fade-in-up text-foreground">{title}</div>}
             {showCloseButton && (
               <Button
@@ -140,9 +134,9 @@ export function Modal({
           </div>
         )}
         {description && (
-          <div className="px-4 md:px-6 py-2 text-muted-foreground text-sm border-b border-border bg-white/60 backdrop-blur animate-fade-in-up">{description}</div>
+          <div className="px-4 md:px-6 py-2 text-muted-foreground text-sm border-b border-border bg-muted/30 backdrop-blur animate-fade-in-up">{description}</div>
         )}
-        <div className="flex-1 overflow-y-auto bg-white/60 backdrop-blur text-card-foreground p-4 md:p-6 transition-all duration-300">{children}</div>
+        <div className="flex-1 overflow-y-auto bg-card/50 backdrop-blur text-card-foreground p-4 md:p-6 transition-all duration-300">{children}</div>
       </div>
     </div>
     );
@@ -155,9 +149,35 @@ interface ModalContentProps {
 
 export function ModalContent({ children, className = "" }: ModalContentProps) {
   return (
-    <div className={`p-6 bg-white/60 backdrop-blur text-foreground ${className}`}>
+    <div className={`bg-transparent text-foreground ${className}`}>
       {children}
     </div>
+  );
+}
+
+interface ModalHeaderProps {
+  children: ReactNode;
+  className?: string;
+}
+
+export function ModalHeader({ children, className = "" }: ModalHeaderProps) {
+  return (
+    <div className={`flex items-center justify-between p-6 pb-4 ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+interface ModalTitleProps {
+  children: ReactNode;
+  className?: string;
+}
+
+export function ModalTitle({ children, className = "" }: ModalTitleProps) {
+  return (
+    <h2 className={`text-xl font-semibold tracking-tight ${className}`}>
+      {children}
+    </h2>
   );
 }
 
@@ -169,7 +189,7 @@ interface ModalFooterProps {
 export function ModalFooter({ children, className = "" }: ModalFooterProps) {
   return (
     <div
-      className={`flex flex-col-reverse sm:flex-row justify-end gap-2 p-6 pt-0 border-t border-border bg-white/60 backdrop-blur ${className}`}
+      className={`flex flex-col-reverse sm:flex-row justify-end gap-2 p-6 pt-4 border-t border-border bg-card/30 backdrop-blur ${className}`}
     >
       {children}
     </div>

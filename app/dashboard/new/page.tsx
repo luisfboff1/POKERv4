@@ -92,7 +92,12 @@ export default function CurrentSessionPage() {
     setLoading(true);
     try {
       const finalPlayers = currentSession.players.map(p => ({
-        ...p,
+        id: p.id,
+        name: p.name,
+        buyin: p.totalBuyin, // Use totalBuyin (includes rebuys) as the buyin value
+        cashout: p.cashout,
+        session_paid: p.session_paid,
+        janta_paid: p.janta_paid,
         balance: p.cashout - p.totalBuyin
       }));
       // Inicializar todas as transferências como não pagas

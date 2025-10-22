@@ -161,14 +161,14 @@ export default function HomePage() {
       <Analytics />
       <div className="relative min-h-screen bg-background text-foreground">
         {/* Plasma Background - Global para toda a página */}
-        <div className="fixed inset-0 z-0">
+        <div className="fixed inset-0 z-0 pointer-events-none">
           <PlasmaWrapper
             color="#3b82f6"
             speed={0.6}
             direction="forward"
             scale={1.1}
             opacity={0.15}
-            mouseInteractive={true}
+            mouseInteractive={false}
           />
         </div>
 

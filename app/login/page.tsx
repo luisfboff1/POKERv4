@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import { trackPokerEvent } from '@/lib/analytics';
 import { Target, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -20,8 +22,15 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+  const [expiredWarning, setExpiredWarning] = useState(false);
+
   const { login } = useAuth();
+
+  useEffect(() => {
+    if (searchParams.get('expired') === 'true') {
+      setExpiredWarning(true);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -102,6 +111,13 @@ export default function LoginPage() {
               </CardHeader>
 
               <CardContent className="space-y-6">
+                {expiredWarning && (
+                  <div className="flex items-center gap-3 rounded-md border border-yellow-500/50 bg-yellow-500/15 px-4 py-3 text-sm text-yellow-700 dark:text-yellow-400">
+                    <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                    <span>Sua sessão expirou. Por favor, faça login novamente.</span>
+                  </div>
+                )}
+
                 {error && (
                   <div className="flex items-center gap-3 rounded-md border border-destructive/50 bg-destructive/15 px-4 py-3 text-sm text-destructive">
                     <AlertCircle className="h-5 w-5 flex-shrink-0" />

@@ -102,6 +102,13 @@ export const Plasma: React.FC<PlasmaProps> = ({
   useEffect(() => {
     if (!containerRef.current) return;
 
+    // Disable Plasma on mobile devices to prevent performance issues
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+      console.log('📱 Plasma: Disabled on mobile device');
+      return;
+    }
+
     try {
       const useCustomColor = color ? 1.0 : 0.0;
       const customColorRgb = color ? hexToRgb(color) : [1, 1, 1];

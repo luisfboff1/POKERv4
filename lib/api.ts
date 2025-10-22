@@ -1,4 +1,4 @@
-import { getToken } from './auth';
+import { getToken, removeToken } from './auth';
 import type { ApiResponse, SessionPlayerData, TransferRecommendation } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
@@ -19,7 +19,7 @@ async function fetchAPI<T>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   const token = getToken();
-  
+
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),
@@ -42,6 +42,18 @@ async function fetchAPI<T>(
 
     if (!response.ok) {
       console.error('Erro da API:', data);
+
+      // Handle expired token (401 Unauthorized)
+      if (response.status === 401) {
+        removeToken();
+        localStorage.removeItem('user');
+
+        // Redirect to login page
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login?expired=true';
+        }
+      }
+
       throw new ApiError(
         data.error || data.message || 'Erro na requisição',
         response.status,
@@ -139,6 +151,11 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
+    delete: (id: number) =>
+      fetchAPI(`/players/${id}`, {
+        method: 'DELETE',
+      }),
+
     syncStats: () =>
       fetchAPI('/sync_players_stats.php', {
         method: 'POST',
@@ -147,34 +164,34 @@ export const api = {
 
   // ===== INVITES =====
   invites: {
-    list: () => fetchAPI('/api/invites'),
-    
+    list: () => fetchAPI('/invites'),
+
     create: (email: string, role: string, name?: string, playerData?: {
       playerLinkType?: string;
       selectedPlayerId?: string | null;
       newPlayerData?: { name: string; nickname: string; phone: string } | null;
     }) => {
-      const payload = { 
-        email, 
-        role, 
+      const payload = {
+        email,
+        role,
         name,
         ...(playerData || {})
       };
       console.log('DEBUG api.ts - Enviando payload:', payload);
-      return fetchAPI('/api/invites', {
+      return fetchAPI('/invites', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
     },
-    
+
     accept: (token: string, password: string, name: string) =>
-      fetchAPI('/api/invites/accept', {
+      fetchAPI('/invites/accept', {
         method: 'POST',
         body: JSON.stringify({ token, password, name }),
       }),
-    
+
     delete: (id: number) =>
-      fetchAPI(`/api/invites/${id}`, {
+      fetchAPI(`/invites/${id}`, {
         method: 'DELETE',
       }),
   },

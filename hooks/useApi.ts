@@ -110,12 +110,34 @@ export function usePlayers() {
     }
   };
 
+  const updatePlayer = async (id: number, playerData: Record<string, unknown>) => {
+    try {
+      await api.players.update(id, playerData);
+      await refetch();
+      return true;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const deletePlayer = async (id: number) => {
+    try {
+      await api.players.delete(id);
+      await refetch();
+      return true;
+    } catch (err) {
+      throw err;
+    }
+  };
+
   return {
     players: data || [],
     loading,
     error,
     refetch,
     createPlayer,
+    updatePlayer,
+    deletePlayer,
   };
 }
 

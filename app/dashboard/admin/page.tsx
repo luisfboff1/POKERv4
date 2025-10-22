@@ -1,32 +1,78 @@
 'use client';
 
+import { useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { usePlayers, useInvites, useSessions, useTenants } from '@/hooks/useApi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { LoadingState, EmptyState } from '@/components/ui/loading';
-import { 
-  Shield, 
-  Users, 
-  Settings, 
+import { useModal, useConfirmModal } from '@/components/ui/modal';
+import {
+  Shield,
+  Users,
+  Settings,
   Database,
   Activity,
   Mail,
   Crown,
   UserCheck,
-  AlertTriangle
+  AlertTriangle,
+  Edit,
+  Trash2
 } from 'lucide-react';
+import { EditPlayerModal } from './components/edit-player-modal';
+import type { Player } from '@/lib/types';
 
 export default function AdminPage() {
   const { user } = useAuth();
-  const { players, loading: playersLoading } = usePlayers();
+  const { players, loading: playersLoading, refetch: refetchPlayers, updatePlayer, deletePlayer } = usePlayers();
   const { invites } = useInvites();
   const { sessions } = useSessions();
   const { tenants: tenantsData, loading: tenantsLoading } = useTenants();
-  
+
   // Garantir que tenants seja sempre um array
   const tenants = Array.isArray(tenantsData) ? tenantsData : [];
+
+  // Modais
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const editModal = useModal();
+  const { confirm, ConfirmModalComponent } = useConfirmModal();
+
+  const handleEditPlayer = (player: Player) => {
+    setSelectedPlayer(player);
+    editModal.open();
+  };
+
+  const handleDeletePlayer = (player: Player) => {
+    confirm({
+      title: 'Excluir jogador',
+      message: `Tem certeza que deseja excluir o jogador "${player.name}"? Esta ação não pode ser desfeita e removerá todos os dados associados.`,
+      confirmText: 'Excluir',
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          await deletePlayer(player.id);
+          await refetchPlayers();
+        } catch (error) {
+          console.error('Erro ao excluir jogador:', error);
+          alert('Erro ao excluir jogador. Tente novamente.');
+        }
+      }
+    });
+  };
+
+  const handleSavePlayer = async (id: number, data: Partial<Player>) => {
+    try {
+      await updatePlayer(id, data);
+      await refetchPlayers();
+      editModal.close();
+      setSelectedPlayer(null);
+    } catch (error) {
+      console.error('Erro ao atualizar jogador:', error);
+      throw error;
+    }
+  };
 
   // Verificar se é super admin
   if (user?.role !== 'super_admin') {
@@ -210,45 +256,72 @@ export default function AdminPage() {
               icon={Users}
             />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Papel</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Team</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {players.map((player) => (
-                  <TableRow key={player.id}>
-                    <TableCell className="font-medium">{player.name}</TableCell>
-                    <TableCell>{player.email}</TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                        player.role === 'super_admin' ? 'bg-yellow-100 text-yellow-800' :
-                        player.role === 'admin' ? 'bg-blue-100 text-blue-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {player.role === 'super_admin' && <Crown className="h-3 w-3" />}
-                        {player.role === 'admin' && <Shield className="h-3 w-3" />}
-                        {player.role === 'super_admin' ? 'Super Admin' :
-                         player.role === 'admin' ? 'Admin' : 'Jogador'}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                        player.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {player.status === 'active' ? 'Ativo' : 'Inativo'}
-                      </span>
-                    </TableCell>
-                    <TableCell>{player.team_name || 'N/A'}</TableCell>
+            <div className="rounded-lg border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Papel</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Team</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {players.map((player) => (
+                    <TableRow key={player.id}>
+                      <TableCell className="font-medium">{player.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{player.email || '-'}</TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                          player.role === 'super_admin' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                          player.role === 'admin' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                          'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
+                        }`}>
+                          {player.role === 'super_admin' && <Crown className="h-3 w-3" />}
+                          {player.role === 'admin' && <Shield className="h-3 w-3" />}
+                          {player.role === 'super_admin' ? 'Super Admin' :
+                           player.role === 'admin' ? 'Admin' : 'Jogador'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                          player.status === 'active'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                        }`}>
+                          {player.status === 'active' ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{player.team_name || 'N/A'}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditPlayer(player)}
+                            className="h-8 px-3 hover:bg-primary/10 hover:text-primary"
+                          >
+                            <Edit className="h-4 w-4 mr-1.5" />
+                            Editar
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeletePlayer(player)}
+                            className="h-8 px-3 hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1.5" />
+                            Excluir
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -335,6 +408,20 @@ export default function AdminPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de Edição */}
+      <EditPlayerModal
+        player={selectedPlayer}
+        isOpen={editModal.isOpen}
+        onClose={() => {
+          editModal.close();
+          setSelectedPlayer(null);
+        }}
+        onSave={handleSavePlayer}
+      />
+
+      {/* Modal de Confirmação */}
+      {ConfirmModalComponent}
     </div>
   );
 }
