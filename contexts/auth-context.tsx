@@ -38,39 +38,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSupabaseUser(session.user);
         setSupabaseSession(session);
 
-        // Fetch user data from our database
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select(`
-            id,
-            name,
-            email,
-            role,
-            tenant_id,
-            player_id,
-            is_active,
-            tenants (
-              name
-            )
-          `)
-          .eq('email', session.user.email)
-          .eq('is_active', true)
-          .single();
+        // Fetch user data from our database via API route (bypasses RLS)
+        try {
+          const response = await fetch('/api/auth/user', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          });
 
-        if (!userError && userData) {
-          const tenant = Array.isArray(userData.tenants) ? userData.tenants[0] : userData.tenants;
-          
-          const user: User = {
-            id: userData.id,
-            name: userData.name,
-            email: userData.email,
-            role: userData.role,
-            team_id: userData.tenant_id,
-            team_name: tenant?.name,
-            player_id: userData.player_id,
-          };
+          if (response.ok) {
+            const { user: userData } = await response.json();
+            const tenant = Array.isArray(userData.tenants) ? userData.tenants[0] : userData.tenants;
+            
+            const user: User = {
+              id: userData.id,
+              name: userData.name,
+              email: userData.email,
+              role: userData.role,
+              team_id: userData.tenant_id,
+              team_name: tenant?.name,
+              player_id: userData.player_id,
+            };
 
-          setUser(user);
+            setUser(user);
+          } else {
+            console.error('Failed to fetch user data:', await response.text());
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
         }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
