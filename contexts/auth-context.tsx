@@ -143,10 +143,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithGoogle = async () => {
     try {
+      // Get redirect parameter from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectParam = urlParams.get('redirect');
+      
+      // Validate and construct callback URL with redirect parameter
+      let callbackUrl = `${window.location.origin}/api/auth/callback`;
+      if (redirectParam && typeof redirectParam === 'string') {
+        if (redirectParam.startsWith('/') && !redirectParam.startsWith('//')) {
+          if (!redirectParam.includes('://') && !redirectParam.includes('//')) {
+            callbackUrl += `?next=${encodeURIComponent(redirectParam)}`;
+          }
+        }
+      }
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`,
+          redirectTo: callbackUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -164,10 +178,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithMicrosoft = async () => {
     try {
+      // Get redirect parameter from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectParam = urlParams.get('redirect');
+      
+      // Validate and construct callback URL with redirect parameter
+      let callbackUrl = `${window.location.origin}/api/auth/callback`;
+      if (redirectParam && typeof redirectParam === 'string') {
+        if (redirectParam.startsWith('/') && !redirectParam.startsWith('//')) {
+          if (!redirectParam.includes('://') && !redirectParam.includes('//')) {
+            callbackUrl += `?next=${encodeURIComponent(redirectParam)}`;
+          }
+        }
+      }
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'azure',
         options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`,
+          redirectTo: callbackUrl,
           scopes: 'email openid profile',
         },
       });
