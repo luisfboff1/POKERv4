@@ -96,7 +96,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // The onAuthStateChange listener will handle setting the user
         // Check if there's a redirect parameter in the URL
         const urlParams = new URLSearchParams(window.location.search);
-        const redirect = urlParams.get('redirect') || '/dashboard';
+        const redirectParam = urlParams.get('redirect');
+        // Validate that redirect is a relative path starting with / and not a full URL
+        const redirect = redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//') 
+          ? redirectParam 
+          : '/dashboard';
         router.push(redirect);
       }
     } catch (error) {
