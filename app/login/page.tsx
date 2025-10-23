@@ -22,7 +22,16 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [expiredWarning, setExpiredWarning] = useState(false);
 
-  const { login, loginWithGoogle, loginWithMicrosoft } = useAuth();
+  const { login, loginWithGoogle, loginWithMicrosoft, user, loading: authLoading } = useAuth();
+
+  // Redirect authenticated users away from login page
+  useEffect(() => {
+    if (!authLoading && user) {
+      const sp = new URLSearchParams(window.location.search);
+      const redirect = sp.get('redirect') || '/dashboard';
+      window.location.href = redirect;
+    }
+  }, [user, authLoading]);
 
   useEffect(() => {
     try {
