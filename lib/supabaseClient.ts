@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -13,21 +13,10 @@ if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('YOUR_SUPABASE')) {
 const dummyUrl = 'https://placeholder.supabase.co';
 const dummyKey = 'placeholder-key';
 
-export const supabase = createClient(
+// Use createBrowserClient from @supabase/ssr which automatically handles cookies
+export const supabase = createBrowserClient(
   supabaseUrl && !supabaseUrl.includes('YOUR_SUPABASE') ? supabaseUrl : dummyUrl,
-  supabaseAnonKey && !supabaseAnonKey.includes('YOUR_SUPABASE') ? supabaseAnonKey : dummyKey,
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      flowType: 'pkce',
-      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-    },
-    db: {
-      schema: 'public',
-    },
-  }
+  supabaseAnonKey && !supabaseAnonKey.includes('YOUR_SUPABASE') ? supabaseAnonKey : dummyKey
 );
 
 export const checkSupabaseConnection = async (): Promise<boolean> => {

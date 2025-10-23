@@ -1,4 +1,5 @@
-import { getToken, removeToken } from './auth';
+import { getToken } from './auth';
+import { supabase } from './supabaseClient';
 import type { ApiResponse, SessionPlayerData, TransferRecommendation } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
@@ -18,7 +19,7 @@ async function fetchAPI<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
-  const token = getToken();
+  const token = await getToken();
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -45,8 +46,8 @@ async function fetchAPI<T>(
 
       // Handle expired token (401 Unauthorized)
       if (response.status === 401) {
-        removeToken();
-        localStorage.removeItem('user');
+        // Sign out from Supabase
+        await supabase.auth.signOut();
 
         // Redirect to login page
         if (typeof window !== 'undefined') {

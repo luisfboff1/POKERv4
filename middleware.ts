@@ -1,24 +1,21 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
 
 // Create Supabase client for middleware
-function createMiddlewareClient(req: NextRequest) {
+function createMiddlewareClient(req: NextRequest, res: NextResponse) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-      storage: {
-        getItem: (key: string) => {
-          const cookie = req.cookies.get(key);
-          return cookie?.value ?? null;
-        },
-        setItem: () => {},
-        removeItem: () => {},
+  return createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return req.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          res.cookies.set(name, value, options);
+        });
       },
     },
   });
@@ -48,21 +45,26 @@ export async function middleware(req: NextRequest) {
 
   // Check authentication for protected routes
   try {
-    const supabase = createMiddlewareClient(req);
-    
+    const res = NextResponse.next();
+    const supabase = createMiddlewareClient(req, res);
+
     // Get session from cookie
     const { data: { session }, error } = await supabase.auth.getSession();
 
+    console.log(`[Middleware] ${pathname} - Session:`, !!session, 'Cookies:', req.cookies.getAll().map(c => c.name).join(', '));
+
     if (error || !session) {
-      // No valid session, redirect to login (simplified - no redirect parameter)
+      // No valid session, redirect to login
+      console.log(`[Middleware] Redirecting ${pathname} to /login - no session`);
       return NextResponse.redirect(new URL('/login', req.url));
     }
 
     // User is authenticated, allow access
-    return NextResponse.next();
+    console.log(`[Middleware] Allowing access to ${pathname}`);
+    return res;
   } catch (error) {
     console.error('Middleware error:', error);
-    // On error, redirect to login for safety (simplified - no redirect parameter)
+    // On error, redirect to login for safety
     return NextResponse.redirect(new URL('/login', req.url));
   }
 }

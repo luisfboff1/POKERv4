@@ -28,11 +28,13 @@ export default function LoginPage() {
 
   // Redirect authenticated users away from login page
   useEffect(() => {
+    console.log('Login page useEffect - authLoading:', authLoading, 'user:', user);
     if (!authLoading && user) {
-      // Simplified: always redirect to /dashboard
-      router.push('/dashboard');
+      console.log('Redirecting to dashboard...');
+      // Use window.location for immediate redirect
+      window.location.href = '/dashboard';
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading]);
 
   useEffect(() => {
     try {

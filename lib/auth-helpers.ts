@@ -105,6 +105,30 @@ export const requireAuth = async (req: NextRequest): Promise<AuthUser> => {
     throw new Error('Token de autenticação necessário');
   }
 
+  // Try to validate as Supabase token first (primary auth method)
+  try {
+    const { data: { user: supabaseUser }, error: supabaseError } = await supabaseServer.auth.getUser(token);
+
+    if (!supabaseError && supabaseUser) {
+      // Token is a valid Supabase token - fetch user from database
+      const userWithTenant = await fetchUserByEmail(supabaseUser.email!);
+
+      if (!userWithTenant) {
+        throw new Error('Usuário não encontrado ou inativo');
+      }
+
+      if (userWithTenant.tenant_status !== 'active') {
+        throw new Error('Tenant inativo ou pendente de aprovação');
+      }
+
+      return userWithTenant;
+    }
+  } catch (supabaseAuthError) {
+    // If Supabase validation fails, try custom JWT (fallback for legacy tokens)
+    console.log('Supabase auth failed, trying custom JWT validation');
+  }
+
+  // Fallback: Try to validate as custom JWT (for backward compatibility)
   const payload = await validateToken(token);
 
   if (!payload) {
@@ -199,6 +223,56 @@ const fetchUserWithTenant = async (userId: number): Promise<AuthUser | null> => 
     };
   } catch (error) {
     console.error('Error fetching user with tenant:', error);
+    return null;
+  }
+};
+
+const fetchUserByEmail = async (email: string): Promise<AuthUser | null> => {
+  try {
+    const { data: user, error: userError } = await supabaseServer
+      .from('users')
+      .select(`
+        id,
+        tenant_id,
+        name,
+        email,
+        role,
+        is_active,
+        player_id,
+        tenants (
+          name,
+          status,
+          plan,
+          max_sessions_per_month,
+          max_users
+        )
+      `)
+      .eq('email', email)
+      .eq('is_active', true)
+      .single();
+
+    if (userError || !user) {
+      return null;
+    }
+
+    const tenant = Array.isArray(user.tenants) ? user.tenants[0] : user.tenants;
+
+    return {
+      id: user.id,
+      tenant_id: user.tenant_id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      is_active: user.is_active,
+      tenant_name: tenant?.name || '',
+      tenant_status: tenant?.status || '',
+      tenant_plan: tenant?.plan || 'basic',
+      max_sessions_per_month: tenant?.max_sessions_per_month,
+      max_users: tenant?.max_users,
+      player_id: user.player_id,
+    };
+  } catch (error) {
+    console.error('Error fetching user by email:', error);
     return null;
   }
 };

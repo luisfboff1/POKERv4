@@ -32,13 +32,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Listen to auth state changes
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event);
+      console.log('Auth state changed:', event, 'Session:', !!session);
 
       if (event === 'SIGNED_IN' && session) {
         setSupabaseUser(session.user);
         setSupabaseSession(session);
 
-        // Fetch user data from our database via API route (bypasses RLS)
+        // Fetch user data from our database via API route
         try {
           const response = await fetch('/api/auth/user', {
             method: 'GET',
@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (response.ok) {
             const { user: userData } = await response.json();
             const tenant = Array.isArray(userData.tenants) ? userData.tenants[0] : userData.tenants;
-            
+
             const user: User = {
               id: userData.id,
               name: userData.name,
@@ -63,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             };
 
             setUser(user);
+            console.log('User data loaded:', user);
           } else {
             console.error('Failed to fetch user data:', await response.text());
           }
@@ -84,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (credentials: LoginCredentials) => {
     try {
       setLoading(true);
-      
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password,
@@ -92,27 +93,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
-      if (data.session && data.user) {
-        // Wait to ensure cookies are fully set before redirecting
-        // This prevents race condition with middleware
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // Verify session is readable multiple times to ensure cookies are set
-        let verifiedSession = null;
-        for (let i = 0; i < 3; i++) {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            verifiedSession = session;
-            break;
-          }
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-        if (verifiedSession) {
-          // The onAuthStateChange listener will handle setting the user
-          // Simplified: always redirect to /dashboard
-          router.replace('/dashboard');
-        }
+      // The onAuthStateChange listener will handle setting the user and redirecting
+      // Just wait a bit to ensure the auth state has propagated
+      if (data.session) {
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     } catch (error) {
       console.error('Error during login:', error);
