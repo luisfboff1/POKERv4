@@ -15,7 +15,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate email format
+    // Validate email format (with length check to prevent ReDoS)
+    if (email.length > 255) {
+      return NextResponse.json(
+        { success: false, message: 'Email too long' },
+        { status: 400 }
+      );
+    }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
