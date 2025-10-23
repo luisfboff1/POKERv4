@@ -81,7 +81,7 @@ export const api = {
       }),
 
     register: (data: { name: string; email: string; password: string; company: string; phone: string; plan?: string }) =>
-      fetchAPI('/register.php', {
+      fetchAPI('/auth/register', {
         method: 'POST',
         body: JSON.stringify(data),
       }),

@@ -28,8 +28,8 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/register', '/forgot-password', '/accept-invite', '/api/auth/callback'];
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+  const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/accept-invite', '/api/auth/callback'];
+  const isPublicRoute = publicRoutes.some(route => pathname === route || (route !== '/' && pathname.startsWith(route)));
 
   // Allow API routes (except those requiring auth)
   if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/callback')) {
@@ -37,7 +37,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // Allow public assets and static files
-  if (pathname.startsWith('/_next') || pathname.startsWith('/icon.svg') || pathname === '/') {
+  if (pathname.startsWith('/_next') || pathname.startsWith('/icon.svg')) {
     return NextResponse.next();
   }
 
