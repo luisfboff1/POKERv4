@@ -93,15 +93,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       if (data.session && data.user) {
-        // The onAuthStateChange listener will handle setting the user
-        // Check if there's a redirect parameter in the URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const redirectParam = urlParams.get('redirect');
-        // Validate that redirect is a relative path starting with / and not a full URL
-        const redirect = redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//') 
-          ? redirectParam 
-          : '/dashboard';
-        router.push(redirect);
+        // Wait a bit to ensure cookies are fully set before redirecting
+        // This prevents race condition with middleware
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Verify session is readable
+        const { data: { session: verifiedSession } } = await supabase.auth.getSession();
+        
+        if (verifiedSession) {
+          // The onAuthStateChange listener will handle setting the user
+          // Check if there's a redirect parameter in the URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirectParam = urlParams.get('redirect');
+          // Validate that redirect is a relative path starting with / and not a full URL
+          const redirect = redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//') 
+            ? redirectParam 
+            : '/dashboard';
+          
+          // Use window.location for hard navigation to ensure middleware sees the session
+          window.location.href = redirect;
+        }
       }
     } catch (error) {
       console.error('Error during login:', error);
