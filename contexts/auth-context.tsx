@@ -1,16 +1,19 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { getToken, saveToken, removeToken } from '@/lib/auth';
-import { api } from '@/lib/api';
+import { supabase } from '@/lib/supabaseClient';
+import { useAuthStore } from '@/stores/authStore';
 import type { User, LoginCredentials } from '@/lib/types';
+import type { AuthError } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
-  logout: () => void;
+  loginWithGoogle: () => Promise<void>;
+  loginWithMicrosoft: () => Promise<void>;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
   hasRole: (role: string | string[]) => boolean;
 }
@@ -18,59 +21,139 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { user, loading, initialize, setUser, setSupabaseUser, setSupabaseSession, setLoading, signOut } = useAuthStore();
 
-  // Carregar usuário do localStorage ao montar
+  // Initialize auth on mount
   useEffect(() => {
-    const loadUser = () => {
-      const token = getToken();
-      const savedUser = localStorage.getItem('user');
-      
-      if (token && savedUser) {
-        try {
-          setUser(JSON.parse(savedUser));
-        } catch (e) {
-          console.error('Erro ao carregar usuário:', e);
-          removeToken();
-          localStorage.removeItem('user');
+    initialize();
+  }, [initialize]);
+
+  // Listen to auth state changes
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+
+      if (event === 'SIGNED_IN' && session) {
+        setSupabaseUser(session.user);
+        setSupabaseSession(session);
+
+        // Fetch user data from our database
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select(`
+            id,
+            name,
+            email,
+            role,
+            tenant_id,
+            player_id,
+            is_active,
+            tenants (
+              name
+            )
+          `)
+          .eq('email', session.user.email)
+          .eq('is_active', true)
+          .single();
+
+        if (!userError && userData) {
+          const tenant = Array.isArray(userData.tenants) ? userData.tenants[0] : userData.tenants;
+          
+          const user: User = {
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
+            role: userData.role,
+            team_id: userData.tenant_id,
+            team_name: tenant?.name,
+            player_id: userData.player_id,
+          };
+
+          setUser(user);
         }
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setSupabaseUser(null);
+        setSupabaseSession(null);
       }
-      setLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
     };
-    loadUser();
-  }, []);
+  }, [setUser, setSupabaseUser, setSupabaseSession]);
 
   const login = async (credentials: LoginCredentials) => {
     try {
-      const response = await api.auth.login(credentials.email, credentials.password);
+      setLoading(true);
       
-      if (response.data) {
-        const { token, user } = response.data as { token: string; user: User };
-        saveToken(token);
-        localStorage.setItem('user', JSON.stringify(user));
-        setUser(user);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password,
+      });
+
+      if (error) throw error;
+
+      if (data.session && data.user) {
+        // The onAuthStateChange listener will handle setting the user
         router.push('/dashboard');
-      } else {
-        throw new Error('Erro ao fazer login');
       }
     } catch (error) {
-      console.error('Erro no login:', error);
-      throw error;
+      console.error('Error during login:', error);
+      const authError = error as AuthError;
+      throw new Error(authError.message || 'Erro ao fazer login');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginWithGoogle = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/api/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error during Google login:', error);
+      const authError = error as AuthError;
+      throw new Error(authError.message || 'Erro ao fazer login com Google');
+    }
+  };
+
+  const loginWithMicrosoft = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'azure',
+        options: {
+          redirectTo: `${window.location.origin}/api/auth/callback`,
+          scopes: 'email openid profile',
+        },
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error during Microsoft login:', error);
+      const authError = error as AuthError;
+      throw new Error(authError.message || 'Erro ao fazer login com Microsoft');
     }
   };
 
   const logout = async () => {
     try {
-      await api.auth.logout();
+      await signOut();
+      router.push('/login');
     } catch (error) {
       console.error('Error during logout:', error);
-    } finally {
-      removeToken();
-      localStorage.removeItem('user');
-      setUser(null);
-      router.push('/login');
+      throw error;
     }
   };
 
@@ -86,6 +169,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         loading,
         login,
+        loginWithGoogle,
+        loginWithMicrosoft,
         logout,
         isAuthenticated: !!user,
         hasRole,

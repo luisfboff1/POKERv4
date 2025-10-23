@@ -103,6 +103,7 @@ export async function POST(req: NextRequest) {
 
     // Generate invite token
     const token = generateInviteToken();
+    const tokenHash = await hashToken(token);
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // Expires in 7 days
 
@@ -139,7 +140,7 @@ export async function POST(req: NextRequest) {
         email: inviteEmail,
         name: inviteName || null,
         role: inviteRole,
-        token,
+        token: tokenHash,
         status: 'pending',
         expires_at: expiresAt.toISOString(),
         invited_by: user.id,
@@ -161,6 +162,7 @@ export async function POST(req: NextRequest) {
         invite_id: invite.id,
         email: invite.email,
         status: invite.status,
+        token, // Return unhashed token to send in email
         message: 'Convite enviado com sucesso',
       },
     });
@@ -182,4 +184,16 @@ function generateInviteToken(): string {
   return Array.from({ length: 32 }, () =>
     Math.floor(Math.random() * 16).toString(16)
   ).join('');
+}
+
+/**
+ * Hash token for secure storage
+ */
+async function hashToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
 }
