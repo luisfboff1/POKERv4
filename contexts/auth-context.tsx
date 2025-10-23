@@ -93,15 +93,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       if (data.session && data.user) {
-        // The onAuthStateChange listener will handle setting the user
-        // Check if there's a redirect parameter in the URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const redirectParam = urlParams.get('redirect');
-        // Validate that redirect is a relative path starting with / and not a full URL
-        const redirect = redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//') 
-          ? redirectParam 
-          : '/dashboard';
-        router.push(redirect);
+        // Wait to ensure cookies are fully set before redirecting
+        // This prevents race condition with middleware
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Verify session is readable multiple times to ensure cookies are set
+        let verifiedSession = null;
+        for (let i = 0; i < 3; i++) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            verifiedSession = session;
+            break;
+          }
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        if (verifiedSession) {
+          // The onAuthStateChange listener will handle setting the user
+          // Check if there's a redirect parameter in the URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirectParam = urlParams.get('redirect');
+          
+          // Validate that redirect is a relative path starting with / and not a full URL
+          // Only allow paths, not protocol-relative URLs or external domains
+          let redirect = '/dashboard';
+          if (redirectParam && typeof redirectParam === 'string') {
+            // Must start with / and not with //
+            if (redirectParam.startsWith('/') && !redirectParam.startsWith('//')) {
+              // Additional check: ensure no protocol or domain
+              if (!redirectParam.includes('://') && !redirectParam.includes('//')) {
+                redirect = redirectParam;
+              }
+            }
+          }
+          
+          // Use router.replace for seamless navigation
+          // replace() doesn't add to history, preventing back button issues
+          router.replace(redirect);
+        }
       }
     } catch (error) {
       console.error('Error during login:', error);
@@ -114,10 +143,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithGoogle = async () => {
     try {
+      // Get redirect parameter from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectParam = urlParams.get('redirect');
+      
+      // Validate and construct callback URL with redirect parameter
+      let callbackUrl = `${window.location.origin}/api/auth/callback`;
+      if (redirectParam && typeof redirectParam === 'string') {
+        if (redirectParam.startsWith('/') && !redirectParam.startsWith('//')) {
+          if (!redirectParam.includes('://') && !redirectParam.includes('//')) {
+            callbackUrl += `?next=${encodeURIComponent(redirectParam)}`;
+          }
+        }
+      }
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`,
+          redirectTo: callbackUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -135,10 +178,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithMicrosoft = async () => {
     try {
+      // Get redirect parameter from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectParam = urlParams.get('redirect');
+      
+      // Validate and construct callback URL with redirect parameter
+      let callbackUrl = `${window.location.origin}/api/auth/callback`;
+      if (redirectParam && typeof redirectParam === 'string') {
+        if (redirectParam.startsWith('/') && !redirectParam.startsWith('//')) {
+          if (!redirectParam.includes('://') && !redirectParam.includes('//')) {
+            callbackUrl += `?next=${encodeURIComponent(redirectParam)}`;
+          }
+        }
+      }
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'azure',
         options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`,
+          redirectTo: callbackUrl,
           scopes: 'email openid profile',
         },
       });
