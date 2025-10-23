@@ -3,6 +3,18 @@ import { hash } from 'bcryptjs';
 import { supabaseServer } from '@/lib/supabaseServer';
 
 /**
+ * Hash token for secure storage
+ */
+async function hashToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
+/**
  * POST /api/invites/accept - Accept invitation and create account
  */
 export async function POST(req: NextRequest) {
@@ -17,11 +29,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Find invite by token
+    // Hash the provided token to match against stored hash
+    const tokenHash = await hashToken(token);
+
+    // Find invite by hashed token
     const { data: invite, error: inviteError } = await supabaseServer
       .from('user_invites')
       .select('*')
-      .eq('token', token)
+      .eq('token', tokenHash)
       .eq('status', 'pending')
       .maybeSingle();
 
