@@ -93,12 +93,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       if (data.session && data.user) {
-        // Wait a bit to ensure cookies are fully set before redirecting
+        // Wait to ensure cookies are fully set before redirecting
         // This prevents race condition with middleware
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 300));
         
-        // Verify session is readable
-        const { data: { session: verifiedSession } } = await supabase.auth.getSession();
+        // Verify session is readable multiple times to ensure cookies are set
+        let verifiedSession = null;
+        for (let i = 0; i < 3; i++) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            verifiedSession = session;
+            break;
+          }
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
         
         if (verifiedSession) {
           // The onAuthStateChange listener will handle setting the user
@@ -119,10 +127,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           }
           
-          // Use router.push with full reload to ensure middleware sees the session
-          router.push(redirect);
-          // Force a full page reload to ensure middleware checks the session
-          router.refresh();
+          // Use router.replace for seamless navigation
+          // replace() doesn't add to history, preventing back button issues
+          router.replace(redirect);
         }
       }
     } catch (error) {
