@@ -29,13 +29,8 @@ export default function LoginPage() {
   // Redirect authenticated users away from login page
   useEffect(() => {
     if (!authLoading && user) {
-      const sp = new URLSearchParams(window.location.search);
-      const redirectParam = sp.get('redirect');
-      // Validate that redirect is a relative path starting with / and not a full URL
-      const redirect = redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//') 
-        ? redirectParam 
-        : '/dashboard';
-      router.push(redirect);
+      // Simplified: always redirect to /dashboard
+      router.push('/dashboard');
     }
   }, [user, authLoading, router]);
 

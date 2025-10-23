@@ -54,20 +54,16 @@ export async function middleware(req: NextRequest) {
     const { data: { session }, error } = await supabase.auth.getSession();
 
     if (error || !session) {
-      // No valid session, redirect to login
-      const redirectUrl = new URL('/login', req.url);
-      redirectUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(redirectUrl);
+      // No valid session, redirect to login (simplified - no redirect parameter)
+      return NextResponse.redirect(new URL('/login', req.url));
     }
 
     // User is authenticated, allow access
     return NextResponse.next();
   } catch (error) {
     console.error('Middleware error:', error);
-    // On error, redirect to login for safety
-    const redirectUrl = new URL('/login', req.url);
-    redirectUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(redirectUrl);
+    // On error, redirect to login for safety (simplified - no redirect parameter)
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 }
 
