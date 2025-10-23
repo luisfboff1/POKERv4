@@ -12,6 +12,14 @@ function createMiddlewareClient(req: NextRequest) {
       persistSession: false,
       autoRefreshToken: false,
       detectSessionInUrl: false,
+      storage: {
+        getItem: (key: string) => {
+          const cookie = req.cookies.get(key);
+          return cookie?.value ?? null;
+        },
+        setItem: () => {},
+        removeItem: () => {},
+      },
     },
   });
 }
