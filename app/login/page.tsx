@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import { trackPokerEvent } from '@/lib/analytics';
 import { Target, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -22,7 +24,20 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [expiredWarning, setExpiredWarning] = useState(false);
 
-  const { login, loginWithGoogle, loginWithMicrosoft } = useAuth();
+  const { login, loginWithGoogle, loginWithMicrosoft, user, loading: authLoading } = useAuth();
+
+  // Redirect authenticated users away from login page
+  useEffect(() => {
+    if (!authLoading && user) {
+      const sp = new URLSearchParams(window.location.search);
+      const redirectParam = sp.get('redirect');
+      // Validate that redirect is a relative path starting with / and not a full URL
+      const redirect = redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//') 
+        ? redirectParam 
+        : '/dashboard';
+      router.push(redirect);
+    }
+  }, [user, authLoading, router]);
 
   useEffect(() => {
     try {
