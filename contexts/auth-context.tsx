@@ -105,13 +105,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Check if there's a redirect parameter in the URL
           const urlParams = new URLSearchParams(window.location.search);
           const redirectParam = urlParams.get('redirect');
-          // Validate that redirect is a relative path starting with / and not a full URL
-          const redirect = redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//') 
-            ? redirectParam 
-            : '/dashboard';
           
-          // Use window.location for hard navigation to ensure middleware sees the session
-          window.location.href = redirect;
+          // Validate that redirect is a relative path starting with / and not a full URL
+          // Only allow paths, not protocol-relative URLs or external domains
+          let redirect = '/dashboard';
+          if (redirectParam && typeof redirectParam === 'string') {
+            // Must start with / and not with //
+            if (redirectParam.startsWith('/') && !redirectParam.startsWith('//')) {
+              // Additional check: ensure no protocol or domain
+              if (!redirectParam.includes('://') && !redirectParam.includes('//')) {
+                redirect = redirectParam;
+              }
+            }
+          }
+          
+          // Use router.push with full reload to ensure middleware sees the session
+          router.push(redirect);
+          // Force a full page reload to ensure middleware checks the session
+          router.refresh();
         }
       }
     } catch (error) {
