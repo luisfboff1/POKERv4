@@ -1,28 +1,70 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
-// Create Supabase client for middleware
-function createMiddlewareClient(req: NextRequest, res: NextResponse) {
+// Create Supabase client for middleware with optimized cookie handling
+function createMiddlewareClient(request: NextRequest) {
+  // Create a response to store cookies
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
-      getAll() {
-        return req.cookies.getAll();
+      get(name: string) {
+        return request.cookies.get(name)?.value;
       },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          res.cookies.set(name, value, options);
+      set(name: string, value: string, options: CookieOptions) {
+        // Update request cookies for the current request
+        request.cookies.set({
+          name,
+          value,
+          ...options,
+        });
+        // Update response cookies for subsequent requests
+        response = NextResponse.next({
+          request: {
+            headers: request.headers,
+          },
+        });
+        response.cookies.set({
+          name,
+          value,
+          ...options,
+        });
+      },
+      remove(name: string, options: CookieOptions) {
+        // Remove from request cookies
+        request.cookies.set({
+          name,
+          value: '',
+          ...options,
+        });
+        // Remove from response cookies
+        response = NextResponse.next({
+          request: {
+            headers: request.headers,
+          },
+        });
+        response.cookies.set({
+          name,
+          value: '',
+          ...options,
         });
       },
     },
   });
+
+  return { supabase, response };
 }
 
-export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
   // Public routes that don't require authentication
   const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/accept-invite'];
@@ -45,29 +87,37 @@ export async function middleware(req: NextRequest) {
 
   // Check authentication for protected routes
   try {
-    const res = NextResponse.next();
-    const supabase = createMiddlewareClient(req, res);
+    const { supabase, response } = createMiddlewareClient(request);
 
-    // Get session from cookie
+    // Get session from cookie - this will automatically refresh if needed
     const { data: { session }, error } = await supabase.auth.getSession();
 
-    console.log(`[Middleware] ${pathname} - Session:`, !!session, 'Cookies:', req.cookies.getAll().map(c => c.name).join(', '));
-
-    if (error || !session) {
-      // No valid session, redirect to login
-      console.log(`[Middleware] Redirecting ${pathname} to /login - no session`);
-      return NextResponse.redirect(new URL('/login', req.url));
+    if (error) {
+      console.error('[Middleware] Auth error:', error.message);
+      return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // User is authenticated, allow access
-    console.log(`[Middleware] Allowing access to ${pathname}`);
-    return res;
+    if (!session) {
+      // No valid session, redirect to login
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Middleware] No session for ${pathname}, redirecting to /login`);
+      }
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    // User is authenticated, return response with updated cookies
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Middleware] Authenticated access to ${pathname}`);
+    }
+    return response;
   } catch (error) {
-    console.error('Middleware error:', error);
+    console.error('[Middleware] Unexpected error:', error);
     // On error, redirect to login for safety
-    return NextResponse.redirect(new URL('/login', req.url));
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 }
+
+// Note: Middleware automatically runs on Edge Runtime for optimal performance
 
 export const config = {
   matcher: [

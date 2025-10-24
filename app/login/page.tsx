@@ -14,7 +14,7 @@ import { trackPokerEvent } from '@/lib/analytics';
 import { Target, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
-  const router = useRouter();
+  const _router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
