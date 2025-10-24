@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { compare } from 'bcryptjs';
 import { supabaseServer, createAuditLog } from '@/lib/supabaseServer';
-import { generateToken, saveUserSession } from '@/lib/auth-helpers';
 
 interface LoginRequestBody {
   email: string;
@@ -29,6 +27,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Use Supabase Auth to sign in
+    const { data: authData, error: authError } = await supabaseServer.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (authError || !authData.user || !authData.session) {
+      await createAuditLog({
+        action: 'failed_login',
+        new_data: { email, reason: authError?.message || 'authentication_failed' },
+        ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
+        user_agent: req.headers.get('user-agent') || undefined,
+      });
+
+      return NextResponse.json(
+        { success: false, error: 'Credenciais inválidas' },
+        { status: 401 }
+      );
+    }
+
+    // Fetch user from database with tenant info
     const { data: user, error: userError } = await supabaseServer
       .from('users')
       .select(`
@@ -36,10 +55,8 @@ export async function POST(req: NextRequest) {
         tenant_id,
         name,
         email,
-        password_hash,
         role,
         is_active,
-        last_login,
         player_id,
         tenants (
           name,
@@ -54,13 +71,13 @@ export async function POST(req: NextRequest) {
     if (userError || !user) {
       await createAuditLog({
         action: 'failed_login',
-        new_data: { email, reason: 'user_not_found' },
+        new_data: { email, reason: 'user_not_found_in_database' },
         ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
         user_agent: req.headers.get('user-agent') || undefined,
       });
 
       return NextResponse.json(
-        { success: false, error: 'Credenciais inválidas' },
+        { success: false, error: 'Usuário não encontrado' },
         { status: 401 }
       );
     }
@@ -74,53 +91,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const isPasswordValid = await compare(password, user.password_hash);
-
-    if (!isPasswordValid) {
-      await createAuditLog({
-        tenant_id: user.tenant_id,
-        user_id: user.id,
-        action: 'failed_login',
-        new_data: { email, reason: 'wrong_password' },
-        ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
-        user_agent: req.headers.get('user-agent') || undefined,
-      });
-
-      return NextResponse.json(
-        { success: false, error: 'Credenciais inválidas' },
-        { status: 401 }
-      );
-    }
-
+    // Update last login
     await supabaseServer
       .from('users')
       .update({ last_login: new Date().toISOString() })
       .eq('id', user.id);
 
-    const token = await generateToken({
-      id: user.id,
-      tenant_id: user.tenant_id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      tenant_name: tenant?.name,
-      tenant_plan: tenant?.plan,
-      player_id: user.player_id,
-    });
-
-    const sessionId = await saveUserSession(
-      user.id,
-      user.tenant_id,
-      token,
-      req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
-      req.headers.get('user-agent') || undefined
-    );
-
     await createAuditLog({
       tenant_id: user.tenant_id,
       user_id: user.id,
       action: 'successful_login',
-      new_data: { session_id: sessionId },
+      new_data: { supabase_user_id: authData.user.id },
       ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
       user_agent: req.headers.get('user-agent') || undefined,
     });
@@ -129,7 +110,8 @@ export async function POST(req: NextRequest) {
       success: true,
       data: {
         message: 'Login realizado com sucesso',
-        token,
+        token: authData.session.access_token,
+        refresh_token: authData.session.refresh_token,
         user: {
           id: user.id,
           name: user.name,
@@ -140,7 +122,7 @@ export async function POST(req: NextRequest) {
           tenant_plan: tenant?.plan,
           player_id: user.player_id,
         },
-        expires_in: 24 * 60 * 60,
+        expires_in: authData.session.expires_in,
       },
     });
   } catch (error) {

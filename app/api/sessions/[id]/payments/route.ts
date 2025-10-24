@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth-helpers';
+import { requireAuth } from '@/lib/supabase-auth';
 import { supabaseServer, createAuditLog } from '@/lib/supabaseServer';
 import type { SessionPlayerData, TransferRecommendation } from '@/lib/types';
 

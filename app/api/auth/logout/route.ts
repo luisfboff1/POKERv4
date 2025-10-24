@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, invalidateSession, getTokenFromHeaders } from '@/lib/auth-helpers';
-import { createAuditLog } from '@/lib/supabaseServer';
+import { requireAuth, getTokenFromHeaders } from '@/lib/supabase-auth';
+import { createAuditLog, supabaseServer } from '@/lib/supabaseServer';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,7 +14,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const invalidated = await invalidateSession(token);
+    // Sign out from Supabase Auth (invalidates token on server)
+    await supabaseServer.auth.signOut();
 
     await createAuditLog({
       tenant_id: user.tenant_id,
@@ -28,7 +29,6 @@ export async function POST(req: NextRequest) {
       success: true,
       data: {
         message: 'Logout realizado com sucesso',
-        invalidated,
       },
     });
   } catch (error) {
