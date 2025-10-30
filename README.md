@@ -497,6 +497,29 @@ Total: 2 transferências (mínimo possível)
 - **Environment Variables**: Configuração segura
 - **TypeScript**: Validação em tempo de build
 
+### **Database Migrations (MANDATORY)**
+- **Supabase Migrations**: Versionamento de schema
+- **pg_dump**: Backup completo do banco
+- **Row Level Security**: Políticas aplicadas via migrations
+
+> **⚠️ REGRA CRÍTICA**: SEMPRE use migrations para mudanças no banco!
+> 
+> ```powershell
+> # 1. Criar migration
+> supabase migration new add_new_column
+> 
+> # 2. Editar SQL gerado em supabase/migrations/
+> # 3. Aplicar em produção
+> supabase db push --project-ref jhodhxvvhohygijqcxbo
+> 
+> # 4. Commitar no Git
+> git add supabase/migrations/ && git commit -m "feat: add column"
+> ```
+> 
+> **Nunca execute SQL direto no Dashboard para mudanças estruturais!**
+> 
+> 📖 **Guia Completo**: [`db/MIGRATION_WORKFLOW.md`](./db/MIGRATION_WORKFLOW.md)
+
 ## 📊 **Métricas do Sistema**
 
 ### **📈 Escala e Performance**
