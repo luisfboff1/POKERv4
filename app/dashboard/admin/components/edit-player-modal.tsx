@@ -18,7 +18,6 @@ interface EditPlayerModalProps {
 export function EditPlayerModal({ player, isOpen, onClose, onSave }: EditPlayerModalProps) {
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
     status: 'active' as 'active' | 'inactive'
   });
   const [saving, setSaving] = useState(false);
@@ -28,7 +27,6 @@ export function EditPlayerModal({ player, isOpen, onClose, onSave }: EditPlayerM
     if (player) {
       setFormData({
         name: player.name || '',
-        email: player.email || '',
         status: player.status || 'active'
       });
       setError('');
@@ -88,21 +86,6 @@ export function EditPlayerModal({ player, isOpen, onClose, onSave }: EditPlayerM
                 disabled={saving}
                 required
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="email@exemplo.com"
-                disabled={saving}
-              />
-              <p className="text-xs text-muted-foreground">
-                Email opcional - usado para notificações e login
-              </p>
             </div>
 
             <div className="space-y-2">
