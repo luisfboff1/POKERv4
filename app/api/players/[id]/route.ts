@@ -5,7 +5,6 @@ import { supabaseServer } from '@/lib/supabaseServer';
 interface UpdatePlayerBody {
   name?: string;
   nickname?: string;
-  email?: string;
   phone?: string;
   notes?: string;
   status?: 'active' | 'inactive';
@@ -50,7 +49,6 @@ export async function GET(
         id: player.id,
         name: player.name,
         nickname: player.nickname || '',
-        email: player.email || '',
         phone: player.phone || '',
         notes: player.notes || '',
         role: 'player',
@@ -121,7 +119,6 @@ export async function PUT(
 
     if (body.name !== undefined) updateData.name = body.name.trim();
     if (body.nickname !== undefined) updateData.nickname = body.nickname.trim() || null;
-    if (body.email !== undefined) updateData.email = body.email.trim() || null;
     if (body.phone !== undefined) updateData.phone = body.phone.trim() || null;
     if (body.notes !== undefined) updateData.notes = body.notes.trim() || null;
     if (body.status !== undefined) updateData.is_active = body.status === 'active';
@@ -144,7 +141,6 @@ export async function PUT(
         id: updatedPlayer.id,
         name: updatedPlayer.name,
         nickname: updatedPlayer.nickname || '',
-        email: updatedPlayer.email || '',
         phone: updatedPlayer.phone || '',
         notes: updatedPlayer.notes || '',
         role: 'player',
