@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getToken } from '@/lib/auth';
 import type { Player } from '@/lib/types';
 
 interface EditPlayerModalProps {
@@ -97,9 +98,18 @@ export function EditPlayerModal({ player, isOpen, onClose, onSave, onRefresh }: 
     setError('');
 
     try {
+      const token = await getToken();
+      
+      if (!token) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      }
+
       const response = await fetch(`/api/players/${player.id}/associate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           email: email,
           password: needsPassword ? emailData.password : undefined,
