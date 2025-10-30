@@ -23,7 +23,7 @@ export const supabaseServer = createClient(
       detectSessionInUrl: false,
     },
     db: {
-      schema: 'public',
+      schema: 'poker',
     },
   }
 );

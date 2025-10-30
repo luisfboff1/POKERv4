@@ -16,7 +16,12 @@ const dummyKey = 'placeholder-key';
 // Use createBrowserClient from @supabase/ssr which automatically handles cookies
 export const supabase = createBrowserClient(
   supabaseUrl && !supabaseUrl.includes('YOUR_SUPABASE') ? supabaseUrl : dummyUrl,
-  supabaseAnonKey && !supabaseAnonKey.includes('YOUR_SUPABASE') ? supabaseAnonKey : dummyKey
+  supabaseAnonKey && !supabaseAnonKey.includes('YOUR_SUPABASE') ? supabaseAnonKey : dummyKey,
+  {
+    db: {
+      schema: 'poker',
+    },
+  }
 );
 
 export const checkSupabaseConnection = async (): Promise<boolean> => {
