@@ -84,7 +84,10 @@ Ensure the poker schema is exposed in the API:
 1. Clear your browser cache and cookies
 2. Try logging in to the application
 3. Check browser console for any errors
-4. If you still see errors, check Supabase logs in Dashboard → Logs
+4. **Verify permissions** by running: `db/verify_poker_schema_permissions.sql`
+   - This script checks all permissions are correctly set
+   - All checks should pass with no errors
+5. If you still see errors, check Supabase logs in Dashboard → Logs
 
 ## What Each Permission Does
 
