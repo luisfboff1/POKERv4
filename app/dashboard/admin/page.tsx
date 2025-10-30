@@ -418,6 +418,7 @@ export default function AdminPage() {
           setSelectedPlayer(null);
         }}
         onSave={handleSavePlayer}
+        onRefresh={refetchPlayers}
       />
 
       {/* Modal de Confirmação */}
