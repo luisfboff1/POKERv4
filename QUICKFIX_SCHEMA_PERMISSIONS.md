@@ -9,7 +9,7 @@ Error fetching user: {
 ```
 
 ## Why It Happens
-Even though you've exposed the `poker` schema in Supabase Dashboard (✅ visible in your screenshot), PostgreSQL needs **explicit permission grants** for the database roles to access the schema.
+Even though you've exposed the `poker` schema in Supabase Dashboard (in Settings → API → Exposed schemas), PostgreSQL needs **explicit permission grants** for the database roles to access the schema. The API settings make the schema accessible to the API layer, but the database itself still enforces its own permission model.
 
 ## The Fix (3 Steps)
 
@@ -56,7 +56,7 @@ GRANT ALL ON ALL TABLES IN SCHEMA poker TO service_role;
 
 ### Check 1: Is poker in exposed schemas?
 Dashboard → Settings → API → Exposed schemas should include `poker`
-(Your screenshot shows this is ✅ already done)
+(This should show ✅ when properly configured)
 
 ### Check 2: Are tables in poker schema?
 ```sql
