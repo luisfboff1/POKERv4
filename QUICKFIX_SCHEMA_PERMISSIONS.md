@@ -34,6 +34,21 @@ All checks should pass without errors.
 - Try logging in
 - Should work! ✅
 
+## After Fixing Permissions
+
+If permissions are fixed but you still get **`User not found`** error:
+
+This means you can authenticate but don't have a record in `poker.users`. 
+
+**Quick Fix:**
+1. Open `db/create_user_for_auth.sql`
+2. Replace `seu-email@exemplo.com` with your login email (4 places)
+3. Replace placeholder names with your info
+4. Run in Supabase SQL Editor
+5. Try login again ✅
+
+📖 **See**: [`SYNC_AUTH_USERS.md`](./SYNC_AUTH_USERS.md) for full details.
+
 ## What the Fix Does
 
 ```sql
