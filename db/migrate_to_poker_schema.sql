@@ -185,22 +185,50 @@ GROUP BY t.id;
 -- The auth.jwt() function will still work as it's a Supabase built-in function
 
 -- 9. Grant necessary permissions on poker schema
-GRANT USAGE ON SCHEMA poker TO authenticated;
+-- Grant USAGE on schema to all roles (required to access schema objects)
 GRANT USAGE ON SCHEMA poker TO anon;
-GRANT ALL ON ALL TABLES IN SCHEMA poker TO authenticated;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA poker TO authenticated;
+GRANT USAGE ON SCHEMA poker TO authenticated;
+GRANT ALL ON SCHEMA poker TO service_role;
+
+-- Grant SELECT to anon role (used for unauthenticated API requests)
+GRANT SELECT ON ALL TABLES IN SCHEMA poker TO anon;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA poker TO anon;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA poker TO anon;
+
+-- Grant full CRUD to authenticated role (used after login)
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA poker TO authenticated;
+GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA poker TO authenticated;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA poker TO authenticated;
 
--- For service role (if needed)
-GRANT ALL ON SCHEMA poker TO service_role;
-GRANT ALL ON ALL TABLES IN SCHEMA poker TO service_role;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA poker TO service_role;
+-- Grant all privileges to service_role (used by server-side code, bypasses RLS)
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA poker TO service_role;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA poker TO service_role;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA poker TO service_role;
 
--- 10. Set default privileges for future tables in poker schema
-ALTER DEFAULT PRIVILEGES IN SCHEMA poker GRANT ALL ON TABLES TO authenticated;
-ALTER DEFAULT PRIVILEGES IN SCHEMA poker GRANT ALL ON SEQUENCES TO authenticated;
-ALTER DEFAULT PRIVILEGES IN SCHEMA poker GRANT EXECUTE ON FUNCTIONS TO authenticated;
+-- 10. Set default privileges for future objects in poker schema
+-- For anon role (read-only)
+ALTER DEFAULT PRIVILEGES IN SCHEMA poker 
+  GRANT SELECT ON TABLES TO anon;
+ALTER DEFAULT PRIVILEGES IN SCHEMA poker 
+  GRANT USAGE, SELECT ON SEQUENCES TO anon;
+ALTER DEFAULT PRIVILEGES IN SCHEMA poker 
+  GRANT EXECUTE ON FUNCTIONS TO anon;
+
+-- For authenticated role (full CRUD)
+ALTER DEFAULT PRIVILEGES IN SCHEMA poker 
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA poker 
+  GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA poker 
+  GRANT EXECUTE ON FUNCTIONS TO authenticated;
+
+-- For service_role (full access)
+ALTER DEFAULT PRIVILEGES IN SCHEMA poker 
+  GRANT ALL ON TABLES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA poker 
+  GRANT ALL ON SEQUENCES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA poker 
+  GRANT EXECUTE ON FUNCTIONS TO service_role;
 
 -- =============================================
 -- 11. CRITICAL: Configure PostgREST to expose poker schema

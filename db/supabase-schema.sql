@@ -12,9 +12,25 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- =============================================
+-- CREATE POKER SCHEMA
+-- =============================================
+-- Create the poker schema where all application tables will reside
+CREATE SCHEMA IF NOT EXISTS poker;
+
+-- Grant permissions on the poker schema to Supabase roles
+-- anon: Used for unauthenticated requests (read-only access)
+GRANT USAGE ON SCHEMA poker TO anon;
+
+-- authenticated: Used for logged-in users (full CRUD access)
+GRANT USAGE ON SCHEMA poker TO authenticated;
+
+-- service_role: Used by server-side code (full access, bypasses RLS)
+GRANT ALL ON SCHEMA poker TO service_role;
+
+-- =============================================
 -- 1. TENANTS TABLE (GRUPOS/CLIENTES)
 -- =============================================
-CREATE TABLE IF NOT EXISTS tenants (
+CREATE TABLE IF NOT EXISTS poker.tenants (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) NOT NULL UNIQUE,
@@ -53,7 +69,7 @@ CREATE POLICY "users_own_tenant" ON tenants
 -- =============================================
 -- 2. USERS TABLE (LOGIN/AUTENTICAÇÃO)
 -- =============================================
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS poker.users (
   id SERIAL PRIMARY KEY,
   tenant_id INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
@@ -76,30 +92,30 @@ CREATE INDEX IF NOT EXISTS idx_users_tenant_role ON users(tenant_id, role);
 
 -- RLS policies for users
 -- Users can only see users from their own tenant
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE poker.users ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "tenant_isolation_users_select" ON users
+CREATE POLICY "tenant_isolation_users_select" ON poker.users
   FOR SELECT
   USING (
     auth.jwt() ->> 'role' = 'super_admin' OR
     tenant_id = NULLIF(auth.jwt() -> 'app_metadata' ->> 'tenant_id', '')::integer
   );
 
-CREATE POLICY "tenant_isolation_users_insert" ON users
+CREATE POLICY "tenant_isolation_users_insert" ON poker.users
   FOR INSERT
   WITH CHECK (
     auth.jwt() ->> 'role' = 'super_admin' OR
     tenant_id = NULLIF(auth.jwt() -> 'app_metadata' ->> 'tenant_id', '')::integer
   );
 
-CREATE POLICY "tenant_isolation_users_update" ON users
+CREATE POLICY "tenant_isolation_users_update" ON poker.users
   FOR UPDATE
   USING (
     auth.jwt() ->> 'role' = 'super_admin' OR
     tenant_id = NULLIF(auth.jwt() -> 'app_metadata' ->> 'tenant_id', '')::integer
   );
 
-CREATE POLICY "tenant_isolation_users_delete" ON users
+CREATE POLICY "tenant_isolation_users_delete" ON poker.users
   FOR DELETE
   USING (
     auth.jwt() ->> 'role' = 'super_admin' OR
