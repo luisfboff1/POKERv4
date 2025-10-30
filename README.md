@@ -2,6 +2,36 @@
 
 > **Sistema SaaS moderno** para gerenciamento de home games de poker com Supabase Auth, Next.js 15, multi-tenancy, analytics em tempo real e muito mais!
 
+## 🚨 IMPORTANTE: Configuração de Permissões do Schema
+
+**Se você está encontrando o erro `permission denied for schema poker`**, siga o guia de correção:
+
+📖 **Veja**: [`FIX_SCHEMA_PERMISSIONS.md`](./FIX_SCHEMA_PERMISSIONS.md) para instruções detalhadas.
+
+**Correção Rápida:**
+1. Execute `db/fix_poker_schema_permissions.sql` no Supabase SQL Editor
+2. Certifique-se de que `poker` está na lista de "Exposed schemas" no Dashboard do Supabase
+3. Limpe o cache do navegador e faça login novamente
+
+Este erro ocorre porque o PostgreSQL precisa de permissões explícitas para os roles do Supabase (`anon`, `authenticated`) acessarem o schema `poker`.
+
+## 🚨 IMPORTANTE: Sincronização de Usuários
+
+**Se você consegue fazer login mas recebe erro `User not found`**, você precisa sincronizar o usuário:
+
+📖 **Veja**: [`SYNC_AUTH_USERS.md`](./SYNC_AUTH_USERS.md) para instruções detalhadas.
+
+**Correção Rápida:**
+1. Abra `db/create_user_for_auth.sql`
+2. Substitua `seu-email@exemplo.com` pelo seu email (em 4 lugares)
+3. Substitua os outros valores placeholder com suas informações
+4. Execute o script no Supabase SQL Editor
+5. Faça login novamente ✅
+
+Este erro ocorre porque você tem um usuário no Supabase Auth mas não existe um registro correspondente na tabela `poker.users`.
+
+---
+
 ![Next.js](https://img.shields.io/badge/Next.js-15.x-black?logo=next.js)
 ![React](https://img.shields.io/badge/React-19.x-blue?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)
