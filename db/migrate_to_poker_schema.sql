@@ -203,11 +203,34 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA poker GRANT ALL ON SEQUENCES TO authenticated
 ALTER DEFAULT PRIVILEGES IN SCHEMA poker GRANT EXECUTE ON FUNCTIONS TO authenticated;
 
 -- =============================================
+-- 11. CRITICAL: Configure PostgREST to expose poker schema
+-- =============================================
+-- This is ESSENTIAL for Supabase API to work with the poker schema
+-- You MUST update the PostgREST configuration in Supabase Dashboard
+
+-- In Supabase Dashboard:
+-- 1. Go to Settings → API → API Settings
+-- 2. Find "Exposed schemas" configuration
+-- 3. Add 'poker' to the exposed schemas list (comma-separated)
+--    Example: public,poker,storage
+-- 4. Save changes and restart the API server if needed
+
+-- Alternatively, you can set the search path to include poker schema:
+-- This makes PostgREST look in poker schema when querying
+-- However, the recommended approach is to expose the schema explicitly
+
+-- =============================================
 -- MIGRATION COMPLETE
 -- =============================================
 -- Next steps:
 -- 1. Run this migration in Supabase SQL Editor
--- 2. Update application code to use schema 'poker' in Supabase client configurations
--- 3. Test all API endpoints and functionality
--- 4. Monitor for any errors in application logs
+-- 2. **CRITICAL**: Configure PostgREST to expose 'poker' schema (see step 11 above)
+-- 3. Update application code to use schema 'poker' in Supabase client configurations
+-- 4. Test all API endpoints and functionality
+-- 5. Monitor for any errors in application logs
+-- 
+-- IMPORTANT: If you get "Failed to fetch user data" or relation errors:
+-- - Verify poker schema is exposed in Supabase API settings
+-- - Check that all foreign key relationships are intact after migration
+-- - Test with direct SQL queries in Supabase SQL Editor
 -- =============================================

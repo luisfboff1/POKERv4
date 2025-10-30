@@ -80,7 +80,20 @@ Este script realiza:
    - Copie todo o conteúdo de `/db/migrate_to_poker_schema.sql`
    - Cole no editor e execute
 
-3. **Verificar a migração**
+3. **CRÍTICO: Configurar o PostgREST para expor o schema poker**
+   
+   **Este passo é ESSENCIAL para a API funcionar!**
+   
+   - Vá para Supabase Dashboard → Settings → API
+   - Procure por "Exposed schemas" ou "DB Schema" nas configurações de API
+   - Adicione `poker` à lista de schemas expostos (separados por vírgula)
+   - Exemplo: `public,poker,storage`
+   - Salve as alterações
+   - Aguarde alguns segundos para o PostgREST reiniciar
+   
+   **Sem este passo, você receberá erro "Failed to fetch user data" no login!**
+
+4. **Verificar a migração**
    ```sql
    -- Verificar se as tabelas estão no schema poker
    SELECT table_name 
@@ -95,7 +108,7 @@ Este script realiza:
    SELECT COUNT(*) FROM poker.sessions;
    ```
 
-4. **Verificar funções e triggers**
+5. **Verificar funções e triggers**
    ```sql
    -- Listar funções no schema poker
    SELECT routine_name 
@@ -108,7 +121,7 @@ Este script realiza:
    WHERE trigger_schema = 'poker';
    ```
 
-5. **Testar a aplicação**
+6. **Testar a aplicação**
    - Restart da aplicação
    - Testar login
    - Testar criação/listagem de sessões
@@ -200,6 +213,61 @@ export const supabaseServer = createClient(url, key, {
 4. **Ambiente de Desenvolvimento:**
    - Garantir que `.env.local` tem as variáveis corretas do Supabase
    - Executar a migração no ambiente de dev antes de prod
+
+## Troubleshooting
+
+### ❌ Erro: "Failed to fetch user data" no login
+
+**Causa:** O schema `poker` não está exposto no PostgREST.
+
+**Solução:**
+1. Vá para Supabase Dashboard → Settings → API
+2. Encontre "Exposed schemas" nas configurações
+3. Adicione `poker` à lista (ex: `public,poker,storage`)
+4. Salve e aguarde alguns segundos
+5. Tente fazer login novamente
+
+**Verificação:**
+```sql
+-- Teste se você consegue acessar a tabela via API
+SELECT * FROM poker.users LIMIT 1;
+```
+
+### ❌ Erro: Relação não encontrada ou foreign key error
+
+**Causa:** As foreign keys não foram preservadas na migração.
+
+**Solução:**
+```sql
+-- Verificar foreign keys
+SELECT 
+    tc.table_schema, 
+    tc.table_name, 
+    kcu.column_name,
+    ccu.table_schema AS foreign_table_schema,
+    ccu.table_name AS foreign_table_name,
+    ccu.column_name AS foreign_column_name 
+FROM information_schema.table_constraints AS tc 
+JOIN information_schema.key_column_usage AS kcu
+  ON tc.constraint_name = kcu.constraint_name
+  AND tc.table_schema = kcu.table_schema
+JOIN information_schema.constraint_column_usage AS ccu
+  ON ccu.constraint_name = tc.constraint_name
+WHERE tc.constraint_type = 'FOREIGN KEY' 
+  AND tc.table_schema = 'poker';
+```
+
+### ❌ Erro: Políticas RLS não funcionam
+
+**Causa:** As funções helper podem estar em um schema diferente.
+
+**Solução:**
+Verificar se as funções estão no schema poker:
+```sql
+SELECT routine_name, routine_schema 
+FROM information_schema.routines 
+WHERE routine_name IN ('get_user_tenant_id', 'user_has_role');
+```
 
 ## Suporte
 

@@ -118,6 +118,21 @@ FROM pg_policies
 WHERE schemaname = 'poker';
 ```
 
+### Passo 2: **CRÍTICO - Configurar PostgREST**
+
+**ESTE PASSO É ESSENCIAL! Sem ele, você terá erro "Failed to fetch user data"**
+
+1. Vá para Supabase Dashboard
+2. Settings → API → API Settings
+3. Procure "Exposed schemas" ou "DB Schema"
+4. Adicione `poker` à lista de schemas (separados por vírgula)
+   - Exemplo: `public,poker,storage`
+5. Salve as alterações
+6. Aguarde alguns segundos para o PostgREST reiniciar
+
+**Por que isso é necessário?**
+O PostgREST (que serve a API do Supabase) precisa saber quais schemas expor via API. Por padrão, apenas `public` está exposto. Sem adicionar `poker`, as queries falharão.
+
 ### Passo 3: Testar a aplicação
 1. Fazer login
 2. Criar/listar sessões
@@ -165,9 +180,43 @@ lib/
 ## Próximos Passos
 
 1. ✅ Código atualizado e testado
-2. ⏳ Executar migração no Supabase (via SQL Editor)
-3. ⏳ Testar aplicação em produção
-4. ⏳ Monitorar logs por 24-48h
+2. ✅ Script SQL de migração criado
+3. ⏳ Executar migração no Supabase (via SQL Editor)
+4. ⏳ **CRÍTICO: Configurar PostgREST para expor schema poker**
+5. ⏳ Testar aplicação em produção
+6. ⏳ Monitorar logs por 24-48h
+
+## Troubleshooting
+
+### ❌ Erro: "Failed to fetch user data" ao fazer login
+
+**Causa:** O schema `poker` não foi configurado no PostgREST.
+
+**Solução:**
+1. Vá para Supabase Dashboard → Settings → API
+2. Adicione `poker` aos "Exposed schemas"
+3. Formato: `public,poker,storage`
+4. Salve e aguarde reiniciar
+5. Tente login novamente
+
+**Como verificar:**
+```sql
+-- No Supabase SQL Editor
+SELECT * FROM poker.users LIMIT 1;
+```
+Se funciona no SQL Editor mas não na API, o problema é a configuração do PostgREST.
+
+### ❌ Queries funcionam mas relações falham
+
+**Problema:** Queries simples funcionam mas joins com `tenants (name)` falham.
+
+**Solução:** Verifique se TODAS as tabelas relacionadas estão no schema poker:
+```sql
+SELECT table_name FROM information_schema.tables 
+WHERE table_schema = 'poker' ORDER BY table_name;
+```
+
+Deve retornar todas as 8 tabelas.
 
 ## Conclusão
 
