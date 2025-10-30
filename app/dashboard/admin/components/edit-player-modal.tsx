@@ -64,7 +64,7 @@ export function EditPlayerModal({ player, isOpen, onClose, onSave, onRefresh }: 
 
     try {
       await onSave(player.id, formData);
-      // onSave will handle closing via parent component
+      // Parent component handles modal closing after successful save operation
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao salvar jogador');
     } finally {
