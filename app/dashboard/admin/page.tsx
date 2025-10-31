@@ -359,18 +359,6 @@ export default function AdminPage() {
         </Card>
       </div>
 
-      {/* Modal de Edição de Jogador */}
-      <EditPlayerModal
-        player={selectedPlayer}
-        isOpen={editPlayerModal.isOpen}
-        onClose={() => {
-          editPlayerModal.close();
-          setSelectedPlayer(null);
-        }}
-        onSave={handleSavePlayer}
-        onRefresh={refetchPlayers}
-      />
-
       {/* Modal de Edição de Role de Usuário */}
       <EditUserRoleModal
         user={selectedUser}

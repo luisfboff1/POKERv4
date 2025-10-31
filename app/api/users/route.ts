@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 
       // Get user_tenants for each user to show all groups they belong to
       const usersWithTenants = await Promise.all(
-        (users || []).map(async (u: any) => {
+        (users || []).map(async (u) => {
           const { data: userTenants } = await supabaseServer.rpc('get_user_tenants', {
             user_email: u.email
           });
@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
         );
       }
 
-      const formattedUsers = userTenants.map((ut: any) => ({
+      const formattedUsers = userTenants.map((ut) => ({
         id: ut.users.id,
         name: ut.users.name,
         email: ut.users.email,

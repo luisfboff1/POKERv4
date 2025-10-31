@@ -70,7 +70,7 @@ export async function GET(
       );
     }
 
-    const formattedConfirmations = (confirmations || []).map((c: any) => ({
+    const formattedConfirmations = (confirmations || []).map((c) => ({
       id: c.id,
       session_id: c.session_id,
       player_id: c.player_id,
