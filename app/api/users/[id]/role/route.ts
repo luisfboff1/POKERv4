@@ -47,7 +47,7 @@ export async function PATCH(
 
       // Update global user role
       const { error: updateError } = await supabaseServer
-        .from('poker.users')
+        .from('users')
         .update({
           role: role,
           updated_at: new Date().toISOString(),
@@ -66,13 +66,13 @@ export async function PATCH(
       if (role === 'super_admin' || role === 'admin') {
         // Get all user's tenants and update their role
         const { data: userTenants } = await supabaseServer
-          .from('poker.user_tenants')
+          .from('user_tenants')
           .select('id')
           .eq('user_id', userId);
 
         if (userTenants && userTenants.length > 0) {
           await supabaseServer
-            .from('poker.user_tenants')
+            .from('user_tenants')
             .update({ role: role === 'super_admin' ? 'admin' : role })
             .eq('user_id', userId);
         }
@@ -105,7 +105,7 @@ export async function PATCH(
 
       // Update user's role in this specific tenant
       const { error: updateError } = await supabaseServer
-        .from('poker.user_tenants')
+        .from('user_tenants')
         .update({
           role: role,
           updated_at: new Date().toISOString(),

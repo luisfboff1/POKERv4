@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
     // Get confirmations for the player
     const { data: confirmations, error } = await supabaseServer
-      .from('poker.session_confirmations')
+      .from('session_confirmations')
       .select(`
         *,
         sessions:poker.sessions!inner(
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
 
     // Verify the session belongs to user's tenant
     const { data: session, error: sessionError } = await supabaseServer
-      .from('poker.sessions')
+      .from('sessions')
       .select('team_id')
       .eq('id', session_id)
       .single();
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
 
     // Upsert confirmation
     const { data: confirmation, error: confirmError } = await supabaseServer
-      .from('poker.session_confirmations')
+      .from('session_confirmations')
       .upsert({
         session_id,
         player_id,

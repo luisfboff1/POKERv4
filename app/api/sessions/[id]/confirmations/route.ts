@@ -24,7 +24,7 @@ export async function GET(
 
     // Verify session belongs to user's tenant
     const { data: session, error: sessionError } = await supabaseServer
-      .from('poker.sessions')
+      .from('sessions')
       .select('id, tenant_id')
       .eq('id', sessionId)
       .single();
@@ -45,7 +45,7 @@ export async function GET(
 
     // Get confirmations first
     const { data: confirmations, error } = await supabaseServer
-      .from('poker.session_confirmations')
+      .from('session_confirmations')
       .select('*')
       .eq('session_id', sessionId)
       .order('created_at', { ascending: true });
@@ -72,7 +72,7 @@ export async function GET(
     const formattedConfirmations = await Promise.all(
       (confirmations || []).map(async (c: RawConfirmation) => {
         const { data: player } = await supabaseServer
-          .from('poker.players')
+          .from('players')
           .select('id, name, nickname')
           .eq('id', c.player_id)
           .single();
@@ -135,7 +135,7 @@ export async function POST(
 
     // Verify session belongs to user's tenant
     const { data: session, error: sessionError } = await supabaseServer
-      .from('poker.sessions')
+      .from('sessions')
       .select('id, tenant_id')
       .eq('id', sessionId)
       .single();
@@ -156,7 +156,7 @@ export async function POST(
 
     // Check if player belongs to tenant
     const { data: player, error: playerError } = await supabaseServer
-      .from('poker.players')
+      .from('players')
       .select('id, tenant_id')
       .eq('id', player_id)
       .single();
@@ -185,7 +185,7 @@ export async function POST(
     };
 
     const { data: confirmation, error: confirmError } = await supabaseServer
-      .from('poker.session_confirmations')
+      .from('session_confirmations')
       .upsert([confirmationData], {
         onConflict: 'session_id,player_id',
       })
@@ -253,7 +253,7 @@ export async function DELETE(
     }
 
     const { data: session, error: sessionError } = await supabaseServer
-      .from('poker.sessions')
+      .from('sessions')
       .select('id, tenant_id')
       .eq('id', sessionId)
       .single();
@@ -273,7 +273,7 @@ export async function DELETE(
     }
 
     const { error: deleteError } = await supabaseServer
-      .from('poker.session_confirmations')
+      .from('session_confirmations')
       .delete()
       .eq('session_id', sessionId)
       .eq('player_id', parseInt(playerId));

@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
 
     // Create the scheduled session
     const { data: session, error: sessionError } = await supabaseServer
-      .from('poker.sessions')
+      .from('sessions')
       .insert([
         {
           tenant_id: user.tenant_id,
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       }));
 
       const { error: confirmError } = await supabaseServer
-        .from('poker.session_confirmations')
+        .from('session_confirmations')
         .insert(confirmations);
 
       if (confirmError) {

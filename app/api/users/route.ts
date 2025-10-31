@@ -14,8 +14,8 @@ export async function GET(req: NextRequest) {
     // Super admin can see all users and players
     if (user.role === 'super_admin') {
       // Get all players first
-      const { data: players, error: playersError } = await supabaseServer
-        .from('poker.players')
+      const { data: players, error: playersError} = await supabaseServer
+        .from('players')
         .select('id, name, nickname, user_id, team_id')
         .order('name', { ascending: true });
 
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
       // Get all users
       const { data: users, error: usersError } = await supabaseServer
-        .from('poker.users')
+        .from('users')
         .select('id, name, email, role, is_active, current_tenant_id')
         .order('name', { ascending: true });
 
@@ -97,7 +97,7 @@ export async function GET(req: NextRequest) {
     if (user.role === 'admin') {
       // Get all players from this tenant
       const { data: players, error: playersError } = await supabaseServer
-        .from('poker.players')
+        .from('players')
         .select('id, name, nickname, user_id, team_id')
         .eq('team_id', user.tenant_id)
         .order('name', { ascending: true });
@@ -117,7 +117,7 @@ export async function GET(req: NextRequest) {
             let userData = null;
             if (player.user_id) {
               const { data, error: userError } = await supabaseServer
-                .from('poker.users')
+                .from('users')
                 .select('id, name, email, role, is_active')
                 .eq('id', player.user_id)
                 .single();
