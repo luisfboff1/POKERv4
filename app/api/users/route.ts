@@ -35,19 +35,36 @@ export async function GET(req: NextRequest) {
       // Get user_tenants for each user to show all groups they belong to
       const usersWithTenants = await Promise.all(
         (users || []).map(async (u) => {
-          const { data: userTenants } = await supabaseServer.rpc('get_user_tenants', {
-            user_email: u.email
-          });
+          try {
+            const { data: userTenants, error: rpcError } = await supabaseServer.rpc('get_user_tenants', {
+              user_email: u.email
+            });
 
-          return {
-            id: u.id,
-            name: u.name,
-            email: u.email,
-            role: u.role,
-            status: u.is_active ? 'active' : 'inactive',
-            team_id: u.current_tenant_id,
-            tenants: userTenants || [],
-          };
+            if (rpcError) {
+              console.error(`Error fetching tenants for user ${u.email}:`, rpcError);
+            }
+
+            return {
+              id: u.id,
+              name: u.name,
+              email: u.email,
+              role: u.role,
+              status: u.is_active ? 'active' : 'inactive',
+              team_id: u.current_tenant_id,
+              tenants: userTenants || [],
+            };
+          } catch (err) {
+            console.error(`Exception fetching tenants for user ${u.email}:`, err);
+            return {
+              id: u.id,
+              name: u.name,
+              email: u.email,
+              role: u.role,
+              status: u.is_active ? 'active' : 'inactive',
+              team_id: u.current_tenant_id,
+              tenants: [],
+            };
+          }
         })
       );
 
@@ -76,22 +93,40 @@ export async function GET(req: NextRequest) {
       // Fetch user details for each user_tenant
       const formattedUsers = await Promise.all(
         (userTenants || []).map(async (ut) => {
-          const { data: userData } = await supabaseServer
-            .from('poker.users')
-            .select('id, name, email, role, is_active')
-            .eq('id', ut.user_id)
-            .single();
+          try {
+            const { data: userData, error: userError } = await supabaseServer
+              .from('poker.users')
+              .select('id, name, email, role, is_active')
+              .eq('id', ut.user_id)
+              .single();
 
-          return {
-            id: userData?.id || ut.user_id,
-            name: userData?.name || 'Desconhecido',
-            email: userData?.email || '',
-            role: ut.role, // Role in this specific tenant
-            global_role: userData?.role, // Global role
-            status: userData?.is_active ? 'active' : 'inactive',
-            team_id: user.tenant_id,
-            tenants: [{ tenant_id: user.tenant_id, role: ut.role }],
-          };
+            if (userError) {
+              console.error(`Error fetching user details for user_id ${ut.user_id}:`, userError);
+            }
+
+            return {
+              id: userData?.id || ut.user_id,
+              name: userData?.name || 'Desconhecido',
+              email: userData?.email || '',
+              role: ut.role, // Role in this specific tenant
+              global_role: userData?.role, // Global role
+              status: userData?.is_active ? 'active' : 'inactive',
+              team_id: user.tenant_id,
+              tenants: [{ tenant_id: user.tenant_id, role: ut.role }],
+            };
+          } catch (err) {
+            console.error(`Exception fetching user details for user_id ${ut.user_id}:`, err);
+            return {
+              id: ut.user_id,
+              name: 'Desconhecido',
+              email: '',
+              role: ut.role,
+              global_role: undefined,
+              status: 'inactive',
+              team_id: user.tenant_id,
+              tenants: [{ tenant_id: user.tenant_id, role: ut.role }],
+            };
+          }
         })
       );
 
