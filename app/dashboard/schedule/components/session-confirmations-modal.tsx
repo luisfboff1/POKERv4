@@ -38,6 +38,7 @@ export function SessionConfirmationsModal({
     if (isOpen && session) {
       loadConfirmations();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, session?.id]);
 
   const loadConfirmations = async () => {

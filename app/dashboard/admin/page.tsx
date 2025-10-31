@@ -18,66 +18,37 @@ import {
   Crown,
   UserCheck,
   AlertTriangle,
-  Edit,
-  Trash2,
   Building2
 } from 'lucide-react';
-import { EditPlayerModal } from './components/edit-player-modal';
 import { EditUserRoleModal } from './components/edit-user-role-modal';
-import type { Player } from '@/lib/types';
+
+interface UserDisplay {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  global_role?: string;
+  status: string;
+  team_id?: number;
+  team_name?: string;
+  tenants?: Array<{ tenant_id: number; tenant_name?: string; role: string }>;
+}
 
 export default function AdminPage() {
   const { user } = useAuth();
   const { users, loading: usersLoading, refetch: refetchUsers, updateUserRole } = useUsers();
-  const { players, loading: playersLoading, refetch: refetchPlayers, updatePlayer, deletePlayer } = usePlayers();
+  const { players, refetch: refetchPlayers } = usePlayers();
   const { invites } = useInvites();
   const { sessions } = useSessions();
 
   // Modais
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
-  const editPlayerModal = useModal();
+  const [selectedUser, setSelectedUser] = useState<UserDisplay | null>(null);
   const editUserRoleModal = useModal();
-  const { confirm, ConfirmModalComponent } = useConfirmModal();
+  const { ConfirmModalComponent } = useConfirmModal();
 
-  const handleEditPlayer = (player: Player) => {
-    setSelectedPlayer(player);
-    editPlayerModal.open();
-  };
-
-  const handleEditUserRole = (user: any) => {
-    setSelectedUser(user);
+  const handleEditUserRole = (u: UserDisplay) => {
+    setSelectedUser(u);
     editUserRoleModal.open();
-  };
-
-  const handleDeletePlayer = (player: Player) => {
-    confirm({
-      title: 'Excluir jogador',
-      message: `Tem certeza que deseja excluir o jogador "${player.name}"? Esta ação não pode ser desfeita e removerá todos os dados associados.`,
-      confirmText: 'Excluir',
-      variant: 'destructive',
-      onConfirm: async () => {
-        try {
-          await deletePlayer(player.id);
-          await refetchPlayers();
-        } catch (error) {
-          console.error('Erro ao excluir jogador:', error);
-          alert('Erro ao excluir jogador. Tente novamente.');
-        }
-      }
-    });
-  };
-
-  const handleSavePlayer = async (id: number, data: Partial<Player>) => {
-    try {
-      await updatePlayer(id, data);
-      await refetchPlayers();
-      editPlayerModal.close();
-      setSelectedPlayer(null);
-    } catch (error) {
-      console.error('Erro ao atualizar jogador:', error);
-      throw error;
-    }
   };
 
   const handleSaveUserRole = async (userId: number, role: string, tenantId?: number) => {
@@ -125,7 +96,7 @@ export default function AdminPage() {
     totalPlayers: players.length,
     pendingInvites: invites.filter(i => i.status === 'pending').length,
     totalSessions: sessions.length,
-    activeAdmins: users.filter((u: any) => u.role === 'admin' || u.role === 'super_admin').length,
+    activeAdmins: (users as UserDisplay[]).filter((u) => u.role === 'admin' || u.role === 'super_admin').length,
   };
 
   return (
@@ -233,7 +204,7 @@ export default function AdminPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((u: any) => (
+                  {(users as UserDisplay[]).map((u) => (
                     <TableRow key={u.id}>
                       <TableCell className="font-medium">{u.name}</TableCell>
                       <TableCell className="text-muted-foreground">{u.email}</TableCell>
@@ -273,7 +244,7 @@ export default function AdminPage() {
                                 {u.tenants.length} {u.tenants.length === 1 ? 'grupo' : 'grupos'}
                                 {u.tenants.length <= 3 && (
                                   <span className="text-xs text-muted-foreground ml-1">
-                                    ({u.tenants.map((t: any) => t.tenant_name || `#${t.tenant_id}`).join(', ')})
+                                    ({u.tenants.map((t) => t.tenant_name || `#${t.tenant_id}`).join(', ')})
                                   </span>
                                 )}
                               </>

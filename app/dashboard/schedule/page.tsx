@@ -6,12 +6,10 @@ import { usePlayers } from '@/hooks/useApi';
 import { api } from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { LoadingState, EmptyState } from '@/components/ui/loading';
 import { useModal } from '@/components/ui/modal';
-import { Calendar, MapPin, Users, Clock, CheckCircle, XCircle, Plus } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, CheckCircle, Plus } from 'lucide-react';
 import { ScheduleSessionModal } from './components/schedule-session-modal';
 import { SessionConfirmationsModal } from './components/session-confirmations-modal';
 import type { Session, SessionConfirmation } from '@/lib/types';
@@ -106,7 +104,7 @@ export default function SchedulePage() {
       return { confirmed: 0, total: 0, pending: 0 };
     }
 
-    const confirmed = session.confirmations.filter((c: any) => c.confirmed).length;
+    const confirmed = session.confirmations.filter((c) => c.confirmed).length;
     const total = session.confirmations.length;
     const pending = total - confirmed;
 
