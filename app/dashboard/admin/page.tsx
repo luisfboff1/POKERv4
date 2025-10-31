@@ -37,7 +37,7 @@ interface UserDisplay {
 export default function AdminPage() {
   const { user } = useAuth();
   const { users, loading: usersLoading, refetch: refetchUsers, updateUserRole } = useUsers();
-  const { players, refetch: refetchPlayers } = usePlayers();
+  const { players } = usePlayers();
   const { invites } = useInvites();
   const { sessions } = useSessions();
 
