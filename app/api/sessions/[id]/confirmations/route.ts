@@ -43,22 +43,10 @@ export async function GET(
       );
     }
 
-    // Get confirmations with player information
+    // Get confirmations first
     const { data: confirmations, error } = await supabaseServer
       .from('poker.session_confirmations')
-      .select(`
-        id,
-        session_id,
-        player_id,
-        confirmed,
-        confirmed_at,
-        created_at,
-        players:poker.players!poker_session_confirmations_player_id_fkey(
-          id,
-          name,
-          nickname
-        )
-      `)
+      .select('*')
       .eq('session_id', sessionId)
       .order('created_at', { ascending: true });
 
@@ -70,16 +58,27 @@ export async function GET(
       );
     }
 
-    const formattedConfirmations = (confirmations || []).map((c) => ({
-      id: c.id,
-      session_id: c.session_id,
-      player_id: c.player_id,
-      player_name: c.players?.name || 'Desconhecido',
-      player_nickname: c.players?.nickname,
-      confirmed: c.confirmed,
-      confirmed_at: c.confirmed_at,
-      created_at: c.created_at,
-    }));
+    // Get player information for each confirmation
+    const formattedConfirmations = await Promise.all(
+      (confirmations || []).map(async (c: any) => {
+        const { data: player } = await supabaseServer
+          .from('poker.players')
+          .select('id, name, nickname')
+          .eq('id', c.player_id)
+          .single();
+
+        return {
+          id: c.id,
+          session_id: c.session_id,
+          player_id: c.player_id,
+          player_name: player?.name || 'Desconhecido',
+          player_nickname: player?.nickname,
+          confirmed: c.confirmed,
+          confirmed_at: c.confirmed_at,
+          created_at: c.created_at,
+        };
+      })
+    );
 
     return NextResponse.json({
       success: true,
