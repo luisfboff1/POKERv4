@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
         role,
         is_active,
         player_id,
-        tenants (
+        tenants!users_tenant_id_fkey (
           name,
           status,
           plan

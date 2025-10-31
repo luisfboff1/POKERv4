@@ -38,14 +38,43 @@ export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps
   // Filtrar sessões onde o jogador participou
   const playerSessions = sessions.filter((session: Session) => {
     if (!Array.isArray(session.players_data)) return false;
-    return session.players_data.some((pd: SessionPlayerData) => pd.id === playerId);
+    // Check both id as number and as string, and also check by name matching
+    return session.players_data.some((pd: SessionPlayerData) => {
+      // Try matching by ID (handle both number and string)
+      if (pd.id && (pd.id === playerId || pd.id === playerId.toString() || Number(pd.id) === playerId)) {
+        return true;
+      }
+      // Fallback: try matching by name if player name matches
+      if (playerData && pd.name && pd.name.toLowerCase() === playerData.name.toLowerCase()) {
+        return true;
+      }
+      return false;
+    });
   });
+
+  console.log('[PlayerDashboard] Player ID:', playerId);
+  console.log('[PlayerDashboard] Player data:', playerData);
+  console.log('[PlayerDashboard] Total sessions:', sessions.length);
+  console.log('[PlayerDashboard] Player sessions found:', playerSessions.length);
+  if (playerSessions.length > 0) {
+    console.log('[PlayerDashboard] Sample session players_data:', playerSessions[0].players_data);
+  }
 
   // Calcular métricas do jogador
   const playerStats = playerSessions.reduce((acc, session: Session) => {
     if (!Array.isArray(session.players_data)) return acc;
     
-    const playerInSession = session.players_data.find((pd: SessionPlayerData) => pd.id === playerId);
+    const playerInSession = session.players_data.find((pd: SessionPlayerData) => {
+      // Match by ID (handle both number and string)
+      if (pd.id && (pd.id === playerId || pd.id === playerId.toString() || Number(pd.id) === playerId)) {
+        return true;
+      }
+      // Fallback: match by name
+      if (playerData && pd.name && pd.name.toLowerCase() === playerData.name.toLowerCase()) {
+        return true;
+      }
+      return false;
+    });
     if (!playerInSession) return acc;
 
     acc.totalSessions += 1;
@@ -77,10 +106,29 @@ export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps
   // Últimas 5 sessões
   const recentPlayerSessions = playerSessions.slice(0, 5);
 
-  // Ranking entre jogadores (baseado nas sessões por enquanto)
-  const playersRanking = players
-    .filter(p => p.total_sessions && p.total_sessions > 0)
-    .sort((a, b) => (b.total_sessions || 0) - (a.total_sessions || 0));
+  // Ranking entre jogadores baseado no profit total
+  // Calculate profit for all players based on their sessions
+  const playersProfitMap = new Map<number, { profit: number; sessions: number }>();
+  
+  sessions.forEach((session: Session) => {
+    if (!Array.isArray(session.players_data)) return;
+    session.players_data.forEach((pd: SessionPlayerData) => {
+      const pId = Number(pd.id);
+      if (!pId) return;
+      const profit = (pd.cashout || 0) - (pd.buyin || 0);
+      const current = playersProfitMap.get(pId) || { profit: 0, sessions: 0 };
+      playersProfitMap.set(pId, {
+        profit: current.profit + profit,
+        sessions: current.sessions + 1
+      });
+    });
+  });
+  
+  // Create ranking based on profit
+  const playersRanking = Array.from(playersProfitMap.entries())
+    .map(([id, data]) => ({ id, ...data }))
+    .filter(p => p.sessions > 0)
+    .sort((a, b) => b.profit - a.profit);
   
   const playerRank = playersRanking.findIndex(p => p.id === playerId) + 1;
 
@@ -240,9 +288,17 @@ export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps
             ) : (
               <div className="space-y-3">
                 {recentPlayerSessions.map((session: Session) => {
-                  const playerInSession = session.players_data?.find(
-                    (pd: SessionPlayerData) => pd.id === playerId
-                  );
+                  const playerInSession = session.players_data?.find((pd: SessionPlayerData) => {
+                    // Match by ID (handle both number and string)
+                    if (pd.id && (pd.id === playerId || pd.id === playerId.toString() || Number(pd.id) === playerId)) {
+                      return true;
+                    }
+                    // Fallback: match by name
+                    if (playerData && pd.name && pd.name.toLowerCase() === playerData.name.toLowerCase()) {
+                      return true;
+                    }
+                    return false;
+                  });
                   const profit = playerInSession 
                     ? (playerInSession.cashout || 0) - (playerInSession.buyin || 0)
                     : 0;
@@ -273,38 +329,61 @@ export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps
       </div>
 
       {/* Ações rápidas */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Ações Rápidas</CardTitle>
-          <CardDescription>
-            Acesse rapidamente as funcionalidades principais
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/dashboard/history">
-              <Button variant="outline" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Ver Histórico Completo
-              </Button>
-            </Link>
-            <Link href="/dashboard/ranking">
-              <Button variant="outline" className="flex items-center gap-2">
-                <Trophy className="h-4 w-4" />
-                Ranking Geral
-              </Button>
-            </Link>
-            {user?.role === 'admin' && (
-              <Link href="/dashboard/new">
-                <Button className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Nova Sessão
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Ações Rápidas</CardTitle>
+            <CardDescription>
+              Acesse rapidamente as funcionalidades principais
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/dashboard/history">
+                <Button variant="outline" className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Ver Histórico Completo
                 </Button>
               </Link>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              <Link href="/dashboard/ranking">
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Trophy className="h-4 w-4" />
+                  Ranking Geral
+                </Button>
+              </Link>
+              {user?.role === 'admin' && (
+                <Link href="/dashboard/new">
+                  <Button className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Nova Sessão
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Upcoming Sessions */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Próximos Jogos
+            </CardTitle>
+            <CardDescription>
+              Sessões agendadas - confirme sua presença
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8 text-muted-foreground">
+              <p>Nenhum jogo agendado</p>
+              <p className="text-sm mt-1">
+                Quando houver jogos futuros, você poderá confirmar sua presença aqui
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

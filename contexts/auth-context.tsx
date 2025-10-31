@@ -52,6 +52,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const { user: userData } = await response.json();
             const tenant = Array.isArray(userData.tenants) ? userData.tenants[0] : userData.tenants;
 
+            // Fetch user's tenants
+            const tenantsResponse = await fetch('/api/user-tenants', {
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+              },
+            });
+            
+            let userTenants = [];
+            if (tenantsResponse.ok) {
+              const tenantsData = await tenantsResponse.json();
+              userTenants = tenantsData.success ? tenantsData.data : [];
+            }
+
             const user: User = {
               id: userData.id,
               name: userData.name,
@@ -60,6 +73,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               team_id: userData.tenant_id,
               team_name: tenant?.name,
               player_id: userData.player_id,
+              current_tenant_id: userData.current_tenant_id || userData.tenant_id,
+              tenants: userTenants,
             };
 
             setUser(user);
