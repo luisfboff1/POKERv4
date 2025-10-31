@@ -9,10 +9,13 @@ import { supabaseServer } from '@/lib/supabaseServer';
  */
 export async function GET(req: NextRequest) {
   try {
+    console.log('[/api/users] Starting request...');
     const user = await requireAuth(req);
+    console.log('[/api/users] Authenticated user:', { id: user.id, email: user.email, role: user.role, tenant_id: user.tenant_id });
 
     // Super admin can see all users and players
     if (user.role === 'super_admin') {
+      console.log('[/api/users] Super admin mode - fetching all players');
       // Get all players first
       const { data: players, error: playersError} = await supabaseServer
         .from('players')
@@ -20,22 +23,35 @@ export async function GET(req: NextRequest) {
         .order('name', { ascending: true });
 
       if (playersError) {
-        console.error('Error fetching players:', playersError);
+        console.error('[/api/users] Error fetching players:', {
+          message: playersError.message,
+          details: playersError.details,
+          hint: playersError.hint,
+          code: playersError.code,
+        });
         return NextResponse.json(
           { success: false, error: 'Erro ao buscar usuários' },
           { status: 500 }
         );
       }
+      console.log(`[/api/users] Fetched ${players?.length || 0} players`);
 
       // Get all users
+      console.log('[/api/users] Fetching users...');
       const { data: users, error: usersError } = await supabaseServer
         .from('users')
         .select('id, name, email, role, is_active, current_tenant_id')
         .order('name', { ascending: true });
 
       if (usersError) {
-        console.error('Error fetching users:', usersError);
+        console.error('[/api/users] Error fetching users:', {
+          message: usersError.message,
+          details: usersError.details,
+          hint: usersError.hint,
+          code: usersError.code,
+        });
       }
+      console.log(`[/api/users] Fetched ${users?.length || 0} users`);
 
       // Create a map of users by ID for quick lookup
       const usersMap = new Map((users || []).map(u => [u.id, u]));
@@ -173,10 +189,14 @@ export async function GET(req: NextRequest) {
       { status: 403 }
     );
   } catch (error) {
-    console.error('Error in GET /api/users:', error);
+    console.error('[/api/users] EXCEPTION in GET /api/users:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      type: error instanceof Error ? error.constructor.name : typeof error,
+    });
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Erro ao processar requisição' },
-      { status: 401 }
+      { success: false, error: 'Erro ao buscar usuários' },
+      { status: 500 }
     );
   }
 }
