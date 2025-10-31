@@ -106,10 +106,29 @@ export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps
   // Últimas 5 sessões
   const recentPlayerSessions = playerSessions.slice(0, 5);
 
-  // Ranking entre jogadores (baseado nas sessões por enquanto)
-  const playersRanking = players
-    .filter(p => p.total_sessions && p.total_sessions > 0)
-    .sort((a, b) => (b.total_sessions || 0) - (a.total_sessions || 0));
+  // Ranking entre jogadores baseado no profit total
+  // Calculate profit for all players based on their sessions
+  const playersProfitMap = new Map<number, { profit: number; sessions: number }>();
+  
+  sessions.forEach((session: Session) => {
+    if (!Array.isArray(session.players_data)) return;
+    session.players_data.forEach((pd: SessionPlayerData) => {
+      const pId = Number(pd.id);
+      if (!pId) return;
+      const profit = (pd.cashout || 0) - (pd.buyin || 0);
+      const current = playersProfitMap.get(pId) || { profit: 0, sessions: 0 };
+      playersProfitMap.set(pId, {
+        profit: current.profit + profit,
+        sessions: current.sessions + 1
+      });
+    });
+  });
+  
+  // Create ranking based on profit
+  const playersRanking = Array.from(playersProfitMap.entries())
+    .map(([id, data]) => ({ id, ...data }))
+    .filter(p => p.sessions > 0)
+    .sort((a, b) => b.profit - a.profit);
   
   const playerRank = playersRanking.findIndex(p => p.id === playerId) + 1;
 
@@ -269,9 +288,17 @@ export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps
             ) : (
               <div className="space-y-3">
                 {recentPlayerSessions.map((session: Session) => {
-                  const playerInSession = session.players_data?.find(
-                    (pd: SessionPlayerData) => pd.id === playerId
-                  );
+                  const playerInSession = session.players_data?.find((pd: SessionPlayerData) => {
+                    // Match by ID (handle both number and string)
+                    if (pd.id && (pd.id === playerId || pd.id === playerId.toString() || Number(pd.id) === playerId)) {
+                      return true;
+                    }
+                    // Fallback: match by name
+                    if (playerData && pd.name && pd.name.toLowerCase() === playerData.name.toLowerCase()) {
+                      return true;
+                    }
+                    return false;
+                  });
                   const profit = playerInSession 
                     ? (playerInSession.cashout || 0) - (playerInSession.buyin || 0)
                     : 0;
