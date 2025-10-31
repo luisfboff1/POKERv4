@@ -8,15 +8,12 @@ import type { UserTenant } from '@/lib/types';
  * Get all tenants for the authenticated user
  */
 export async function GET(req: NextRequest) {
-  const authData = await requireAuth(req);
-  if (!authData.authenticated) {
-    return NextResponse.json(authData.response, { status: 401 });
-  }
-
   try {
+    const user = await requireAuth(req);
+
     // Get user's tenants using the helper function
     const { data: userTenants, error } = await supabaseServer.rpc('get_user_tenants', {
-      user_email: authData.user.email
+      user_email: user.email
     });
 
     if (error) {
@@ -34,8 +31,8 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error('Error in GET /api/user-tenants:', error);
     return NextResponse.json(
-      { success: false, error: 'Erro ao processar requisição' },
-      { status: 500 }
+      { success: false, error: error instanceof Error ? error.message : 'Erro ao processar requisição' },
+      { status: 401 }
     );
   }
 }
@@ -46,12 +43,9 @@ export async function GET(req: NextRequest) {
  * Body: { tenant_id: number }
  */
 export async function POST(req: NextRequest) {
-  const authData = await requireAuth(req);
-  if (!authData.authenticated) {
-    return NextResponse.json(authData.response, { status: 401 });
-  }
-
   try {
+    const user = await requireAuth(req);
+
     const body = await req.json();
     const { tenant_id } = body;
 
@@ -64,7 +58,7 @@ export async function POST(req: NextRequest) {
 
     // Use the helper function to switch tenant
     const { data: success, error } = await supabaseServer.rpc('switch_user_tenant', {
-      user_email: authData.user.email,
+      user_email: user.email,
       new_tenant_id: tenant_id
     });
 
@@ -83,7 +77,7 @@ export async function POST(req: NextRequest) {
         *,
         tenants:poker.tenants!poker_users_current_tenant_id_fkey(name)
       `)
-      .eq('email', authData.user.email)
+      .eq('email', user.email)
       .single();
 
     if (userError) {
@@ -98,8 +92,8 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Error in POST /api/user-tenants:', error);
     return NextResponse.json(
-      { success: false, error: 'Erro ao processar requisição' },
-      { status: 500 }
+      { success: false, error: error instanceof Error ? error.message : 'Erro ao processar requisição' },
+      { status: 401 }
     );
   }
 }

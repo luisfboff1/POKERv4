@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -21,7 +20,6 @@ interface TenantSwitcherProps {
 }
 
 export function TenantSwitcher({ currentTenantId, currentTenantName }: TenantSwitcherProps) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [tenants, setTenants] = useState<UserTenant[]>([]);
   const [loading, setLoading] = useState(false);

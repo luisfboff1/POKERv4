@@ -273,38 +273,61 @@ export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps
       </div>
 
       {/* Ações rápidas */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Ações Rápidas</CardTitle>
-          <CardDescription>
-            Acesse rapidamente as funcionalidades principais
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/dashboard/history">
-              <Button variant="outline" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Ver Histórico Completo
-              </Button>
-            </Link>
-            <Link href="/dashboard/ranking">
-              <Button variant="outline" className="flex items-center gap-2">
-                <Trophy className="h-4 w-4" />
-                Ranking Geral
-              </Button>
-            </Link>
-            {user?.role === 'admin' && (
-              <Link href="/dashboard/new">
-                <Button className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Nova Sessão
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Ações Rápidas</CardTitle>
+            <CardDescription>
+              Acesse rapidamente as funcionalidades principais
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/dashboard/history">
+                <Button variant="outline" className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Ver Histórico Completo
                 </Button>
               </Link>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              <Link href="/dashboard/ranking">
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Trophy className="h-4 w-4" />
+                  Ranking Geral
+                </Button>
+              </Link>
+              {user?.role === 'admin' && (
+                <Link href="/dashboard/new">
+                  <Button className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Nova Sessão
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Upcoming Sessions */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Próximos Jogos
+            </CardTitle>
+            <CardDescription>
+              Sessões agendadas - confirme sua presença
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8 text-muted-foreground">
+              <p>Nenhum jogo agendado</p>
+              <p className="text-sm mt-1">
+                Quando houver jogos futuros, você poderá confirmar sua presença aqui
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -30,9 +30,15 @@ export default function LoginPage() {
   useEffect(() => {
     console.log('Login page useEffect - authLoading:', authLoading, 'user:', user);
     if (!authLoading && user) {
-      console.log('Redirecting to dashboard...');
-      // Use window.location for immediate redirect
-      window.location.href = '/dashboard';
+      console.log('Redirecting after login...');
+      // Check if user has multiple tenants
+      if (user.tenants && user.tenants.length > 1) {
+        // Redirect to tenant selection
+        window.location.href = '/select-tenant';
+      } else {
+        // Redirect directly to dashboard
+        window.location.href = '/dashboard';
+      }
     }
   }, [user, authLoading]);
 

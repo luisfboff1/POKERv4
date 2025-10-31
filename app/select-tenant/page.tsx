@@ -25,6 +25,7 @@ export default function SelectTenantPage() {
     if (isAuthenticated && user) {
       fetchUserTenants();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user]);
 
   const fetchUserTenants = async () => {
