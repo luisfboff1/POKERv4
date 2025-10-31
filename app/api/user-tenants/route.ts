@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     // Get updated user data
     const { data: userData, error: userError } = await supabaseServer
-      .from('poker.users')
+      .from('users')
       .select(`
         *,
         tenants:poker.tenants!poker_users_current_tenant_id_fkey(name)

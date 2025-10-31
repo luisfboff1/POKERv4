@@ -197,6 +197,32 @@ export function useTenants() {
   };
 }
 
+// Hook específico para usuários (admin/super admin)
+export function useUsers() {
+  const { data, loading, error, refetch } = useApi<any[]>(
+    () => api.users.list(),
+    []
+  );
+
+  const updateUserRole = async (userId: number, role: string, tenantId?: number) => {
+    try {
+      await api.users.updateRole(userId, role, tenantId);
+      await refetch();
+      return true;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  return {
+    users: data || [],
+    loading,
+    error,
+    refetch,
+    updateUserRole,
+  };
+}
+
 // Hook para buscar jogadores de um tenant específico
 export function usePlayersForTenant() {
   const { data, loading, error, refetch } = useApi<Player[]>(
