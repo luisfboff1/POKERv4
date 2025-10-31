@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
       // Get all players first
       const { data: players, error: playersError } = await supabaseServer
         .from('poker.players')
-        .select('id, name, nickname, email, user_id, team_id')
+        .select('id, name, nickname, user_id, team_id')
         .order('name', { ascending: true });
 
       if (playersError) {
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
               user_id: player.user_id,
               name: player.name,
               nickname: player.nickname,
-              email: player.email || userAccount?.email || '',
+              email: userAccount?.email || '',
               role: userAccount?.role || 'player',
               has_account: !!player.user_id,
               status: userAccount?.is_active ? 'active' : 'inactive',
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
               user_id: player.user_id,
               name: player.name,
               nickname: player.nickname,
-              email: player.email || '',
+              email: '',
               role: 'player',
               has_account: !!player.user_id,
               status: 'inactive',
@@ -98,7 +98,7 @@ export async function GET(req: NextRequest) {
       // Get all players from this tenant
       const { data: players, error: playersError } = await supabaseServer
         .from('poker.players')
-        .select('id, name, nickname, email, user_id, team_id')
+        .select('id, name, nickname, user_id, team_id')
         .eq('team_id', user.tenant_id)
         .order('name', { ascending: true });
 
@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
               user_id: player.user_id,
               name: player.name,
               nickname: player.nickname,
-              email: player.email || userData?.email || '',
+              email: userData?.email || '',
               role: userData?.role || 'player',
               has_account: !!player.user_id,
               global_role: userData?.role,
@@ -149,7 +149,7 @@ export async function GET(req: NextRequest) {
               user_id: player.user_id,
               name: player.name,
               nickname: player.nickname,
-              email: player.email || '',
+              email: '',
               role: 'player',
               has_account: !!player.user_id,
               global_role: undefined,
