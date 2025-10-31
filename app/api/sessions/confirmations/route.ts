@@ -32,11 +32,11 @@ export async function GET(req: NextRequest) {
           scheduled_date,
           max_players,
           status,
-          team_id
+          tenant_id
         )
       `)
       .eq('player_id', parseInt(playerId))
-      .eq('sessions.team_id', user.tenant_id)
+      .eq('sessions.tenant_id', user.tenant_id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
     // Verify the session belongs to user's tenant
     const { data: session, error: sessionError } = await supabaseServer
       .from('sessions')
-      .select('team_id')
+      .select('tenant_id')
       .eq('id', session_id)
       .single();
 
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (session.team_id !== user.tenant_id) {
+    if (session.tenant_id !== user.tenant_id) {
       return NextResponse.json(
         { success: false, error: 'Você não tem acesso a esta sessão' },
         { status: 403 }

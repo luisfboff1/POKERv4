@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
       // Get all players first
       const { data: players, error: playersError} = await supabaseServer
         .from('players')
-        .select('id, name, nickname, user_id, team_id')
+        .select('id, name, nickname, user_id, tenant_id')
         .order('name', { ascending: true });
 
       if (playersError) {
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
               role: userAccount?.role || 'player',
               has_account: !!player.user_id,
               status: userAccount?.is_active ? 'active' : 'inactive',
-              team_id: player.team_id || userAccount?.current_tenant_id,
+              team_id: player.tenant_id || userAccount?.current_tenant_id,
               tenants: userTenants,
             };
           } catch (err) {
@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
               role: 'player',
               has_account: !!player.user_id,
               status: 'inactive',
-              team_id: player.team_id,
+              team_id: player.tenant_id,
               tenants: [],
             };
           }
@@ -114,8 +114,8 @@ export async function GET(req: NextRequest) {
       // Get all players from this tenant
       const { data: players, error: playersError } = await supabaseServer
         .from('players')
-        .select('id, name, nickname, user_id, team_id')
-        .eq('team_id', user.tenant_id)
+        .select('id, name, nickname, user_id, tenant_id')
+        .eq('tenant_id', user.tenant_id)
         .order('name', { ascending: true });
 
       if (playersError) {
