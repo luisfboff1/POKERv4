@@ -91,7 +91,7 @@ const fetchUserByEmail = async (email: string): Promise<AuthUser | null> => {
         role,
         is_active,
         player_id,
-        tenants (
+        tenants!users_tenant_id_fkey (
           name,
           status,
           plan,
