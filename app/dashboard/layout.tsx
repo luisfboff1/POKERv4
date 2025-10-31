@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { TenantSwitcher } from '@/components/TenantSwitcher';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -163,6 +164,12 @@ export default function DashboardLayout({
               </div>
             </div>
           </div>
+
+          {/* Tenant Switcher */}
+          <TenantSwitcher 
+            currentTenantId={user.team_id}
+            currentTenantName={user.team_name}
+          />
 
           <Button
             variant="ghost"

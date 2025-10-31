@@ -7,6 +7,20 @@ export interface User {
   team_id: number;
   team_name?: string;
   player_id?: number; // Vinculação com jogador para dashboard personalizado
+  current_tenant_id?: number; // Tenant atualmente selecionado
+  tenants?: UserTenant[]; // Lista de tenants que o usuário participa
+}
+
+// UserTenant - Relacionamento entre User e Tenant (N:N)
+export interface UserTenant {
+  id: number;
+  user_id: number;
+  tenant_id: number;
+  tenant_name: string;
+  role: 'admin' | 'player';
+  player_id?: number;
+  is_active: boolean;
+  created_at: string;
 }
 
 export interface AuthResponse {
@@ -56,6 +70,21 @@ export interface Session {
   team_id: number;
   players_data?: SessionPlayerData[];
   recommendations?: TransferRecommendation[];
+  scheduled_date?: string; // Para sessões futuras
+  max_players?: number;
+  is_confirmed?: boolean;
+  confirmations?: SessionConfirmation[];
+}
+
+// SessionConfirmation - Confirmação de presença em sessão
+export interface SessionConfirmation {
+  id: number;
+  session_id: number;
+  player_id: number;
+  player_name?: string;
+  confirmed: boolean;
+  confirmed_at?: string;
+  created_at: string;
 }
 
 // Player data persisted with a historical session (subset of LivePlayer plus payment flags)
