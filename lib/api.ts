@@ -221,5 +221,16 @@ export const api = {
         body: JSON.stringify({ action: 'analyze', session_id: sessionId }),
       }),
   },
+
+  // ===== USER TENANTS (Multi-tenant) =====
+  userTenants: {
+    list: () => fetchAPI('/user-tenants'),
+    
+    switch: (tenant_id: number) =>
+      fetchAPI('/user-tenants', {
+        method: 'POST',
+        body: JSON.stringify({ tenant_id }),
+      }),
+  },
 };
 

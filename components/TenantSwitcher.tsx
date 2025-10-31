@@ -13,6 +13,7 @@ import {
 import { Repeat, Loader2, ArrowRight } from 'lucide-react';
 import type { UserTenant } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { api } from '@/lib/api';
 
 interface TenantSwitcherProps {
   currentTenantId?: number;
@@ -35,13 +36,12 @@ export function TenantSwitcher({ currentTenantId, currentTenantName }: TenantSwi
   const fetchTenants = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/user-tenants');
-      const data = await response.json();
-
-      if (data.success) {
-        setTenants(data.data);
+      const response = await api.userTenants.list();
+      
+      if (response.success && response.data) {
+        setTenants(response.data as UserTenant[]);
       } else {
-        console.error('Error fetching tenants:', data.error);
+        console.error('Error fetching tenants:', response.error);
       }
     } catch (error) {
       console.error('Error fetching user tenants:', error);
@@ -59,22 +59,14 @@ export function TenantSwitcher({ currentTenantId, currentTenantName }: TenantSwi
     try {
       setSwitching(tenantId);
 
-      const response = await fetch('/api/user-tenants', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ tenant_id: tenantId }),
-      });
+      const response = await api.userTenants.switch(tenantId);
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.success) {
         // Reload to update the entire context
         window.location.href = '/dashboard';
       } else {
-        console.error('Error switching tenant:', data.error);
-        alert(data.error || 'Erro ao trocar de home game');
+        console.error('Error switching tenant:', response.error);
+        alert(response.error || 'Erro ao trocar de home game');
       }
     } catch (error) {
       console.error('Error switching tenant:', error);
