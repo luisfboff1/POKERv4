@@ -4,64 +4,83 @@ import { supabaseServer } from '@/lib/supabaseServer';
 
 /**
  * GET /api/users
- * Get all users (super_admin) or tenant users (admin)
+ * Get all users and players (super_admin) or tenant users/players (admin)
+ * Returns both registered users and players without accounts
  */
 export async function GET(req: NextRequest) {
   try {
     const user = await requireAuth(req);
 
-    // Super admin can see all users
+    // Super admin can see all users and players
     if (user.role === 'super_admin') {
-      const { data: users, error } = await supabaseServer
-        .from('poker.users')
-        .select(`
-          id,
-          name,
-          email,
-          role,
-          is_active,
-          current_tenant_id
-        `)
+      // Get all players first
+      const { data: players, error: playersError } = await supabaseServer
+        .from('poker.players')
+        .select('id, name, nickname, email, user_id, team_id')
         .order('name', { ascending: true });
 
-      if (error) {
-        console.error('Error fetching users:', error);
+      if (playersError) {
+        console.error('Error fetching players:', playersError);
         return NextResponse.json(
           { success: false, error: 'Erro ao buscar usuários' },
           { status: 500 }
         );
       }
 
-      // Get user_tenants for each user to show all groups they belong to
-      const usersWithTenants = await Promise.all(
-        (users || []).map(async (u) => {
-          try {
-            const { data: userTenants, error: rpcError } = await supabaseServer.rpc('get_user_tenants', {
-              user_email: u.email
-            });
+      // Get all users
+      const { data: users, error: usersError } = await supabaseServer
+        .from('poker.users')
+        .select('id, name, email, role, is_active, current_tenant_id')
+        .order('name', { ascending: true });
 
-            if (rpcError) {
-              console.error(`Error fetching tenants for user ${u.email}:`, rpcError);
+      if (usersError) {
+        console.error('Error fetching users:', usersError);
+      }
+
+      // Create a map of users by ID for quick lookup
+      const usersMap = new Map((users || []).map(u => [u.id, u]));
+
+      // Combine players with their user info (if they have an account)
+      const combined = await Promise.all(
+        (players || []).map(async (player) => {
+          const userAccount = player.user_id ? usersMap.get(player.user_id) : null;
+          
+          try {
+            // Get tenant info if user has an account
+            let userTenants = [];
+            if (userAccount?.email) {
+              const { data: tenants, error: rpcError } = await supabaseServer.rpc('get_user_tenants', {
+                user_email: userAccount.email
+              });
+              if (!rpcError && tenants) {
+                userTenants = tenants;
+              }
             }
 
             return {
-              id: u.id,
-              name: u.name,
-              email: u.email,
-              role: u.role,
-              status: u.is_active ? 'active' : 'inactive',
-              team_id: u.current_tenant_id,
-              tenants: userTenants || [],
+              id: player.id,
+              user_id: player.user_id,
+              name: player.name,
+              nickname: player.nickname,
+              email: player.email || userAccount?.email || '',
+              role: userAccount?.role || 'player',
+              has_account: !!player.user_id,
+              status: userAccount?.is_active ? 'active' : 'inactive',
+              team_id: player.team_id || userAccount?.current_tenant_id,
+              tenants: userTenants,
             };
           } catch (err) {
-            console.error(`Exception fetching tenants for user ${u.email}:`, err);
+            console.error(`Exception processing player ${player.id}:`, err);
             return {
-              id: u.id,
-              name: u.name,
-              email: u.email,
-              role: u.role,
-              status: u.is_active ? 'active' : 'inactive',
-              team_id: u.current_tenant_id,
+              id: player.id,
+              user_id: player.user_id,
+              name: player.name,
+              nickname: player.nickname,
+              email: player.email || '',
+              role: 'player',
+              has_account: !!player.user_id,
+              status: 'inactive',
+              team_id: player.team_id,
               tenants: [],
             };
           }
@@ -70,61 +89,73 @@ export async function GET(req: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        data: usersWithTenants,
+        data: combined,
       });
     }
 
-    // Tenant admin can only see users from their tenant
+    // Tenant admin can only see players from their tenant
     if (user.role === 'admin') {
-      const { data: userTenants, error } = await supabaseServer
-        .from('poker.user_tenants')
-        .select('*')
-        .eq('tenant_id', user.tenant_id)
-        .eq('is_active', true);
+      // Get all players from this tenant
+      const { data: players, error: playersError } = await supabaseServer
+        .from('poker.players')
+        .select('id, name, nickname, email, user_id, team_id')
+        .eq('team_id', user.tenant_id)
+        .order('name', { ascending: true });
 
-      if (error) {
-        console.error('Error fetching tenant users:', error);
+      if (playersError) {
+        console.error('Error fetching tenant players:', playersError);
         return NextResponse.json(
           { success: false, error: 'Erro ao buscar usuários do grupo' },
           { status: 500 }
         );
       }
 
-      // Fetch user details for each user_tenant
+      // Fetch user details for each player that has a user account
       const formattedUsers = await Promise.all(
-        (userTenants || []).map(async (ut) => {
+        (players || []).map(async (player) => {
           try {
-            const { data: userData, error: userError } = await supabaseServer
-              .from('poker.users')
-              .select('id, name, email, role, is_active')
-              .eq('id', ut.user_id)
-              .single();
+            let userData = null;
+            if (player.user_id) {
+              const { data, error: userError } = await supabaseServer
+                .from('poker.users')
+                .select('id, name, email, role, is_active')
+                .eq('id', player.user_id)
+                .single();
 
-            if (userError) {
-              console.error(`Error fetching user details for user_id ${ut.user_id}:`, userError);
+              if (userError) {
+                console.error(`Error fetching user details for user_id ${player.user_id}:`, userError);
+              } else {
+                userData = data;
+              }
             }
 
             return {
-              id: userData?.id || ut.user_id,
-              name: userData?.name || 'Desconhecido',
-              email: userData?.email || '',
-              role: ut.role, // Role in this specific tenant
-              global_role: userData?.role, // Global role
+              id: player.id,
+              user_id: player.user_id,
+              name: player.name,
+              nickname: player.nickname,
+              email: player.email || userData?.email || '',
+              role: userData?.role || 'player',
+              has_account: !!player.user_id,
+              global_role: userData?.role,
               status: userData?.is_active ? 'active' : 'inactive',
               team_id: user.tenant_id,
-              tenants: [{ tenant_id: user.tenant_id, role: ut.role }],
+              tenants: [{ tenant_id: user.tenant_id, role: 'player' }],
             };
           } catch (err) {
-            console.error(`Exception fetching user details for user_id ${ut.user_id}:`, err);
+            console.error(`Exception fetching user details for player ${player.id}:`, err);
             return {
-              id: ut.user_id,
-              name: 'Desconhecido',
-              email: '',
-              role: ut.role,
+              id: player.id,
+              user_id: player.user_id,
+              name: player.name,
+              nickname: player.nickname,
+              email: player.email || '',
+              role: 'player',
+              has_account: !!player.user_id,
               global_role: undefined,
               status: 'inactive',
               team_id: user.tenant_id,
-              tenants: [{ tenant_id: user.tenant_id, role: ut.role }],
+              tenants: [{ tenant_id: user.tenant_id, role: 'player' }],
             };
           }
         })

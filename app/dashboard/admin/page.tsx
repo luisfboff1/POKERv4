@@ -24,10 +24,13 @@ import { EditUserRoleModal } from './components/edit-user-role-modal';
 
 interface UserDisplay {
   id: number;
+  user_id?: number;
   name: string;
+  nickname?: string;
   email: string;
   role: string;
   global_role?: string;
+  has_account: boolean;
   status: string;
   team_id?: number;
   team_name?: string;
@@ -198,6 +201,7 @@ export default function AdminPage() {
                     <TableHead>Nome</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Papel</TableHead>
+                    <TableHead>Cadastrado</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Grupos</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
@@ -206,8 +210,11 @@ export default function AdminPage() {
                 <TableBody>
                   {(users as UserDisplay[]).map((u) => (
                     <TableRow key={u.id}>
-                      <TableCell className="font-medium">{u.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{u.email}</TableCell>
+                      <TableCell className="font-medium">
+                        {u.name}
+                        {u.nickname && <span className="text-xs text-muted-foreground ml-1">({u.nickname})</span>}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{u.email || '-'}</TableCell>
                       <TableCell>
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                           u.role === 'super_admin' || u.global_role === 'super_admin' 
@@ -224,6 +231,15 @@ export default function AdminPage() {
                           ) : (
                             u.role === 'admin' ? 'Admin' : 'Jogador'
                           )}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                          u.has_account
+                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                            : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
+                        }`}>
+                          {u.has_account ? '✓ Sim' : '✗ Não'}
                         </span>
                       </TableCell>
                       <TableCell>
