@@ -58,9 +58,19 @@ export async function GET(
       );
     }
 
+    // Define type for raw confirmation data
+    interface RawConfirmation {
+      id: number;
+      session_id: number;
+      player_id: number;
+      confirmed: boolean;
+      confirmed_at: string | null;
+      created_at: string;
+    }
+
     // Get player information for each confirmation
     const formattedConfirmations = await Promise.all(
-      (confirmations || []).map(async (c: any) => {
+      (confirmations || []).map(async (c: RawConfirmation) => {
         const { data: player } = await supabaseServer
           .from('poker.players')
           .select('id, name, nickname')
