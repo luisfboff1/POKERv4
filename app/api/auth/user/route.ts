@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
         tenant_id,
         player_id,
         is_active,
+        current_tenant_id,
         tenants (
           name
         )

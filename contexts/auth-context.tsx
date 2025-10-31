@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               team_id: userData.tenant_id,
               team_name: tenant?.name,
               player_id: userData.player_id,
-              current_tenant_id: userData.current_tenant_id,
+              current_tenant_id: userData.current_tenant_id || userData.tenant_id,
               tenants: userTenants,
             };
 
