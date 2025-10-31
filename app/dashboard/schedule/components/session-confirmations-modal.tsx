@@ -7,18 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { LoadingState } from '@/components/ui/loading';
 import { api } from '@/lib/api';
 import { CheckCircle, XCircle, Clock, UserPlus } from 'lucide-react';
-import type { Player } from '@/lib/types';
-
-interface Confirmation {
-  id: number;
-  session_id: number;
-  player_id: number;
-  player_name: string;
-  player_nickname?: string;
-  confirmed: boolean;
-  confirmed_at?: string;
-  created_at: string;
-}
+import type { Player, SessionConfirmation } from '@/lib/types';
 
 interface SessionConfirmationsModalProps {
   isOpen: boolean;
@@ -28,7 +17,7 @@ interface SessionConfirmationsModalProps {
     location: string;
     scheduled_date?: string;
     date: string;
-    confirmations?: Confirmation[];
+    confirmations?: SessionConfirmation[];
   };
   players: Player[];
   onRefresh: () => void;
@@ -41,7 +30,7 @@ export function SessionConfirmationsModal({
   players,
   onRefresh,
 }: SessionConfirmationsModalProps) {
-  const [confirmations, setConfirmations] = useState<Confirmation[]>([]);
+  const [confirmations, setConfirmations] = useState<SessionConfirmation[]>([]);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState<number | null>(null);
 
@@ -55,7 +44,7 @@ export function SessionConfirmationsModal({
     try {
       setLoading(true);
       const response = await api.sessions.getConfirmations(session.id);
-      setConfirmations((response.data as Confirmation[]) || []);
+      setConfirmations((response.data as SessionConfirmation[]) || []);
     } catch (error) {
       console.error('Error loading confirmations:', error);
     } finally {

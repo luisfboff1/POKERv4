@@ -14,15 +14,10 @@ import { useModal } from '@/components/ui/modal';
 import { Calendar, MapPin, Users, Clock, CheckCircle, XCircle, Plus } from 'lucide-react';
 import { ScheduleSessionModal } from './components/schedule-session-modal';
 import { SessionConfirmationsModal } from './components/session-confirmations-modal';
+import type { Session, SessionConfirmation } from '@/lib/types';
 
-interface ScheduledSession {
-  id: number;
-  date: string;
-  scheduled_date: string;
-  location: string;
-  status: string;
-  max_players?: number;
-  confirmations?: any[];
+interface ScheduledSession extends Session {
+  confirmations?: SessionConfirmation[];
 }
 
 export default function SchedulePage() {
@@ -48,8 +43,8 @@ export default function SchedulePage() {
       
       // Filter for scheduled sessions (those with scheduled_date in the future)
       const now = new Date();
-      const allSessions = (response.data as any[]) || [];
-      const scheduledSessions = allSessions.filter((s: any) => {
+      const allSessions = (response.data as Session[]) || [];
+      const scheduledSessions = allSessions.filter((s: Session) => {
         if (!s.scheduled_date) return false;
         return new Date(s.scheduled_date) > now;
       });
@@ -83,7 +78,7 @@ export default function SchedulePage() {
       const response = await api.sessions.getConfirmations(session.id);
       setSelectedSession({
         ...session,
-        confirmations: (response.data as any[]) || [],
+        confirmations: (response.data as SessionConfirmation[]) || [],
       });
       confirmationsModal.open();
     } catch (error) {

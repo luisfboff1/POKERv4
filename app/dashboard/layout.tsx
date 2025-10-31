@@ -19,7 +19,8 @@ import {
   Menu,
   X,
   Spade,
-  ChevronRight
+  ChevronRight,
+  Calendar
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -57,10 +58,11 @@ export default function DashboardLayout({
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['super_admin', 'admin', 'player'] },
     { name: 'Nova Sessão', href: '/dashboard/new', icon: Plus, roles: ['super_admin', 'admin'] },
+    { name: 'Agendar Jogo', href: '/dashboard/schedule', icon: Calendar, roles: ['super_admin', 'admin'] },
     { name: 'Histórico', href: '/dashboard/history', icon: History, roles: ['super_admin', 'admin', 'player'] },
     { name: 'Ranking', href: '/dashboard/ranking', icon: Trophy, roles: ['super_admin', 'admin', 'player'] },
     { name: 'Convites', href: '/dashboard/invites', icon: Users, roles: ['super_admin', 'admin'] },
-    { name: 'Admin', href: '/dashboard/admin', icon: Shield, roles: ['super_admin'] },
+    { name: 'Admin', href: '/dashboard/admin', icon: Shield, roles: ['super_admin', 'admin'] },
   ];
 
   const filteredNavigation = navigation.filter((item) =>

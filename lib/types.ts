@@ -83,6 +83,7 @@ export interface SessionConfirmation {
   session_id: number;
   player_id: number;
   player_name?: string;
+  player_nickname?: string;
   confirmed: boolean;
   confirmed_at?: string;
   created_at: string;

@@ -121,11 +121,11 @@ export default function AdminPage() {
   }
 
   const stats = {
-    totalUsers: users.length || 0,
-    totalPlayers: players.length || 0,
+    totalUsers: users.length,
+    totalPlayers: players.length,
     pendingInvites: invites.filter(i => i.status === 'pending').length,
     totalSessions: sessions.length,
-    activeAdmins: users.filter((u: any) => u.role === 'admin' || u.role === 'super_admin').length || 0,
+    activeAdmins: users.filter((u: any) => u.role === 'admin' || u.role === 'super_admin').length,
   };
 
   return (

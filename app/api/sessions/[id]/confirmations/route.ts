@@ -170,8 +170,8 @@ export async function POST(
     const confirmationData = {
       session_id: sessionId,
       player_id: player_id,
-      confirmed: confirmed !== false, // Default to true if not specified
-      confirmed_at: confirmed !== false ? new Date().toISOString() : null,
+      confirmed: confirmed === true, // Explicit boolean check
+      confirmed_at: confirmed === true ? new Date().toISOString() : null,
       updated_at: new Date().toISOString(),
     };
 
@@ -194,7 +194,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       data: confirmation,
-      message: confirmed !== false ? 'Presença confirmada' : 'Confirmação cancelada',
+      message: confirmed === true ? 'Presença confirmada' : 'Confirmação cancelada',
     });
   } catch (error) {
     console.error('Error in POST /api/sessions/[id]/confirmations:', error);
