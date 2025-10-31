@@ -38,14 +38,43 @@ export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps
   // Filtrar sessões onde o jogador participou
   const playerSessions = sessions.filter((session: Session) => {
     if (!Array.isArray(session.players_data)) return false;
-    return session.players_data.some((pd: SessionPlayerData) => pd.id === playerId);
+    // Check both id as number and as string, and also check by name matching
+    return session.players_data.some((pd: SessionPlayerData) => {
+      // Try matching by ID (handle both number and string)
+      if (pd.id && (pd.id === playerId || pd.id === playerId.toString() || Number(pd.id) === playerId)) {
+        return true;
+      }
+      // Fallback: try matching by name if player name matches
+      if (playerData && pd.name && pd.name.toLowerCase() === playerData.name.toLowerCase()) {
+        return true;
+      }
+      return false;
+    });
   });
+
+  console.log('[PlayerDashboard] Player ID:', playerId);
+  console.log('[PlayerDashboard] Player data:', playerData);
+  console.log('[PlayerDashboard] Total sessions:', sessions.length);
+  console.log('[PlayerDashboard] Player sessions found:', playerSessions.length);
+  if (playerSessions.length > 0) {
+    console.log('[PlayerDashboard] Sample session players_data:', playerSessions[0].players_data);
+  }
 
   // Calcular métricas do jogador
   const playerStats = playerSessions.reduce((acc, session: Session) => {
     if (!Array.isArray(session.players_data)) return acc;
     
-    const playerInSession = session.players_data.find((pd: SessionPlayerData) => pd.id === playerId);
+    const playerInSession = session.players_data.find((pd: SessionPlayerData) => {
+      // Match by ID (handle both number and string)
+      if (pd.id && (pd.id === playerId || pd.id === playerId.toString() || Number(pd.id) === playerId)) {
+        return true;
+      }
+      // Fallback: match by name
+      if (playerData && pd.name && pd.name.toLowerCase() === playerData.name.toLowerCase()) {
+        return true;
+      }
+      return false;
+    });
     if (!playerInSession) return acc;
 
     acc.totalSessions += 1;
