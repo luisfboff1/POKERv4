@@ -43,19 +43,36 @@ User: postgres.jhodhxvvhohygijqcxbo
 ### Pré-requisitos
 
 ```powershell
-# 1. Instalar Supabase CLI (via Scoop)
-scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
-scoop install supabase
+# Supabase CLI via NPX (não requer instalação global)
+# Funciona se você já tem Node.js/npm instalado
 
-# 2. Verificar instalação
-supabase --version
+# 1. Verificar se funciona
+npx supabase --version
 
-# 3. Fazer login
-supabase login
+# 2. Fazer login (abre o browser)
+npx supabase login
 
-# 4. Linkar ao projeto (fazer apenas 1 vez)
-supabase link --project-ref jhodhxvvhohygijqcxbo
+# 3. Linkar ao projeto (fazer apenas 1 vez)
+npx supabase link --project-ref jhodhxvvhohygijqcxbo
 ```
+
+**Nota**: Usamos `npx supabase` em todos os comandos. O `npx` baixa e executa o Supabase CLI temporariamente sem instalação global.
+
+### Estrutura de Pastas
+
+As migrations ficam salvas em:
+```
+C:\Users\Luisf\OneDrive\Github\Poker-Novo\
+├── supabase/
+│   └── migrations/              # ← Migrations ficam AQUI
+│       ├── 20251031000000_add_user_tenants_multi_home_game.sql
+│       └── [futuras migrations...]
+├── db/
+│   ├── migrations/              # ← Migrations antigas (não usar)
+│   └── backups/                 # ← Backups do banco (pg_dump)
+```
+
+**IMPORTANTE**: As migrations do Supabase CLI ficam em `supabase/migrations/`, não em `db/migrations/`!
 
 ---
 
@@ -64,11 +81,13 @@ supabase link --project-ref jhodhxvvhohygijqcxbo
 ### 1️⃣ Criar Nova Migration
 
 ```powershell
-# Sintaxe: supabase migration new <nome_descritivo>
-supabase migration new add_verified_column_to_users
+# Sintaxe: npx supabase migration new <nome_descritivo>
+npx supabase migration new add_verified_column_to_users
 ```
 
 Isso cria um arquivo em: `supabase/migrations/TIMESTAMP_add_verified_column_to_users.sql`
+
+**Onde fica salvo**: `C:\Users\Luisf\OneDrive\Github\Poker-Novo\supabase\migrations\`
 
 ### 2️⃣ Editar a Migration
 
@@ -92,19 +111,28 @@ COMMENT ON COLUMN poker.users.verified IS 'Indica se o email do usuário foi ver
 
 ```powershell
 # Se tiver Supabase rodando localmente
-supabase start
-supabase db reset  # Aplica todas as migrations do zero
+npx supabase start
+npx supabase db reset  # Aplica todas as migrations do zero
 ```
 
 ### 4️⃣ Aplicar em Produção
 
 ```powershell
 # Aplicar todas as migrations pendentes
-supabase db push --project-ref jhodhxvvhohygijqcxbo
+npx supabase db push
 
-# Ou se já estiver linkado:
-supabase db push
+# O comando vai:
+# 1. Conectar ao Supabase remoto
+# 2. Listar migrations pendentes
+# 3. Pedir confirmação
+# 4. Executar SQL no banco de produção
+# 5. Registrar migration como aplicada
 ```
+
+**O que acontece no Supabase:**
+- SQL é executado no banco PostgreSQL
+- Migration é registrada em `supabase_migrations.schema_migrations`
+- Mudanças ficam permanentes no banco de produção
 
 ### 5️⃣ Commitar no Git
 
@@ -122,9 +150,9 @@ git push origin main
 
 ```powershell
 # 1. Criar migration
-supabase migration new add_phone_to_users
+npx supabase migration new add_phone_to_users
 
-# 2. Editar arquivo gerado
+# 2. Editar arquivo gerado em: supabase/migrations/TIMESTAMP_add_phone_to_users.sql
 ```
 
 ```sql
@@ -137,15 +165,19 @@ CREATE INDEX idx_users_phone ON poker.users(phone);
 ```
 
 ```powershell
-# 3. Aplicar
-supabase db push
+# 3. Aplicar (vai executar no banco Supabase remoto)
+npx supabase db push
+
+# 4. Commitar no Git
+git add supabase/migrations/
+git commit -m "feat: add phone column to users"
 ```
 
 ### Exemplo 2: Criar Nova Tabela
 
 ```powershell
 # 1. Criar migration
-supabase migration new create_notifications_table
+npx supabase migration new create_notifications_table
 
 # 2. Editar arquivo
 ```
@@ -189,14 +221,14 @@ COMMENT ON TABLE poker.notifications IS 'Notificações do sistema para usuário
 
 ```powershell
 # 3. Aplicar
-supabase db push
+npx supabase db push
 ```
 
 ### Exemplo 3: Modificar Coluna Existente
 
 ```powershell
 # 1. Criar migration
-supabase migration new change_email_max_length
+npx supabase migration new change_email_max_length
 
 # 2. Editar arquivo
 ```
@@ -214,14 +246,14 @@ CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
 
 ```powershell
 # 3. Aplicar
-supabase db push
+npx supabase db push
 ```
 
 ### Exemplo 4: Adicionar RLS Policy
 
 ```powershell
 # 1. Criar migration
-supabase migration new add_rls_policy_players_update
+npx supabase migration new add_rls_policy_players_update
 
 # 2. Editar arquivo
 ```
@@ -248,7 +280,7 @@ WITH CHECK (
 
 ```powershell
 # 3. Aplicar
-supabase db push
+npx supabase db push
 ```
 
 ---
@@ -261,7 +293,7 @@ supabase db push
 
 ```powershell
 # Se aplicou migration que adicionou coluna 'phone'
-supabase migration new remove_phone_from_users
+npx supabase migration new remove_phone_from_users
 ```
 
 ```sql
@@ -271,7 +303,7 @@ DROP INDEX IF EXISTS idx_users_phone;
 ```
 
 ```powershell
-supabase db push
+npx supabase db push
 ```
 
 ### Opção 2: Restaurar Backup Completo
@@ -285,7 +317,7 @@ psql -h aws-1-sa-east-1.pooler.supabase.com `
      -f db\backups\poker_full_TIMESTAMP.sql
 
 # 2. Recriar migrations para refletir estado atual
-supabase db pull
+npx supabase db pull
 ```
 
 ---
@@ -294,22 +326,22 @@ supabase db pull
 
 ```powershell
 # Listar todas as migrations
-supabase migration list
+npx supabase migration list
 
 # Baixar schema atual do Supabase (gera migration)
-supabase db pull
+npx supabase db pull
 
 # Ver diff entre local e remoto
-supabase db diff
+npx supabase db diff
 
 # Resetar banco local (reaplica todas migrations)
-supabase db reset
+npx supabase db reset
 
 # Linkar a outro projeto
-supabase link --project-ref OUTRO_PROJECT_REF
+npx supabase link --project-ref OUTRO_PROJECT_REF
 
 # Ver status da conexão
-supabase status
+npx supabase status
 ```
 
 ---
@@ -366,12 +398,106 @@ Antes de aplicar uma migration em produção:
 
 | Situação | Ferramenta | Comando |
 |----------|-----------|---------|
-| Mudar estrutura do banco | **Migration** | `supabase migration new` |
+| Mudar estrutura do banco | **Migration** | `npx supabase migration new` |
 | Backup completo | **pg_dump** | `.\backup-postgres.bat` |
 | Testar SQL rápido | **SQL Editor** | Dashboard Supabase |
 | Dados de seed/demo | **Seed File** | `db/sample_data.sql` |
-| Ver schema atual | **Pull** | `supabase db pull` |
+| Ver schema atual | **Pull** | `npx supabase db pull` |
 | Migrar para outro banco | **Backup + Restore** | `pg_dump` + `psql` |
+
+---
+
+## 📍 Onde Ficam os Arquivos
+
+## 📍 Onde Ficam os Arquivos
+
+### 🗂️ Estrutura Completa
+
+```
+C:\Users\Luisf\OneDrive\Github\Poker-Novo\
+│
+├── supabase/                                    # ← Pasta do Supabase CLI
+│   └── migrations/                              # ← MIGRATIONS FICAM AQUI
+│       ├── 20251031000000_add_user_tenants.sql  # ✅ Aplicada (exemplo)
+│       └── [futuras migrations...]              # 📝 Novas aqui
+│
+├── db/                                          # ← Pasta do banco (legado)
+│   ├── backups/                                 # ← BACKUPS FICAM AQUI
+│   │   ├── poker_full_20251030_174558.sql       # 💾 Backup completo
+│   │   ├── poker_structure_20251030_174558.sql  # 🏗️ Apenas estrutura
+│   │   └── poker_data_20251030_174558.sql       # 📊 Apenas dados
+│   │
+│   ├── migrations/                              # ⚠️ Migrations antigas (NÃO USAR)
+│   │   └── [arquivos legados...]                # Antes do Supabase CLI
+│   │
+│   ├── MIGRATION_WORKFLOW.md                    # 📖 Este guia
+│   ├── BACKUP_POSTGRESQL.md                     # 📖 Guia de backup
+│   └── backup-postgres.bat                      # 🔧 Script de backup
+│
+└── .gitignore                                   # ⚠️ db/backups/ está ignorado
+```
+
+### 📊 Fluxo de Dados
+
+```
+1️⃣ DESENVOLVIMENTO (Seu PC)
+   ↓
+   npx supabase migration new
+   ↓
+   📝 Edita: supabase/migrations/TIMESTAMP_nome.sql
+   ↓
+   npx supabase db push
+   ↓
+2️⃣ SUPABASE (Nuvem - AWS São Paulo)
+   ↓
+   ✅ SQL executado em: PostgreSQL 15
+   ✅ Registrado em: supabase_migrations.schema_migrations
+   ↓
+3️⃣ GIT (Versionamento)
+   ↓
+   git add supabase/migrations/
+   git commit -m "feat: description"
+   git push
+   ↓
+   ✅ Migration salva no GitHub
+   ✅ Time pode ver mudanças
+```
+
+### Migrations (Versionamento)
+```
+C:\Users\Luisf\OneDrive\Github\Poker-Novo\supabase\migrations\
+├── 20251031000000_add_user_tenants_multi_home_game.sql  ← Exemplo aplicado
+└── [futuras migrations...]                               ← Novas aqui
+```
+- ✅ **Commitadas no Git** (versionamento)
+- ✅ **Rastreadas** pelo Supabase CLI
+- ✅ **Aplicadas em ordem** por timestamp
+
+### Backups (Cópia completa do banco)
+```
+C:\Users\Luisf\OneDrive\Github\Poker-Novo\db\backups\
+├── poker_full_20251030_174558.sql       ← Backup completo (DDL + dados)
+├── poker_structure_20251030_174558.sql  ← Apenas estrutura (DDL)
+└── poker_data_20251030_174558.sql       ← Apenas dados (INSERT)
+```
+- ⚠️ **NÃO commitar no Git** (pode ter dados sensíveis/pessoais)
+- ✅ **Backup local** para disaster recovery
+- ✅ **Gerados** via `cd db; .\backup-postgres.bat`
+- 🔄 **Quando usar**: Antes de migrations grandes, ou backup semanal
+
+**Como fazer backup agora:**
+```powershell
+cd db
+.\backup-postgres.bat
+# Gera 3 arquivos em db/backups/ com timestamp
+```
+
+### Banco de Dados (Supabase - Produção)
+- 🌐 **Host**: `aws-1-sa-east-1.pooler.supabase.com`
+- 📊 **Tabela de controle**: `supabase_migrations.schema_migrations`
+  - Registra quais migrations já foram aplicadas
+  - Impede dupla aplicação
+  - Mantém histórico de quando cada migration foi aplicada
 
 ---
 
@@ -384,17 +510,93 @@ Antes de aplicar uma migration em produção:
 
 ---
 
+## 🔧 Troubleshooting
+
+### Erro: "column s.team_id does not exist"
+**Causa**: Migration usa nome de coluna incorreto (tabela usa `tenant_id`, não `team_id`)
+
+**Solução**:
+1. Editar arquivo de migration em `supabase/migrations/`
+2. Corrigir o nome da coluna
+3. Rodar `npx supabase db push` novamente
+
+### Erro: "supabase: command not found" ou "termo não reconhecido"
+**Causa**: Supabase CLI não está no PATH
+
+**Solução**: Use `npx supabase` em vez de apenas `supabase`
+```powershell
+# ❌ ERRADO
+supabase db push
+
+# ✅ CORRETO
+npx supabase db push
+```
+
+### Erro: "Need to install the following packages"
+**Causa**: NPX precisa baixar o Supabase CLI
+
+**Solução**: Pressione `y` e Enter para confirmar instalação temporária
+
+### Migration já foi aplicada
+**Causa**: Tentou aplicar migration que já existe no banco
+
+**Solução**: 
+- Verifique com `npx supabase migration list`
+- Se precisa modificar, crie uma NOVA migration de correção
+- Nunca edite migrations já aplicadas!
+
+### Perdi o link com o projeto
+**Solução**: Re-linkar ao projeto
+```powershell
+npx supabase link --project-ref jhodhxvvhohygijqcxbo
+```
+
+---
+
 ## 🔑 Resumo
 
 ```
 ┌────────────────────────────────────────────────┐
 │   MUDANÇA NO BANCO DE DADOS?                   │
 │   ↓                                            │
-│   1. supabase migration new <nome>            │
+│   1. npx supabase migration new <nome>        │
 │   2. Editar arquivo .sql gerado                │
-│   3. supabase db push                          │
+│   3. npx supabase db push                      │
 │   4. git commit + push                         │
 └────────────────────────────────────────────────┘
 ```
+
+### 📝 Exemplo Real do que Fizemos:
+
+```powershell
+# 1. Login (primeira vez)
+npx supabase login
+
+# 2. Linkar ao projeto (primeira vez)
+npx supabase link --project-ref jhodhxvvhohygijqcxbo
+
+# 3. Criar migration
+npx supabase migration new add_user_tenants_multi_home_game
+# Arquivo criado: supabase/migrations/20251031000000_add_user_tenants_multi_home_game.sql
+
+# 4. Editar o SQL (criar tabelas, RLS policies, etc)
+# [Editamos o arquivo...]
+
+# 5. Aplicar no banco
+npx supabase db push
+# ✅ Executado com sucesso!
+
+# 6. Commitar
+git add supabase/migrations/
+git commit -m "feat: add multi-tenant user support and session confirmations"
+git push
+```
+
+**Resultado:**
+- ✅ Novas tabelas criadas: `user_tenants`, `session_confirmations`
+- ✅ RLS policies aplicadas
+- ✅ Funções helper criadas
+- ✅ Tudo versionado no Git
+- ✅ Rastreado pelo Supabase
 
 **Nunca pule esse workflow!** Suas futuras entregas e colaboradores agradecem. 🙏
