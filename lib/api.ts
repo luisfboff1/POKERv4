@@ -232,5 +232,16 @@ export const api = {
         body: JSON.stringify({ tenant_id }),
       }),
   },
+
+  // ===== USERS (Admin/Super Admin) =====
+  users: {
+    list: () => fetchAPI('/users'),
+
+    updateRole: (userId: number, role: string, tenantId?: number) =>
+      fetchAPI(`/users/${userId}/role`, {
+        method: 'PATCH',
+        body: JSON.stringify({ role, tenantId }),
+      }),
+  },
 };
 

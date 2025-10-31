@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import { usePlayers, useInvites, useSessions } from '@/hooks/useApi';
+import { useUsers, usePlayers, useInvites, useSessions } from '@/hooks/useApi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,25 +19,35 @@ import {
   UserCheck,
   AlertTriangle,
   Edit,
-  Trash2
+  Trash2,
+  Building2
 } from 'lucide-react';
 import { EditPlayerModal } from './components/edit-player-modal';
+import { EditUserRoleModal } from './components/edit-user-role-modal';
 import type { Player } from '@/lib/types';
 
 export default function AdminPage() {
   const { user } = useAuth();
+  const { users, loading: usersLoading, refetch: refetchUsers, updateUserRole } = useUsers();
   const { players, loading: playersLoading, refetch: refetchPlayers, updatePlayer, deletePlayer } = usePlayers();
   const { invites } = useInvites();
   const { sessions } = useSessions();
 
   // Modais
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-  const editModal = useModal();
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const editPlayerModal = useModal();
+  const editUserRoleModal = useModal();
   const { confirm, ConfirmModalComponent } = useConfirmModal();
 
   const handleEditPlayer = (player: Player) => {
     setSelectedPlayer(player);
-    editModal.open();
+    editPlayerModal.open();
+  };
+
+  const handleEditUserRole = (user: any) => {
+    setSelectedUser(user);
+    editUserRoleModal.open();
   };
 
   const handleDeletePlayer = (player: Player) => {
@@ -62,7 +72,7 @@ export default function AdminPage() {
     try {
       await updatePlayer(id, data);
       await refetchPlayers();
-      editModal.close();
+      editPlayerModal.close();
       setSelectedPlayer(null);
     } catch (error) {
       console.error('Erro ao atualizar jogador:', error);
@@ -70,8 +80,23 @@ export default function AdminPage() {
     }
   };
 
-  // Verificar se é super admin
-  if (user?.role !== 'super_admin') {
+  const handleSaveUserRole = async (userId: number, role: string, tenantId?: number) => {
+    try {
+      await updateUserRole(userId, role, tenantId);
+      await refetchUsers();
+      editUserRoleModal.close();
+      setSelectedUser(null);
+    } catch (error) {
+      console.error('Erro ao atualizar role:', error);
+      throw error;
+    }
+  };
+
+  // Verificar se é super admin ou admin
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isSuperAdmin = user?.role === 'super_admin';
+
+  if (!isAdmin) {
     return (
       <div className="space-y-8">
         <div>
@@ -86,7 +111,7 @@ export default function AdminPage() {
               <Shield className="h-12 w-12 text-red-500" />
               <div className="text-center">
                 <p className="text-lg font-medium">Área restrita</p>
-                <p className="text-muted-foreground">Apenas super administradores podem acessar esta área.</p>
+                <p className="text-muted-foreground">Apenas administradores podem acessar esta área.</p>
               </div>
             </div>
           </CardContent>
@@ -96,21 +121,24 @@ export default function AdminPage() {
   }
 
   const stats = {
-    totalUsers: players.length,
+    totalUsers: users.length || 0,
+    totalPlayers: players.length || 0,
     pendingInvites: invites.filter(i => i.status === 'pending').length,
     totalSessions: sessions.length,
-    activeAdmins: players.filter(p => p.role === 'admin' || p.role === 'super_admin').length,
+    activeAdmins: users.filter((u: any) => u.role === 'admin' || u.role === 'super_admin').length || 0,
   };
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-3">
-          <Crown className="h-8 w-8 text-yellow-500" />
-          Painel Super Admin
+          {isSuperAdmin ? <Crown className="h-8 w-8 text-yellow-500" /> : <Shield className="h-8 w-8 text-blue-500" />}
+          {isSuperAdmin ? 'Painel Super Admin' : 'Painel de Administração'}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Controle total do sistema, usuários e configurações avançadas
+          {isSuperAdmin
+            ? 'Controle total do sistema, usuários e configurações avançadas'
+            : 'Gerencie usuários e configurações do seu grupo'}
         </p>
       </div>
 
@@ -169,7 +197,7 @@ export default function AdminPage() {
         </Card>
       </div>
 
-      {/* Jogadores Cadastrados */}
+      {/* Usuários Cadastrados */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -177,16 +205,18 @@ export default function AdminPage() {
             Gerenciar usuários
           </CardTitle>
           <CardDescription>
-            Visualize e gerencie todos os usuários do sistema
+            {isSuperAdmin
+              ? 'Visualize e gerencie todos os usuários do sistema'
+              : 'Visualize e gerencie usuários do seu grupo'}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {playersLoading ? (
+          {usersLoading ? (
             <LoadingState text="Carregando usuários..." />
-          ) : players.length === 0 ? (
+          ) : users.length === 0 ? (
             <EmptyState 
               title="Nenhum usuário encontrado"
-              description="Não há usuários cadastrados no sistema."
+              description="Não há usuários cadastrados."
               icon={Users}
             />
           ) : (
@@ -198,58 +228,73 @@ export default function AdminPage() {
                     <TableHead>Email</TableHead>
                     <TableHead>Papel</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Team</TableHead>
+                    <TableHead>Grupos</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {players.map((player) => (
-                    <TableRow key={player.id}>
-                      <TableCell className="font-medium">{player.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{player.email || '-'}</TableCell>
+                  {users.map((u: any) => (
+                    <TableRow key={u.id}>
+                      <TableCell className="font-medium">{u.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{u.email}</TableCell>
                       <TableCell>
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                          player.role === 'super_admin' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                          player.role === 'admin' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                          u.role === 'super_admin' || u.global_role === 'super_admin' 
+                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                          u.role === 'admin' || u.global_role === 'admin'
+                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
                           'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
                         }`}>
-                          {player.role === 'super_admin' && <Crown className="h-3 w-3" />}
-                          {player.role === 'admin' && <Shield className="h-3 w-3" />}
-                          {player.role === 'super_admin' ? 'Super Admin' :
-                           player.role === 'admin' ? 'Admin' : 'Jogador'}
+                          {(u.role === 'super_admin' || u.global_role === 'super_admin') && <Crown className="h-3 w-3" />}
+                          {(u.role === 'admin' || u.global_role === 'admin') && u.role !== 'super_admin' && u.global_role !== 'super_admin' && <Shield className="h-3 w-3" />}
+                          {isSuperAdmin ? (
+                            u.role === 'super_admin' ? 'Super Admin' :
+                            u.role === 'admin' ? 'Admin' : 'Jogador'
+                          ) : (
+                            u.role === 'admin' ? 'Admin' : 'Jogador'
+                          )}
                         </span>
                       </TableCell>
                       <TableCell>
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                          player.status === 'active'
+                          u.status === 'active'
                             ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
                             : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                         }`}>
-                          {player.status === 'active' ? 'Ativo' : 'Inativo'}
+                          {u.status === 'active' ? 'Ativo' : 'Inativo'}
                         </span>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{player.team_name || 'N/A'}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditPlayer(player)}
-                            className="h-8 px-3 hover:bg-primary/10 hover:text-primary"
-                          >
-                            <Edit className="h-4 w-4 mr-1.5" />
-                            Editar
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeletePlayer(player)}
-                            className="h-8 px-3 hover:bg-destructive/10 hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-1.5" />
-                            Excluir
-                          </Button>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                            {u.tenants && u.tenants.length > 0 ? (
+                              <>
+                                {u.tenants.length} {u.tenants.length === 1 ? 'grupo' : 'grupos'}
+                                {u.tenants.length <= 3 && (
+                                  <span className="text-xs text-muted-foreground ml-1">
+                                    ({u.tenants.map((t: any) => t.tenant_name || `#${t.tenant_id}`).join(', ')})
+                                  </span>
+                                )}
+                              </>
+                            ) : u.team_name ? (
+                              u.team_name
+                            ) : (
+                              'N/A'
+                            )}
+                          </span>
                         </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditUserRole(u)}
+                          className="h-8 px-3 hover:bg-primary/10 hover:text-primary"
+                        >
+                          <Shield className="h-4 w-4 mr-1.5" />
+                          Permissões
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -343,16 +388,29 @@ export default function AdminPage() {
         </Card>
       </div>
 
-      {/* Modal de Edição */}
+      {/* Modal de Edição de Jogador */}
       <EditPlayerModal
         player={selectedPlayer}
-        isOpen={editModal.isOpen}
+        isOpen={editPlayerModal.isOpen}
         onClose={() => {
-          editModal.close();
+          editPlayerModal.close();
           setSelectedPlayer(null);
         }}
         onSave={handleSavePlayer}
         onRefresh={refetchPlayers}
+      />
+
+      {/* Modal de Edição de Role de Usuário */}
+      <EditUserRoleModal
+        user={selectedUser}
+        isOpen={editUserRoleModal.isOpen}
+        onClose={() => {
+          editUserRoleModal.close();
+          setSelectedUser(null);
+        }}
+        onSave={handleSaveUserRole}
+        isSuperAdmin={isSuperAdmin}
+        currentTenantId={user?.tenant_id}
       />
 
       {/* Modal de Confirmação */}

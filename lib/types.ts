@@ -8,6 +8,7 @@ export interface User {
   team_name?: string;
   player_id?: number; // Vinculação com jogador para dashboard personalizado
   current_tenant_id?: number; // Tenant atualmente selecionado
+  tenant_id?: number; // Alias for current_tenant_id
   tenants?: UserTenant[]; // Lista de tenants que o usuário participa
 }
 
