@@ -107,6 +107,26 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
+    schedule: (data: { scheduled_date: string; location: string; max_players?: number; player_ids?: number[] }) =>
+      fetchAPI('/sessions/schedule', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    getConfirmations: (sessionId: number) =>
+      fetchAPI(`/sessions/${sessionId}/confirmations`),
+
+    confirmPlayer: (sessionId: number, playerId: number, confirmed: boolean = true) =>
+      fetchAPI(`/sessions/${sessionId}/confirmations`, {
+        method: 'POST',
+        body: JSON.stringify({ player_id: playerId, confirmed }),
+      }),
+
+    removeConfirmation: (sessionId: number, playerId: number) =>
+      fetchAPI(`/sessions/${sessionId}/confirmations?player_id=${playerId}`, {
+        method: 'DELETE',
+      }),
+
     update: (id: number, data: Partial<{ date: string; location: string; players_data: SessionPlayerData[] }>) =>
       fetchAPI(`/sessions/${id}`, {
         method: 'PUT',
