@@ -33,6 +33,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -98,22 +99,39 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed md:static inset-y-0 left-0 z-[70] w-72 flex flex-col',
-          'bg-background/40 backdrop-blur-2xl border-r border-border/50',
+          'fixed md:static inset-y-0 left-0 z-40 flex flex-col',
+          'bg-card/80 backdrop-blur-lg border-r border-border/60 shadow-xl',
           'transform transition-all duration-300 ease-out',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full',
+          'md:translate-x-0',
+          sidebarCollapsed ? 'md:w-16' : 'md:w-72'
         )}
       >
         {/* Logo Section - Desktop Only */}
         <div className="hidden md:flex items-center gap-3 px-6 py-6 border-b border-border/30">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/60 shadow-lg ring-2 ring-primary/20">
+          <div className={cn(
+            "flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/60 shadow-lg ring-2 ring-primary/20 transition-all duration-200",
+            sidebarCollapsed && "mx-auto"
+          )}>
             <Spade className="h-6 w-6 text-primary-foreground" />
           </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-base font-bold tracking-tight truncate">Poker Manager</h1>
-            <p className="text-xs text-muted-foreground truncate">{user.team_name || 'Time'}</p>
-          </div>
-          <ThemeToggle />
+          {!sidebarCollapsed && (
+            <div className="flex-1 min-w-0">
+              <h1 className="text-base font-bold tracking-tight truncate">Poker Manager</h1>
+              <p className="text-xs text-muted-foreground truncate">{user.team_name || 'Time'}</p>
+            </div>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="h-8 w-8 hover:bg-accent/50 transition-all duration-200"
+          >
+            <ChevronRight className={cn(
+              "h-4 w-4 transition-transform duration-200",
+              sidebarCollapsed && "rotate-180"
+            )} />
+          </Button>
         </div>
 
         {/* Navigation */}
@@ -133,21 +151,26 @@ export default function DashboardLayout({
                   'hover:scale-[1.02] active:scale-[0.98]',
                   isActive
                     ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
+                  sidebarCollapsed && 'md:justify-center md:px-3'
                 )}
+                title={sidebarCollapsed ? item.name : undefined}
               >
                 <Icon className={cn(
-                  'w-5 h-5 transition-transform duration-200',
+                  'w-5 h-5 transition-transform duration-200 flex-shrink-0',
                   isActive ? 'scale-110' : 'group-hover:scale-110'
                 )} />
-                <span className="flex-1">{item.name}</span>
-                {isActive && (
-                  <ChevronRight className="w-4 h-4 opacity-70" />
+                {!sidebarCollapsed && <span className="flex-1 truncate">{item.name}</span>}
+                {isActive && !sidebarCollapsed && (
+                  <ChevronRight className="w-4 h-4 opacity-70 flex-shrink-0" />
                 )}
 
                 {/* Active indicator */}
                 {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-foreground rounded-r-full" />
+                  <div className={cn(
+                    "absolute left-0 top-1/2 -translate-y-1/2 bg-primary-foreground rounded-r-full",
+                    sidebarCollapsed ? "w-1 h-6" : "w-1 h-8"
+                  )} />
                 )}
               </Link>
             );
@@ -156,22 +179,24 @@ export default function DashboardLayout({
 
         {/* User Section */}
         <div className="p-4 border-t border-border/30 space-y-3">
-          <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-muted/50 to-muted/30 p-4 backdrop-blur-sm border border-border/30 hover:border-border/50 transition-all duration-200">
-            <div className="relative z-10 space-y-1.5">
-              <p className="text-sm font-semibold text-foreground truncate">{user.name}</p>
-              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                {user.role === 'super_admin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'Player'}
+          {!sidebarCollapsed && (
+            <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-muted/50 to-muted/30 p-4 backdrop-blur-sm border border-border/30 hover:border-border/50 transition-all duration-200">
+              <div className="relative z-10 space-y-1.5">
+                <p className="text-sm font-semibold text-foreground truncate">{user.name}</p>
+                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                  <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                  {user.role === 'super_admin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'Player'}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Tenant Switcher */}
-          <TenantSwitcher 
+          {!sidebarCollapsed && <TenantSwitcher 
             currentTenantId={user.team_id}
             currentTenantName={user.team_name}
-          />
+          />}
 
           <Button
             variant="ghost"
@@ -179,11 +204,13 @@ export default function DashboardLayout({
             className={cn(
               'w-full justify-start gap-3 h-11 rounded-xl',
               'hover:bg-destructive/10 hover:text-destructive',
-              'transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]'
+              'transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]',
+              sidebarCollapsed && 'md:justify-center md:px-3'
             )}
+            title={sidebarCollapsed ? 'Sair da conta' : undefined}
           >
-            <LogOut className="w-4 h-4" />
-            <span className="font-medium">Sair da conta</span>
+            <LogOut className="w-4 h-4 flex-shrink-0" />
+            {!sidebarCollapsed && <span className="font-medium">Sair da conta</span>}
           </Button>
         </div>
       </aside>
@@ -191,14 +218,17 @@ export default function DashboardLayout({
       {/* Overlay (mobile) */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm md:hidden animate-in fade-in duration-200"
+          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden animate-in fade-in duration-200"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Main Content */}
       <main className="flex-1 overflow-hidden">
-        <div className="h-full w-full overflow-y-auto pt-16 md:pt-0 p-4 md:p-8">
+        <div className={cn(
+          "h-full w-full overflow-y-auto pt-16 md:pt-0 p-4 md:p-8 transition-all duration-300",
+          sidebarCollapsed && "md:ml-0"
+        )}>
           <ErrorBoundary>
             {children}
           </ErrorBoundary>
