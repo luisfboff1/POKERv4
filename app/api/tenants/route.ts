@@ -44,19 +44,23 @@ export async function GET(req: NextRequest) {
     // Buscar contagem de usuários para cada tenant
     const tenantsWithCount = await Promise.all(
       (tenants || []).map(async (tenant) => {
-        const { count, error: countError } = await supabaseServer
+        // Buscar usuários ativos deste tenant
+        const { data: userTenants, error: countError } = await supabaseServer
           .from('user_tenants')
-          .select('*', { count: 'exact', head: true })
+          .select('id')
           .eq('tenant_id', tenant.id)
           .eq('is_active', true);
 
         if (countError) {
-          console.error('[GET /api/tenants] Error counting users for tenant:', tenant.id, countError);
+          console.error('[GET /api/tenants] Error counting users for tenant:', tenant.id);
+          console.error('[GET /api/tenants] Error details:', JSON.stringify(countError, null, 2));
+        } else {
+          console.log('[GET /api/tenants] Count for tenant', tenant.id, ':', userTenants?.length || 0);
         }
 
         return {
           ...tenant,
-          users_count: count || 0
+          users_count: userTenants?.length || 0
         };
       })
     );
