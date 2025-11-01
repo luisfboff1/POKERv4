@@ -20,6 +20,19 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
+import { 
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from 'recharts';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface PlayerDashboardProps {
   user: {
@@ -37,6 +50,8 @@ export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps
   const { players, loading: playersLoading } = usePlayers();
   const [confirmations, setConfirmations] = useState<Record<number, { confirmed: boolean; confirmed_at: string | null }>>({});
   const [confirmingSession, setConfirmingSession] = useState<number | null>(null);
+  const [chartType, setChartType] = useState<'cumulative' | 'profit' | 'buyin' | 'cashout' | 'ranking'>('cumulative');
+  const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
 
   // Encontrar dados do jogador
   const playerData = players.find(p => p.id === playerId);
@@ -175,7 +190,11 @@ export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps
     }
   };
 
-  console.log('[PlayerDashboard] Upcoming sessions found:', upcomingSessions.length);
+  // Função para lidar com mudança de tipo de gráfico
+  const handleChartTypeChange = (value: 'cumulative' | 'profit' | 'buyin' | 'cashout' | 'ranking') => {
+    setChartType(value);
+    setIsMobileModalOpen(false);
+  };
 
   // Ranking entre jogadores baseado no profit total
   // Calculate profit for all players based on their sessions
@@ -202,6 +221,89 @@ export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps
     .sort((a, b) => b.profit - a.profit);
   
   const playerRank = playersRanking.findIndex(p => p.id === playerId) + 1;
+  
+  // Preparar dados para o gráfico de evolução do ranking
+  const rankingData = useMemo(() => {
+    // Ordenar sessões por data (mais antiga primeiro)
+    const sortedSessions = [...sessions].sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    const rankingHistory = [];
+    const currentProfits = new Map<number, number>();
+
+    for (const session of sortedSessions) {
+      if (!Array.isArray(session.players_data)) continue;
+
+      // Atualizar profits com esta sessão
+      session.players_data.forEach((pd: SessionPlayerData) => {
+        const pId = Number(pd.id);
+        if (!pId) return;
+        const profit = (pd.cashout || 0) - (pd.buyin || 0);
+        const current = currentProfits.get(pId) || 0;
+        currentProfits.set(pId, current + profit);
+      });
+
+      // Calcular ranking atual
+      const currentRanking = Array.from(currentProfits.entries())
+        .map(([id, profit]) => ({ id, profit }))
+        .sort((a, b) => b.profit - a.profit);
+
+      const playerRank = currentRanking.findIndex(p => p.id === playerId) + 1;
+      const playerProfit = currentProfits.get(playerId) || 0;
+
+      rankingHistory.push({
+        date: new Date(session.date).toLocaleDateString('pt-BR'),
+        fullDate: session.date,
+        rank: playerRank,
+        profit: playerProfit,
+        totalPlayers: currentRanking.length,
+        location: session.location,
+        sessionId: session.id
+      });
+    }
+
+    return rankingHistory;
+  }, [sessions, playerId]);
+
+  // Preparar dados para o gráfico de sessões ao longo do tempo
+  const chartData = useMemo(() => {
+    // Ordenar sessões por data (mais antiga primeiro)
+    const sortedSessions = [...playerSessions].sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    let cumulativeProfit = 0;
+    return sortedSessions.map((session: Session) => {
+      const playerInSession = session.players_data?.find((pd: SessionPlayerData) => {
+        // Match by ID (handle both number and string)
+        if (pd.id && (pd.id === playerId || pd.id === playerId.toString() || Number(pd.id) === playerId)) {
+          return true;
+        }
+        // Fallback: match by name
+        if (playerData && pd.name && pd.name.toLowerCase() === playerData.name.toLowerCase()) {
+          return true;
+        }
+        return false;
+      });
+
+      const buyin = playerInSession?.buyin || 0;
+      const cashout = playerInSession?.cashout || 0;
+      const sessionProfit = cashout - buyin;
+      cumulativeProfit += sessionProfit;
+
+      return {
+        date: new Date(session.date).toLocaleDateString('pt-BR'),
+        fullDate: session.date,
+        profit: sessionProfit,
+        cumulativeProfit,
+        buyin,
+        cashout,
+        location: session.location,
+        sessionId: session.id
+      };
+    });
+  }, [playerSessions, playerId, playerData]);
 
   if (sessionsLoading || playersLoading) {
     return (
@@ -304,6 +406,285 @@ export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps
           </CardContent>
         </Card>
       </div>
+
+      {/* Gráfico interativo de sessões ao longo do tempo */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                {chartType === 'cumulative' && 'Performance Acumulada'}
+                {chartType === 'profit' && 'Profit por Sessão'}
+                {chartType === 'buyin' && 'Buy-in por Sessão'}
+                {chartType === 'cashout' && 'Cash-out por Sessão'}
+                {chartType === 'ranking' && 'Evolução do Ranking'}
+              </CardTitle>
+            </div>
+            <Dialog open={isMobileModalOpen} onOpenChange={setIsMobileModalOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="w-10 h-8 px-2">
+                  <span className="text-lg">⋯</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Selecionar Visualização</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-2 py-4">
+                  {[
+                    { value: 'cumulative', label: 'Performance Acumulada' },
+                    { value: 'profit', label: 'Profit por Sessão' },
+                    { value: 'buyin', label: 'Buy-in por Sessão' },
+                    { value: 'cashout', label: 'Cash-out por Sessão' },
+                    { value: 'ranking', label: 'Evolução do Ranking' }
+                  ].map((option) => (
+                    <Button
+                      key={option.value}
+                      variant={chartType === option.value ? "default" : "outline"}
+                      className="justify-start h-12"
+                      onClick={() => handleChartTypeChange(option.value as 'cumulative' | 'profit' | 'buyin' | 'cashout' | 'ranking')}
+                    >
+                      {option.label}
+                    </Button>
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {((chartType === 'ranking' && rankingData.length === 0) || (chartType !== 'ranking' && chartData.length === 0)) ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>Nenhum dado disponível para o gráfico</p>
+              <p className="text-sm mt-1">
+                Participe de mais sessões para ver sua evolução gráfica
+              </p>
+            </div>
+          ) : (
+            <div className="h-80 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                {chartType === 'cumulative' ? (
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    <XAxis 
+                      dataKey="date" 
+                      fontSize={12}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    />
+                    <YAxis 
+                      fontSize={12}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      tickFormatter={(value) => `R$ ${value.toFixed(0)}`}
+                    />
+                    <Tooltip
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
+                              <p className="font-medium text-sm mb-2">{`Data: ${label}`}</p>
+                              <p className="text-sm text-muted-foreground mb-1">{`Local: ${data.location}`}</p>
+                              <p className="text-sm">
+                                <span className="font-medium">Profit da sessão:</span>{' '}
+                                <span className={data.profit >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                  {data.profit >= 0 ? '+' : ''}R$ {data.profit.toFixed(2)}
+                                </span>
+                              </p>
+                              <p className="text-sm">
+                                <span className="font-medium">Profit acumulado:</span>{' '}
+                                <span className={data.cumulativeProfit >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                  {data.cumulativeProfit >= 0 ? '+' : ''}R$ {data.cumulativeProfit.toFixed(2)}
+                                </span>
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Buy-in: R$ {data.buyin.toFixed(2)} → Cash-out: R$ {data.cashout.toFixed(2)}
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="cumulativeProfit"
+                      stroke={chartData.length > 0 && chartData[chartData.length - 1].cumulativeProfit >= 0 ? '#16a34a' : '#dc2626'}
+                      strokeWidth={3}
+                      dot={(props) => {
+                        const { payload } = props;
+                        return (
+                          <circle
+                            cx={props.cx}
+                            cy={props.cy}
+                            r={4}
+                            fill={payload.cumulativeProfit >= 0 ? '#16a34a' : '#dc2626'}
+                            stroke={payload.cumulativeProfit >= 0 ? '#16a34a' : '#dc2626'}
+                            strokeWidth={2}
+                          />
+                        );
+                      }}
+                      activeDot={(props) => {
+                        const { payload } = props;
+                        return (
+                          <circle
+                            cx={props.cx}
+                            cy={props.cy}
+                            r={6}
+                            fill={payload.cumulativeProfit >= 0 ? '#16a34a' : '#dc2626'}
+                            stroke={payload.cumulativeProfit >= 0 ? '#16a34a' : '#dc2626'}
+                            strokeWidth={2}
+                          />
+                        );
+                      }}
+                    />
+                  </LineChart>
+                ) : chartType === 'ranking' ? (
+                  <LineChart data={rankingData}>
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    <XAxis 
+                      dataKey="date" 
+                      fontSize={12}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    />
+                    <YAxis 
+                      fontSize={12}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      reversed={true}
+                      domain={[1, 'dataMax']}
+                      tickFormatter={(value) => `#${value}`}
+                    />
+                    <Tooltip
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
+                              <p className="font-medium text-sm mb-2">{`Data: ${label}`}</p>
+                              <p className="text-sm text-muted-foreground mb-1">{`Local: ${data.location}`}</p>
+                              <p className="text-sm">
+                                <span className="font-medium">Posição no ranking:</span>{' '}
+                                <span className="font-bold">#{data.rank}</span>
+                              </p>
+                              <p className="text-sm">
+                                <span className="font-medium">Profit acumulado:</span>{' '}
+                                <span className={data.profit >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                  {data.profit >= 0 ? '+' : ''}R$ {data.profit.toFixed(2)}
+                                </span>
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Total de jogadores: {data.totalPlayers}
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="rank"
+                      stroke="#8b5cf6"
+                      strokeWidth={3}
+                      dot={(props) => (
+                        <circle
+                          cx={props.cx}
+                          cy={props.cy}
+                          r={4}
+                          fill="#8b5cf6"
+                          stroke="#8b5cf6"
+                          strokeWidth={2}
+                        />
+                      )}
+                      activeDot={(props) => (
+                        <circle
+                          cx={props.cx}
+                          cy={props.cy}
+                          r={6}
+                          fill="#8b5cf6"
+                          stroke="#8b5cf6"
+                          strokeWidth={2}
+                        />
+                      )}
+                    />
+                  </LineChart>
+                ) : (
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    <XAxis 
+                      dataKey="date" 
+                      fontSize={12}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    />
+                    <YAxis 
+                      fontSize={12}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      tickFormatter={(value) => `R$ ${value.toFixed(0)}`}
+                    />
+                    <Tooltip
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          const value = payload[0].value as number;
+                          const dataKey = payload[0].dataKey as string;
+                          
+                          return (
+                            <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
+                              <p className="font-medium text-sm mb-2">{`Data: ${label}`}</p>
+                              <p className="text-sm text-muted-foreground mb-1">{`Local: ${data.location}`}</p>
+                              {dataKey === 'profit' && (
+                                <p className="text-sm">
+                                  <span className="font-medium">Profit da sessão:</span>{' '}
+                                  <span className={value >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                    {value >= 0 ? '+' : ''}R$ {value.toFixed(2)}
+                                  </span>
+                                </p>
+                              )}
+                              {dataKey === 'buyin' && (
+                                <p className="text-sm">
+                                  <span className="font-medium">Buy-in:</span>{' '}
+                                  R$ {value.toFixed(2)}
+                                </p>
+                              )}
+                              {dataKey === 'cashout' && (
+                                <p className="text-sm">
+                                  <span className="font-medium">Cash-out:</span>{' '}
+                                  R$ {value.toFixed(2)}
+                                </p>
+                              )}
+                              <p className="text-sm text-muted-foreground">
+                                Buy-in: R$ {data.buyin.toFixed(2)} → Cash-out: R$ {data.cashout.toFixed(2)}
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar
+                      dataKey={chartType === 'profit' ? 'profit' : chartType === 'buyin' ? 'buyin' : 'cashout'}
+                      radius={[2, 2, 0, 0]}
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={
+                            chartType === 'profit' 
+                              ? (entry.profit >= 0 ? '#16a34a' : '#dc2626')
+                              : chartType === 'buyin'
+                              ? '#3b82f6'
+                              : '#8b5cf6'
+                          } 
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                )}
+              </ResponsiveContainer>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Gráficos e estatísticas detalhadas */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
