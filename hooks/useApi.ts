@@ -184,16 +184,33 @@ export function useInvites() {
 
 // Hook específico para tenants (super admin)
 export function useTenants() {
-  const { data, loading, error, refetch } = useApi<{tenants: Tenant[]}>(
+  const { data, loading, error, refetch } = useApi<Tenant[]>(
     () => api.tenants.list(),
     []
   );
 
+  console.log('[useTenants] RAW data received:', data);
+  console.log('[useTenants] Is array?', Array.isArray(data));
+  console.log('[useTenants] Length:', data?.length);
+
+  const createTenant = async (name: string, email?: string) => {
+    try {
+      console.log('[useTenants] Creating tenant:', { name, email });
+      await api.tenants.create(name, email);
+      await refetch();
+      return true;
+    } catch (err) {
+      console.error('[useTenants] Error creating tenant:', err);
+      throw err;
+    }
+  };
+
   return {
-    tenants: (data?.tenants as Tenant[]) || [],
+    tenants: (data as Tenant[]) || [],
     loading,
     error,
     refetch,
+    createTenant,
   };
 }
 

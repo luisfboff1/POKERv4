@@ -47,6 +47,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Verify project isolation - check if user belongs to this project
+    const userMetadata = authData.user.user_metadata;
+    if (userMetadata?.project_id !== 'poker-novo') {
+      await createAuditLog({
+        action: 'failed_login',
+        new_data: { 
+          email, 
+          reason: 'wrong_project', 
+          user_project: userMetadata?.project_id,
+          expected_project: 'poker-novo'
+        },
+        ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
+        user_agent: req.headers.get('user-agent') || undefined,
+      });
+
+      // Sign out the user since they don't belong to this project
+      await supabaseServer.auth.signOut();
+
+      return NextResponse.json(
+        { success: false, error: 'Usuário não autorizado neste projeto' },
+        { status: 403 }
+      );
+    }
+
     // Fetch user from database with tenant info
     const { data: user, error: userError } = await supabaseServer
       .from('users')

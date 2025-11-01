@@ -63,13 +63,34 @@ export async function GET(req: NextRequest) {
           
           try {
             // Get tenant info if user has an account
-            let userTenants = [];
+            let userTenants: Array<{ tenant_id: number; tenant_name: string; role: string }> = [];
             if (userAccount?.email) {
               const { data: tenants, error: rpcError } = await supabaseServer.rpc('get_user_tenants', {
                 user_email: userAccount.email
               });
+              console.log(`[/api/users] get_user_tenants for ${userAccount.email}:`, { tenants, error: rpcError });
               if (!rpcError && tenants) {
-                userTenants = tenants;
+                userTenants = tenants.map((t: any) => ({
+                  tenant_id: t.tenant_id,
+                  tenant_name: t.tenant_name,
+                  role: t.role
+                }));
+              }
+              console.log(`[/api/users] userTenants mapped:`, userTenants);
+            } else if (player.tenant_id) {
+              // Se NÃO tem conta de usuário, buscar nome do tenant do player
+              const { data: tenantData } = await supabaseServer
+                .from('tenants')
+                .select('name')
+                .eq('id', player.tenant_id)
+                .single();
+              
+              if (tenantData) {
+                userTenants = [{
+                  tenant_id: player.tenant_id,
+                  tenant_name: tenantData.name,
+                  role: 'player'
+                }];
               }
             }
 
@@ -103,6 +124,8 @@ export async function GET(req: NextRequest) {
         })
       );
 
+      console.log('[/api/users] Super admin - returning combined data:', JSON.stringify(combined.slice(0, 2), null, 2));
+
       return NextResponse.json({
         success: true,
         data: combined,
@@ -131,6 +154,8 @@ export async function GET(req: NextRequest) {
         (players || []).map(async (player) => {
           try {
             let userData = null;
+            let tenantName = '';
+            
             if (player.user_id) {
               const { data, error: userError } = await supabaseServer
                 .from('users')
@@ -144,6 +169,17 @@ export async function GET(req: NextRequest) {
                 userData = data;
               }
             }
+            
+            // Get tenant name
+            const { data: tenantData } = await supabaseServer
+              .from('tenants')
+              .select('name')
+              .eq('id', user.tenant_id)
+              .single();
+            
+            if (tenantData) {
+              tenantName = tenantData.name;
+            }
 
             return {
               id: player.id,
@@ -156,7 +192,7 @@ export async function GET(req: NextRequest) {
               global_role: userData?.role,
               status: userData?.is_active ? 'active' : 'inactive',
               team_id: user.tenant_id,
-              tenants: [{ tenant_id: user.tenant_id, role: 'player' }],
+              tenants: [{ tenant_id: user.tenant_id, tenant_name: tenantName, role: 'player' }],
             };
           } catch (err) {
             console.error(`Exception fetching user details for player ${player.id}:`, err);

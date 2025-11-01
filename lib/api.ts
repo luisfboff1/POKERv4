@@ -46,7 +46,33 @@ async function fetchAPI<T>(
 
       // Handle expired token (401 Unauthorized)
       if (response.status === 401) {
-        // Sign out from Supabase
+        // Try to refresh the token
+        try {
+          const { data: { session }, error } = await supabase.auth.refreshSession();
+
+          if (!error && session?.access_token) {
+            // Retry the request with the new token
+            const retryHeaders: HeadersInit = {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.access_token}`,
+              ...options.headers,
+            };
+
+            const retryResponse = await fetch(`${API_URL}${endpoint}`, {
+              ...options,
+              headers: retryHeaders,
+            });
+
+            if (retryResponse.ok) {
+              const retryData = await retryResponse.json();
+              return retryData;
+            }
+          }
+        } catch (refreshError) {
+          console.error('Erro ao renovar token:', refreshError);
+        }
+
+        // If refresh failed or retry failed, sign out
         await supabase.auth.signOut();
 
         // Redirect to login page
@@ -219,7 +245,13 @@ export const api = {
 
   // ===== TENANTS (Super Admin) =====
   tenants: {
-    list: () => fetchAPI('/super_admin.php?action=tenants'),
+    list: () => fetchAPI('/tenants'),
+    
+    create: (name: string, email?: string) =>
+      fetchAPI('/tenants', {
+        method: 'POST',
+        body: JSON.stringify({ name, email }),
+      }),
     
     details: (id: number) => 
       fetchAPI(`/super_admin.php?action=tenant_details&tenant_id=${id}`),

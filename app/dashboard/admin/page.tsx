@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import { useUsers, usePlayers, useInvites, useSessions } from '@/hooks/useApi';
+import { useUsers, usePlayers, useInvites, useSessions, useTenants } from '@/hooks/useApi';
+import { api } from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -18,9 +19,12 @@ import {
   Crown,
   UserCheck,
   AlertTriangle,
-  Building2
+  Building2,
+  Plus
 } from 'lucide-react';
 import { EditUserRoleModal } from './components/edit-user-role-modal';
+import { CreateTenantModal } from './components/create-tenant-modal';
+import { EditPlayerModal } from './components/edit-player-modal';
 
 interface UserDisplay {
   id: number;
@@ -43,15 +47,55 @@ export default function AdminPage() {
   const { players } = usePlayers();
   const { invites } = useInvites();
   const { sessions } = useSessions();
+  const { tenants, loading: tenantsLoading, createTenant } = useTenants();
+
+  // Debug logs
+  console.log('[AdminPage] Tenants data:', tenants);
+  console.log('[AdminPage] Tenants loading:', tenantsLoading);
+  console.log('[AdminPage] User role:', user?.role);
 
   // Modais
   const [selectedUser, setSelectedUser] = useState<UserDisplay | null>(null);
+  const [selectedPlayerForEdit, setSelectedPlayerForEdit] = useState<any>(null);
   const editUserRoleModal = useModal();
+  const createTenantModal = useModal();
+  const editPlayerModal = useModal();
   const { ConfirmModalComponent } = useConfirmModal();
 
   const handleEditUserRole = (u: UserDisplay) => {
     setSelectedUser(u);
     editUserRoleModal.open();
+  };
+
+  const handleEditPlayer = (u: UserDisplay) => {
+    // Converter UserDisplay para formato Player
+    setSelectedPlayerForEdit({
+      id: u.id,
+      name: u.name,
+      nickname: u.nickname,
+      user_id: u.user_id,
+      status: u.status === 'active' ? 'active' : 'inactive'
+    });
+    editPlayerModal.open();
+  };
+
+  const handleSavePlayer = async (id: number, data: any) => {
+    try {
+      const response = await fetch(`/api/players/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) throw new Error('Erro ao salvar jogador');
+      
+      await refetchUsers();
+      editPlayerModal.close();
+      setSelectedPlayerForEdit(null);
+    } catch (error) {
+      console.error('Erro ao salvar jogador:', error);
+      throw error;
+    }
   };
 
   const handleSaveUserRole = async (userId: number, role: string, tenantId?: number) => {
@@ -62,6 +106,17 @@ export default function AdminPage() {
       setSelectedUser(null);
     } catch (error) {
       console.error('Erro ao atualizar role:', error);
+      throw error;
+    }
+  };
+
+  const handleCreateTenant = async (tenantName: string) => {
+    try {
+      await createTenant(tenantName);
+      await refetchUsers(); // Refresh users list to show new tenant
+      createTenantModal.close();
+    } catch (error) {
+      console.error('Erro ao criar tenant:', error);
       throw error;
     }
   };
@@ -171,6 +226,74 @@ export default function AdminPage() {
         </Card>
       </div>
 
+      {/* Grupos */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Grupos
+              </CardTitle>
+              <CardDescription>
+                Gerencie os grupos do sistema
+              </CardDescription>
+            </div>
+              {isSuperAdmin && (
+                <Button
+                  size="sm"
+                  onClick={createTenantModal.open}
+                  className="h-8 px-3"
+                >
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Novo
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {tenantsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-sm text-muted-foreground">Carregando grupos...</div>
+              </div>
+            ) : tenants.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Building2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Nenhum grupo encontrado</p>
+                <p className="text-xs mt-1">Crie o primeiro grupo usando o botão acima</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {tenants.map((tenant) => (
+                  <div key={tenant.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium text-sm">{tenant.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {tenant.users_count || 0} usuários • {tenant.plan} • {tenant.status}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        tenant.status === 'active'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                          : tenant.status === 'inactive'
+                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                          : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                      }`}>
+                        {tenant.status === 'active' ? 'Ativo' :
+                         tenant.status === 'inactive' ? 'Inativo' : 'Suspenso'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
       {/* Usuários Cadastrados */}
       <Card>
         <CardHeader>
@@ -178,12 +301,12 @@ export default function AdminPage() {
             <UserCheck className="h-5 w-5" />
             Gerenciar usuários
           </CardTitle>
-          <CardDescription>
-            {isSuperAdmin
-              ? 'Visualize e gerencie todos os usuários do sistema'
-              : 'Visualize e gerencie usuários do seu grupo'}
-          </CardDescription>
-        </CardHeader>
+            <CardDescription>
+              {isSuperAdmin
+                ? 'Visualize e gerencie todos os usuários do sistema'
+                : 'Visualize e gerencie usuários do seu grupo'}
+            </CardDescription>
+          </CardHeader>
         <CardContent>
           {usersLoading ? (
             <LoadingState text="Carregando usuários..." />
@@ -273,15 +396,31 @@ export default function AdminPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditUserRole(u)}
-                          className="h-8 px-3 hover:bg-primary/10 hover:text-primary"
-                        >
-                          <Shield className="h-4 w-4 mr-1.5" />
-                          Permissões
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          {/* Se NÃO tem conta, mostrar botão para criar/vincular */}
+                          {!u.has_account && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditPlayer(u)}
+                              className="h-8 px-3 hover:bg-green-500/10 hover:text-green-600"
+                            >
+                              <UserCheck className="h-4 w-4 mr-1.5" />
+                              Criar conta
+                            </Button>
+                          )}
+                          
+                          {/* Botão de permissões (sempre visível) */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditUserRole(u)}
+                            className="h-8 px-3 hover:bg-primary/10 hover:text-primary"
+                          >
+                            <Shield className="h-4 w-4 mr-1.5" />
+                            Permissões
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -291,8 +430,7 @@ export default function AdminPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* Configurações do sistema */}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -386,6 +524,25 @@ export default function AdminPage() {
         onSave={handleSaveUserRole}
         isSuperAdmin={isSuperAdmin}
         currentTenantId={user?.tenant_id}
+      />
+
+      {/* Modal de Criação de Tenant */}
+      <CreateTenantModal
+        isOpen={createTenantModal.isOpen}
+        onClose={createTenantModal.close}
+        onCreate={handleCreateTenant}
+      />
+
+      {/* Modal de Edição de Jogador (criar conta/vincular email) */}
+      <EditPlayerModal
+        player={selectedPlayerForEdit}
+        isOpen={editPlayerModal.isOpen}
+        onClose={() => {
+          editPlayerModal.close();
+          setSelectedPlayerForEdit(null);
+        }}
+        onSave={handleSavePlayer}
+        onRefresh={refetchUsers}
       />
 
       {/* Modal de Confirmação */}

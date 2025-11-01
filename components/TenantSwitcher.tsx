@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -25,6 +25,11 @@ export function TenantSwitcher({ currentTenantId, currentTenantName }: TenantSwi
   const [tenants, setTenants] = useState<UserTenant[]>([]);
   const [loading, setLoading] = useState(false);
   const [switching, setSwitching] = useState<number | null>(null);
+
+  // Fetch tenants on mount
+  useEffect(() => {
+    fetchTenants();
+  }, []);
 
   const handleOpenChange = async (isOpen: boolean) => {
     setOpen(isOpen);
@@ -76,10 +81,7 @@ export function TenantSwitcher({ currentTenantId, currentTenantName }: TenantSwi
     }
   };
 
-  // Don't show if only one tenant
-  if (tenants.length === 1 && !loading) {
-    return null;
-  }
+  // Always show the button
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -92,6 +94,11 @@ export function TenantSwitcher({ currentTenantId, currentTenantName }: TenantSwi
           <span className="font-medium flex-1 text-left truncate">
             {currentTenantName || 'Trocar Home Game'}
           </span>
+          {tenants.length > 1 && (
+            <div className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full font-medium">
+              {tenants.length}
+            </div>
+          )}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -110,6 +117,33 @@ export function TenantSwitcher({ currentTenantId, currentTenantName }: TenantSwi
           ) : tenants.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               Nenhum home game encontrado
+            </div>
+          ) : tenants.length === 1 ? (
+            <div className="text-center py-8">
+              <div className="text-muted-foreground mb-4">
+                Você tem acesso apenas a este home game
+              </div>
+              <button
+                onClick={() => setOpen(false)}
+                className={cn(
+                  'w-full p-4 rounded-lg border-2 text-left transition-all',
+                  'border-primary bg-primary/10'
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">
+                      {tenants[0].tenant_name}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {tenants[0].role === 'admin' ? 'Administrador' : 'Jogador'}
+                    </div>
+                  </div>
+                  <div className="text-xs font-medium text-primary bg-primary/20 px-2 py-1 rounded ml-2">
+                    Atual
+                  </div>
+                </div>
+              </button>
             </div>
           ) : (
             tenants.map((tenant) => {

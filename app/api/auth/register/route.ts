@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create user in Supabase Auth
+    // Create user in Supabase Auth with project_id for isolation
     const { data: authData, error: authError } = await supabaseServer.auth.admin.createUser({
       email: email,
       password: password,
@@ -84,6 +84,7 @@ export async function POST(req: NextRequest) {
       user_metadata: {
         full_name: name,
         tenant_id: tenant.id,
+        project_id: 'poker-novo', // Project isolation identifier
       },
     });
 
