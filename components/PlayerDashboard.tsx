@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useSessions, usePlayers } from '@/hooks/useApi';
 import type { Session, SessionPlayerData } from '@/lib/types';
+import { api } from '@/lib/api';
 import Link from 'next/link';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -14,7 +16,9 @@ import {
   Target,
   BarChart3,
   Clock,
-  Star
+  Star,
+  CheckCircle,
+  XCircle
 } from 'lucide-react';
 
 interface PlayerDashboardProps {
@@ -31,6 +35,8 @@ interface PlayerDashboardProps {
 export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps) {
   const { sessions, loading: sessionsLoading } = useSessions();
   const { players, loading: playersLoading } = usePlayers();
+  const [confirmations, setConfirmations] = useState<Record<number, { confirmed: boolean; confirmed_at: string | null }>>({});
+  const [confirmingSession, setConfirmingSession] = useState<number | null>(null);
 
   // Encontrar dados do jogador
   const playerData = players.find(p => p.id === playerId);
@@ -105,6 +111,71 @@ export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps
 
   // Últimas 5 sessões
   const recentPlayerSessions = playerSessions.slice(0, 5);
+
+  // Filtrar sessões agendadas futuras (próximos jogos) - memoizado para evitar re-renders
+  const upcomingSessions = useMemo(() => {
+    return sessions.filter((session: Session) => {
+      if (!session.scheduled_date) return false;
+      return new Date(session.scheduled_date) > new Date();
+    }).sort((a, b) => new Date(a.scheduled_date!).getTime() - new Date(b.scheduled_date!).getTime());
+  }, [sessions]);
+
+  // Carregar confirmações para sessões futuras
+  useEffect(() => {
+    const loadConfirmations = async () => {
+      if (upcomingSessions.length === 0) return;
+
+      try {
+        const confirmationPromises = upcomingSessions.map(session =>
+          api.sessions.getConfirmations(session.id)
+        );
+        const results = await Promise.all(confirmationPromises);
+
+        const newConfirmations: Record<number, { confirmed: boolean; confirmed_at: string | null }> = {};
+        results.forEach((_result: unknown, index: number) => {
+          const sessionId = upcomingSessions[index].id;
+          const result = _result as { data?: unknown[] };
+          const confirmations = result.data || [];
+          const playerConfirmation = confirmations.find((c: unknown) => {
+            const confirmation = c as { player_id?: number; confirmed?: boolean; confirmed_at?: string | null };
+            return confirmation.player_id === playerId;
+          }) as { player_id: number; confirmed: boolean; confirmed_at: string | null } | undefined;
+          if (playerConfirmation) {
+            newConfirmations[sessionId] = {
+              confirmed: playerConfirmation.confirmed,
+              confirmed_at: playerConfirmation.confirmed_at
+            };
+          }
+        });
+        setConfirmations(newConfirmations);
+      } catch (error) {
+        console.error('Erro ao carregar confirmações:', error);
+      }
+    };
+
+    loadConfirmations();
+  }, [upcomingSessions, playerId]);
+
+  // Função para confirmar presença
+  const handleConfirmPresence = async (sessionId: number, confirmed: boolean) => {
+    setConfirmingSession(sessionId);
+    try {
+      await api.sessions.confirmPlayer(sessionId, playerId, confirmed);
+      setConfirmations(prev => ({
+        ...prev,
+        [sessionId]: {
+          confirmed,
+          confirmed_at: confirmed ? new Date().toISOString() : null
+        }
+      }));
+    } catch (error) {
+      console.error('Erro ao confirmar presença:', error);
+    } finally {
+      setConfirmingSession(null);
+    }
+  };
+
+  console.log('[PlayerDashboard] Upcoming sessions found:', upcomingSessions.length);
 
   // Ranking entre jogadores baseado no profit total
   // Calculate profit for all players based on their sessions
@@ -375,12 +446,88 @@ export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <p>Nenhum jogo agendado</p>
-              <p className="text-sm mt-1">
-                Quando houver jogos futuros, você poderá confirmar sua presença aqui
-              </p>
-            </div>
+            {upcomingSessions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Nenhum jogo agendado</p>
+                <p className="text-sm mt-1">
+                  Quando houver jogos futuros, você poderá confirmar sua presença aqui
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {upcomingSessions.slice(0, 3).map((session: Session) => (
+                  <div key={session.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div>
+                      <p className="font-medium">
+                        {new Date(session.scheduled_date!).toLocaleDateString('pt-BR', {
+                          weekday: 'short',
+                          day: 'numeric',
+                          month: 'short'
+                        })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(session.scheduled_date!).toLocaleTimeString('pt-BR', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })} • {session.location}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      {(() => {
+                        const confirmation = confirmations[session.id];
+                        const isConfirming = confirmingSession === session.id;
+
+                        if (confirmation?.confirmed) {
+                          return (
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                              <span className="text-sm text-green-600 font-medium">Confirmado</span>
+                            </div>
+                          );
+                        } else if (confirmation && !confirmation.confirmed) {
+                          return (
+                            <div className="flex items-center gap-2">
+                              <XCircle className="h-4 w-4 text-red-600" />
+                              <span className="text-sm text-red-600 font-medium">Recusado</span>
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleConfirmPresence(session.id, true)}
+                                disabled={isConfirming}
+                                className="text-green-600 border-green-600 hover:bg-green-50"
+                              >
+                                {isConfirming ? '...' : 'Confirmar'}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleConfirmPresence(session.id, false)}
+                                disabled={isConfirming}
+                                className="text-red-600 border-red-600 hover:bg-red-50"
+                              >
+                                {isConfirming ? '...' : 'Recusar'}
+                              </Button>
+                            </div>
+                          );
+                        }
+                      })()}
+                    </div>
+                  </div>
+                ))}
+                {upcomingSessions.length > 3 && (
+                  <div className="pt-2 border-t">
+                    <Link href="/dashboard/schedule" className="text-sm text-primary hover:underline">
+                      Ver todas as {upcomingSessions.length} sessões agendadas →
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

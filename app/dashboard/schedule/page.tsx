@@ -38,16 +38,46 @@ export default function SchedulePage() {
     try {
       setLoading(true);
       const response = await api.sessions.list();
-      
+
       // Filter for scheduled sessions (those with scheduled_date in the future)
       const now = new Date();
       const allSessions = (response.data as Session[]) || [];
+
+      console.log('[Schedule Page] Total sessions fetched:', allSessions.length);
+
       const scheduledSessions = allSessions.filter((s: Session) => {
         if (!s.scheduled_date) return false;
         return new Date(s.scheduled_date) > now;
       });
 
+      console.log('[Schedule Page] Filtered scheduled sessions:', scheduledSessions.length);
+
+      // Set sessions first without confirmations
       setSessions(scheduledSessions);
+
+      // Load confirmations asynchronously for each session
+      scheduledSessions.forEach(async (session) => {
+        try {
+          const confirmationsResponse = await api.sessions.getConfirmations(session.id);
+          const confirmations = (confirmationsResponse.data as SessionConfirmation[]) || [];
+
+          // Update the session with confirmations
+          setSessions(prev => prev.map(s =>
+            s.id === session.id
+              ? { ...s, confirmations }
+              : s
+          ));
+        } catch (error) {
+          console.error(`Error loading confirmations for session ${session.id}:`, error);
+          // Still update with empty confirmations to avoid blocking
+          setSessions(prev => prev.map(s =>
+            s.id === session.id
+              ? { ...s, confirmations: [] }
+              : s
+          ));
+        }
+      });
+
     } catch (error) {
       console.error('Error loading scheduled sessions:', error);
     } finally {
@@ -81,6 +111,12 @@ export default function SchedulePage() {
       confirmationsModal.open();
     } catch (error) {
       console.error('Error loading confirmations:', error);
+      // Still open modal with empty confirmations
+      setSelectedSession({
+        ...session,
+        confirmations: [],
+      });
+      confirmationsModal.open();
     }
   };
 
