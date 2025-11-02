@@ -20,7 +20,8 @@ import {
   UserCheck,
   AlertTriangle,
   Building2,
-  Plus
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { EditUserRoleModal } from './components/edit-user-role-modal';
 import { CreateTenantModal } from './components/create-tenant-modal';
@@ -57,9 +58,11 @@ export default function AdminPage() {
   // Modais
   const [selectedUser, setSelectedUser] = useState<UserDisplay | null>(null);
   const [selectedPlayerForEdit, setSelectedPlayerForEdit] = useState<any>(null);
+  const [selectedTenantToDelete, setSelectedTenantToDelete] = useState<any>(null);
   const editUserRoleModal = useModal();
   const createTenantModal = useModal();
   const editPlayerModal = useModal();
+  const deleteTenantModal = useModal();
   const { ConfirmModalComponent } = useConfirmModal();
 
   const handleEditUserRole = (u: UserDisplay) => {
@@ -117,6 +120,27 @@ export default function AdminPage() {
       createTenantModal.close();
     } catch (error) {
       console.error('Erro ao criar tenant:', error);
+      throw error;
+    }
+  };
+
+  const handleDeleteTenant = async (tenantId: number) => {
+    try {
+      const response = await fetch(`/api/tenants/${tenantId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro ao excluir grupo');
+      }
+
+      // Refresh lists
+      await refetchUsers();
+      deleteTenantModal.close();
+      setSelectedTenantToDelete(null);
+    } catch (error) {
+      console.error('Erro ao excluir grupo:', error);
       throw error;
     }
   };
@@ -271,7 +295,7 @@ export default function AdminPage() {
                       <div>
                         <p className="font-medium text-sm">{tenant.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {tenant.users_count || 0} usuários • {tenant.plan} • {tenant.status}
+                          {tenant.users_count || 0} jogadores • {tenant.plan} • {tenant.status}
                         </p>
                       </div>
                     </div>
@@ -286,6 +310,19 @@ export default function AdminPage() {
                         {tenant.status === 'active' ? 'Ativo' :
                          tenant.status === 'inactive' ? 'Inativo' : 'Suspenso'}
                       </span>
+                      {isSuperAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => {
+                            setSelectedTenantToDelete(tenant);
+                            deleteTenantModal.open();
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -544,6 +581,50 @@ export default function AdminPage() {
         onSave={handleSavePlayer}
         onRefresh={refetchUsers}
       />
+
+      {/* Modal de Confirmação de Exclusão de Grupo */}
+      {deleteTenantModal.isOpen && selectedTenantToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                Excluir Grupo
+              </CardTitle>
+              <CardDescription>
+                Esta ação não pode ser desfeita
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p className="text-sm font-medium mb-2">Você está prestes a excluir:</p>
+                <p className="text-lg font-bold">{selectedTenantToDelete.name}</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {selectedTenantToDelete.users_count || 0} jogadores serão afetados
+                </p>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    deleteTenantModal.close();
+                    setSelectedTenantToDelete(null);
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDeleteTenant(selectedTenantToDelete.id)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir Grupo
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Modal de Confirmação */}
       {ConfirmModalComponent}

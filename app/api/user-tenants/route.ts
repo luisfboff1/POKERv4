@@ -70,15 +70,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get updated user data
+    // Get updated user data with current tenant info
     const { data: userData, error: userError } = await supabaseServer
       .from('users')
-      .select(`
-        *,
-        tenants:poker.tenants!poker_users_current_tenant_id_fkey(name)
-      `)
+      .select('*')
       .eq('email', user.email)
       .single();
+
+    // Get current tenant name separately
+    let currentTenantName = null;
+    if (userData?.current_tenant_id) {
+      const { data: tenantData } = await supabaseServer
+        .from('tenants')
+        .select('name')
+        .eq('id', userData.current_tenant_id)
+        .single();
+      
+      currentTenantName = tenantData?.name;
+    }
 
     if (userError) {
       console.error('Error fetching updated user:', userError);
@@ -86,7 +95,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ 
       success: true, 
-      data: userData,
+      data: {
+        ...userData,
+        current_tenant_name: currentTenantName
+      },
       message: 'Home game alterado com sucesso' 
     });
   } catch (error) {

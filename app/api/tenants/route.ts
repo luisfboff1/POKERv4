@@ -41,26 +41,26 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Buscar contagem de usuários para cada tenant
+    // Buscar contagem de players para cada tenant
     const tenantsWithCount = await Promise.all(
       (tenants || []).map(async (tenant) => {
-        // Buscar usuários ativos deste tenant
-        const { data: userTenants, error: countError } = await supabaseServer
-          .from('user_tenants')
+        // Contar players ativos deste tenant
+        const { data: players, error: countError } = await supabaseServer
+          .from('players')
           .select('id')
           .eq('tenant_id', tenant.id)
           .eq('is_active', true);
 
         if (countError) {
-          console.error('[GET /api/tenants] Error counting users for tenant:', tenant.id);
+          console.error('[GET /api/tenants] Error counting players for tenant:', tenant.id);
           console.error('[GET /api/tenants] Error details:', JSON.stringify(countError, null, 2));
         } else {
-          console.log('[GET /api/tenants] Count for tenant', tenant.id, ':', userTenants?.length || 0);
+          console.log('[GET /api/tenants] Players count for tenant', tenant.id, ':', players?.length || 0);
         }
 
         return {
           ...tenant,
-          users_count: userTenants?.length || 0
+          users_count: players?.length || 0 // Mantém o nome users_count mas conta players
         };
       })
     );
@@ -178,19 +178,53 @@ export async function POST(req: NextRequest) {
 
     console.log('[POST /api/tenants] Tenant created successfully:', newTenant);
 
-    // Add the creator as admin of the new tenant
+    // 1. Create a player for the creator in the new tenant
+    const { data: newPlayer, error: playerError } = await supabaseServer
+      .from('players')
+      .insert({
+        tenant_id: newTenant.id,
+        name: user.name || user.email.split('@')[0], // Use user name or email prefix
+        email: user.email,
+        user_id: user.id,
+        is_active: true,
+        status: 'active'
+      })
+      .select()
+      .single();
+
+    if (playerError) {
+      console.error('[POST /api/tenants] Error creating player:', playerError);
+      // Don't fail, but log
+    } else {
+      console.log('[POST /api/tenants] Player created:', newPlayer);
+    }
+
+    // 2. Add the creator as admin of the new tenant
     const { error: userTenantError } = await supabaseServer
       .from('user_tenants')
       .insert({
         user_id: user.id,
         tenant_id: newTenant.id,
         role: 'admin',
+        player_id: newPlayer?.id || null, // Link to player if created
         is_active: true
       });
 
     if (userTenantError) {
       console.error('[POST /api/tenants] Error adding user to tenant:', userTenantError);
       // Don't fail the request, just log the error
+    } else {
+      console.log('[POST /api/tenants] User added to tenant as admin');
+    }
+
+    // 3. Update user's current_tenant_id to the new tenant
+    const { error: updateUserError } = await supabaseServer
+      .from('users')
+      .update({ current_tenant_id: newTenant.id })
+      .eq('id', user.id);
+
+    if (updateUserError) {
+      console.error('[POST /api/tenants] Error updating user current_tenant_id:', updateUserError);
     }
 
     return NextResponse.json({
