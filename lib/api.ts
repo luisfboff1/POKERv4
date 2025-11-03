@@ -224,7 +224,6 @@ export const api = {
         name,
         ...(playerData || {})
       };
-      console.log('DEBUG api.ts - Enviando payload:', payload);
       return fetchAPI('/invites', {
         method: 'POST',
         body: JSON.stringify(payload),

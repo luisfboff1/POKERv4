@@ -32,8 +32,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Listen to auth state changes
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, 'Session:', !!session);
-
       if (event === 'SIGNED_IN' && session) {
         setSupabaseUser(session.user);
         setSupabaseSession(session);
@@ -78,7 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             };
 
             setUser(user);
-            console.log('User data loaded:', user);
           } else {
             console.error('Failed to fetch user data:', await response.text());
           }

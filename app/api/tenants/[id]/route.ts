@@ -12,19 +12,12 @@ import { supabaseServer } from '@/lib/supabaseServer';
  * - All user_tenants entries for this tenant
  * - All player_transfers associated with sessions from this tenant
  */
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requireAuth(req);
+    // Normalize params (Next can provide params as Promise in context)
+    const params = await context.params;
     const tenantId = parseInt(params.id);
-
-    console.log('[DELETE /api/tenants] Request:', { 
-      tenantId, 
-      user: user.email, 
-      role: user.role 
-    });
+    const user = await requireAuth(req);
 
     // Only super admins can delete tenants
     if (user.role !== 'super_admin') {
@@ -49,8 +42,6 @@ export async function DELETE(
       );
     }
 
-    console.log('[DELETE /api/tenants] Deleting tenant:', tenant.name);
-
     // SECURITY: Prevent deletion of users' current tenant
     // Check if any users are currently using this tenant
     const { data: usersInTenant, error: usersError } = await supabaseServer
@@ -67,11 +58,10 @@ export async function DELETE(
     }
 
     if (usersInTenant && usersInTenant.length > 0) {
-      console.log('[DELETE /api/tenants] Cannot delete - users currently using this tenant:', usersInTenant.length);
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `Não é possível excluir. ${usersInTenant.length} usuário(s) estão usando este grupo. Peça aos usuários para trocar de grupo primeiro.` 
+        {
+          success: false,
+          error: `Não é possível excluir. ${usersInTenant.length} usuário(s) estão usando este grupo. Peça aos usuários para trocar de grupo primeiro.`
         },
         { status: 400 }
       );
@@ -83,8 +73,6 @@ export async function DELETE(
     // 3. Delete user_tenants (references tenant_id and player_id)
     // 4. Delete players (references tenant_id)
     // 5. Delete tenant
-
-    console.log('[DELETE /api/tenants] Step 1: Getting sessions for tenant:', tenantId);
     
     // Get all session IDs for this tenant
     const { data: sessions, error: sessionsError } = await supabaseServer
@@ -101,11 +89,9 @@ export async function DELETE(
     }
 
     const sessionIds = (sessions || []).map(s => s.id);
-    console.log('[DELETE /api/tenants] Found sessions:', sessionIds.length);
 
     // Step 1: Delete player_transfers for these sessions
     if (sessionIds.length > 0) {
-      console.log('[DELETE /api/tenants] Step 1: Deleting player_transfers...');
       const { error: transfersError } = await supabaseServer
         .from('player_transfers')
         .delete()
@@ -121,7 +107,6 @@ export async function DELETE(
     }
 
     // Step 2: Delete sessions
-    console.log('[DELETE /api/tenants] Step 2: Deleting sessions...');
     const { error: sessionsDeleteError } = await supabaseServer
       .from('sessions')
       .delete()
@@ -136,7 +121,6 @@ export async function DELETE(
     }
 
     // Step 3: Delete user_tenants entries
-    console.log('[DELETE /api/tenants] Step 3: Deleting user_tenants...');
     const { error: userTenantsError } = await supabaseServer
       .from('user_tenants')
       .delete()
@@ -151,7 +135,6 @@ export async function DELETE(
     }
 
     // Step 4: Delete players
-    console.log('[DELETE /api/tenants] Step 4: Deleting players...');
     const { error: playersError } = await supabaseServer
       .from('players')
       .delete()
@@ -166,7 +149,6 @@ export async function DELETE(
     }
 
     // Step 5: Finally, delete the tenant
-    console.log('[DELETE /api/tenants] Step 5: Deleting tenant...');
     const { error: tenantDeleteError } = await supabaseServer
       .from('tenants')
       .delete()
@@ -179,8 +161,6 @@ export async function DELETE(
         { status: 500 }
       );
     }
-
-    console.log('[DELETE /api/tenants] ✅ Tenant deleted successfully:', tenant.name);
 
     return NextResponse.json({
       success: true,

@@ -27,8 +27,6 @@ export class SessionAutoApproval {
    * ⚠️ DEPRECADO: Status agora é atualizado automaticamente pela API
    */
   async checkAndApprove(transfers: Transfer[]): Promise<boolean> {
-    console.log('ℹ️ Auto-aprovação desabilitada - status é atualizado automaticamente pela API');
-    
     const allTransfersPaid = transfers.every(transfer => transfer.isPaid);
     
     // Apenas notificar mudança de status (não aprovar)
@@ -53,7 +51,6 @@ export class SessionAutoApproval {
    */
   async onTransferUpdate(transfers: Transfer[]): Promise<void> {
     // Não faz nada - API já atualiza o status automaticamente
-    console.log('ℹ️ onTransferUpdate: Status é atualizado automaticamente pela API');
     await this.checkAndApprove(transfers);
   }
 }
@@ -81,7 +78,6 @@ export function createSessionAutoApproval(
 export function useSessionAutoApproval(sessionId: number) {
   const approveSession = async (_id: number) => {
     // Não faz nada - API já atualiza automaticamente
-    console.log('ℹ️ approveSession: Status é atualizado automaticamente pela API ao marcar pagamentos');
   };
 
   const autoApproval = createSessionAutoApproval(sessionId, approveSession);

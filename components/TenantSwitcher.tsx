@@ -42,14 +42,12 @@ export function TenantSwitcher({ currentTenantId, currentTenantName }: TenantSwi
     try {
       setLoading(true);
       const response = await api.userTenants.list();
-      
+
       if (response.success && response.data) {
         setTenants(response.data as UserTenant[]);
-      } else {
-        console.error('Error fetching tenants:', response.error);
       }
     } catch (error) {
-      console.error('Error fetching user tenants:', error);
+      console.error('[TENANT_SWITCH_UI] Erro ao buscar tenants:', error);
     } finally {
       setLoading(false);
     }
@@ -67,14 +65,14 @@ export function TenantSwitcher({ currentTenantId, currentTenantName }: TenantSwi
       const response = await api.userTenants.switch(tenantId);
 
       if (response.success) {
-        // Reload to update the entire context
-        window.location.href = '/dashboard';
+        // Force a complete reload to clear all caches
+        window.location.reload();
       } else {
-        console.error('Error switching tenant:', response.error);
+        console.error('[TENANT_SWITCH_UI] Falha na troca:', response.error);
         alert(response.error || 'Erro ao trocar de home game');
       }
     } catch (error) {
-      console.error('Error switching tenant:', error);
+      console.error('[TENANT_SWITCH_UI] Exceção durante troca:', error);
       alert('Erro ao trocar de home game');
     } finally {
       setSwitching(null);

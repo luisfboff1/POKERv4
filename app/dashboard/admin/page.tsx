@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useUsers, usePlayers, useInvites, useSessions, useTenants } from '@/hooks/useApi';
-import { api } from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -42,6 +41,21 @@ interface UserDisplay {
   tenants?: Array<{ tenant_id: number; tenant_name?: string; role: string }>;
 }
 
+interface PlayerEditData {
+  id: number;
+  name: string;
+  nickname?: string;
+  user_id?: number;
+  status: 'active' | 'inactive';
+  team_id: number;
+}
+
+interface TenantDeleteData {
+  id: number;
+  name: string;
+  users_count?: number;
+}
+
 export default function AdminPage() {
   const { user } = useAuth();
   const { users, loading: usersLoading, refetch: refetchUsers, updateUserRole } = useUsers();
@@ -50,15 +64,10 @@ export default function AdminPage() {
   const { sessions } = useSessions();
   const { tenants, loading: tenantsLoading, createTenant } = useTenants();
 
-  // Debug logs
-  console.log('[AdminPage] Tenants data:', tenants);
-  console.log('[AdminPage] Tenants loading:', tenantsLoading);
-  console.log('[AdminPage] User role:', user?.role);
-
   // Modais
   const [selectedUser, setSelectedUser] = useState<UserDisplay | null>(null);
-  const [selectedPlayerForEdit, setSelectedPlayerForEdit] = useState<any>(null);
-  const [selectedTenantToDelete, setSelectedTenantToDelete] = useState<any>(null);
+  const [selectedPlayerForEdit, setSelectedPlayerForEdit] = useState<PlayerEditData | null>(null);
+  const [selectedTenantToDelete, setSelectedTenantToDelete] = useState<TenantDeleteData | null>(null);
   const editUserRoleModal = useModal();
   const createTenantModal = useModal();
   const editPlayerModal = useModal();
@@ -77,12 +86,13 @@ export default function AdminPage() {
       name: u.name,
       nickname: u.nickname,
       user_id: u.user_id,
-      status: u.status === 'active' ? 'active' : 'inactive'
+      status: u.status === 'active' ? 'active' : 'inactive',
+      team_id: u.team_id || 0
     });
     editPlayerModal.open();
   };
 
-  const handleSavePlayer = async (id: number, data: any) => {
+  const handleSavePlayer = async (id: number, data: Partial<PlayerEditData>) => {
     try {
       const response = await fetch(`/api/players/${id}`, {
         method: 'PUT',

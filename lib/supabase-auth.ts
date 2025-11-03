@@ -78,6 +78,7 @@ export const requireAuth = async (req: NextRequest): Promise<AuthUser> => {
 
 /**
  * Fetch user by email with tenant information
+ * IMPORTANT: Uses current_tenant_id for multi-tenant support
  */
 const fetchUserByEmail = async (email: string): Promise<AuthUser | null> => {
   try {
@@ -86,18 +87,12 @@ const fetchUserByEmail = async (email: string): Promise<AuthUser | null> => {
       .select(`
         id,
         tenant_id,
+        current_tenant_id,
         name,
         email,
         role,
         is_active,
-        player_id,
-        tenants!users_tenant_id_fkey (
-          name,
-          status,
-          plan,
-          max_sessions_per_month,
-          max_users
-        )
+        player_id
       `)
       .eq('email', email)
       .eq('is_active', true)
@@ -107,20 +102,33 @@ const fetchUserByEmail = async (email: string): Promise<AuthUser | null> => {
       return null;
     }
 
-    const tenant = Array.isArray(user.tenants) ? user.tenants[0] : user.tenants;
+    // Use current_tenant_id if available, fallback to tenant_id
+    const activeTenantId = user.current_tenant_id || user.tenant_id;
+
+    // Fetch current tenant info
+    const { data: tenant, error: tenantError } = await supabaseServer
+      .from('tenants')
+      .select('name, status, plan, max_sessions_per_month, max_users')
+      .eq('id', activeTenantId)
+      .single();
+
+    if (tenantError || !tenant) {
+      console.error('Error fetching tenant:', tenantError);
+      return null;
+    }
 
     return {
       id: user.id,
-      tenant_id: user.tenant_id,
+      tenant_id: activeTenantId, // Use active tenant ID
       name: user.name,
       email: user.email,
       role: user.role,
       is_active: user.is_active,
-      tenant_name: tenant?.name || '',
-      tenant_status: tenant?.status || '',
-      tenant_plan: tenant?.plan || 'basic',
-      max_sessions_per_month: tenant?.max_sessions_per_month,
-      max_users: tenant?.max_users,
+      tenant_name: tenant.name || '',
+      tenant_status: tenant.status || '',
+      tenant_plan: tenant.plan || 'basic',
+      max_sessions_per_month: tenant.max_sessions_per_month,
+      max_users: tenant.max_users,
       player_id: user.player_id,
     };
   } catch (error) {

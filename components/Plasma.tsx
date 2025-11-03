@@ -105,7 +105,6 @@ export const Plasma: React.FC<PlasmaProps> = ({
     // Disable Plasma on mobile devices to prevent performance issues
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     if (isMobile) {
-      console.log('📱 Plasma: Disabled on mobile device');
       return;
     }
 
@@ -128,9 +127,7 @@ export const Plasma: React.FC<PlasmaProps> = ({
       canvas.style.height = '100%';
       containerRef.current.appendChild(canvas);
 
-      console.log('✅ Plasma: Canvas criado e WebGL inicializado');
-
-    const geometry = new Triangle(gl);
+      const geometry = new Triangle(gl);
 
     const program = new Program(gl, {
       vertex: vertex,

@@ -10,22 +10,13 @@ export async function GET(req: NextRequest) {
   try {
     const user = await requireAuth(req);
 
-    console.log('[GET /api/tenants] User authenticated:', { 
-      email: user.email, 
-      role: user.role,
-      id: user.id 
-    });
-
     // Only super admins can list all tenants
     if (user.role !== 'super_admin') {
-      console.log('[GET /api/tenants] Access denied - not super_admin, role is:', user.role);
       return NextResponse.json(
         { success: false, error: 'Apenas super administradores podem listar todos os grupos' },
         { status: 403 }
       );
     }
-
-    console.log('[GET /api/tenants] Fetching tenants for super admin:', user.email);
 
     // Buscar todos os tenants
     const { data: tenants, error: tenantsError } = await supabaseServer
@@ -52,10 +43,7 @@ export async function GET(req: NextRequest) {
           .eq('is_active', true);
 
         if (countError) {
-          console.error('[GET /api/tenants] Error counting players for tenant:', tenant.id);
-          console.error('[GET /api/tenants] Error details:', JSON.stringify(countError, null, 2));
-        } else {
-          console.log('[GET /api/tenants] Players count for tenant', tenant.id, ':', players?.length || 0);
+          console.error('[GET /api/tenants] Error counting players:', countError);
         }
 
         return {
@@ -64,9 +52,6 @@ export async function GET(req: NextRequest) {
         };
       })
     );
-
-    console.log('[GET /api/tenants] Found tenants:', tenantsWithCount?.length || 0);
-    console.log('[GET /api/tenants] Sample tenant with count:', tenantsWithCount?.[0]);
 
     return NextResponse.json({
       success: true,
@@ -101,8 +86,6 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, email } = body;
 
-    console.log('[POST /api/tenants] Creating tenant:', { name, email, user: user.email });
-
     if (!name || typeof name !== 'string' || name.trim().length < 3) {
       return NextResponse.json(
         { success: false, error: 'Nome do grupo deve ter pelo menos 3 caracteres' },
@@ -136,7 +119,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (existingTenant) {
-      console.log('[POST /api/tenants] Tenant name already exists:', name.trim());
       return NextResponse.json(
         { success: false, error: 'Já existe um grupo com este nome' },
         { status: 409 }
@@ -145,13 +127,6 @@ export async function POST(req: NextRequest) {
 
     // Note: Email validation removed - users can participate in multiple tenants
     // Each tenant can have its own contact email
-
-    console.log('[POST /api/tenants] Creating tenant with data:', {
-      name: name.trim(),
-      email: tenantEmail,
-      plan: 'basic',
-      status: 'active'
-    });
 
     // Create the tenant
     const { data: newTenant, error: createError } = await supabaseServer
@@ -176,8 +151,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('[POST /api/tenants] Tenant created successfully:', newTenant);
-
     // 1. Create a player for the creator in the new tenant
     const { data: newPlayer, error: playerError } = await supabaseServer
       .from('players')
@@ -194,9 +167,6 @@ export async function POST(req: NextRequest) {
 
     if (playerError) {
       console.error('[POST /api/tenants] Error creating player:', playerError);
-      // Don't fail, but log
-    } else {
-      console.log('[POST /api/tenants] Player created:', newPlayer);
     }
 
     // 2. Add the creator as admin of the new tenant
@@ -212,9 +182,6 @@ export async function POST(req: NextRequest) {
 
     if (userTenantError) {
       console.error('[POST /api/tenants] Error adding user to tenant:', userTenantError);
-      // Don't fail the request, just log the error
-    } else {
-      console.log('[POST /api/tenants] User added to tenant as admin');
     }
 
     // 3. Update user's current_tenant_id to the new tenant

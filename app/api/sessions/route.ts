@@ -14,7 +14,6 @@ interface CreateSessionBody {
 export async function GET(req: NextRequest) {
   try {
     const user = await requireAuth(req);
-    console.log('[/api/sessions GET] Fetching sessions for tenant:', user.tenant_id);
 
     const { data: sessions, error } = await supabaseServer
       .from('sessions')
@@ -25,12 +24,6 @@ export async function GET(req: NextRequest) {
 
     if (error) {
       throw new Error(`Failed to fetch sessions: ${error.message}`);
-    }
-
-    console.log('[/api/sessions GET] Total sessions found:', sessions?.length || 0);
-    console.log('[/api/sessions GET] Sessions with scheduled_date:', sessions?.filter((s: Record<string, unknown>) => s.scheduled_date).length || 0);
-    if (sessions && sessions.length > 0) {
-      console.log('[/api/sessions GET] Sample session:', sessions[0]);
     }
 
     const formattedSessions = sessions.map((session: Record<string, unknown>) => ({

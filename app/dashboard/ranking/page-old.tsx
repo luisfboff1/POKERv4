@@ -116,7 +116,6 @@ export default function RankingPage() {
       
       if (result.success) {
         await refetchPlayers();
-        console.log('✅ Estatísticas sincronizadas:', result.message);
       } else {
         console.error('❌ Erro:', result.error);
         alert('Erro ao sincronizar: ' + result.error);
@@ -148,7 +147,6 @@ export default function RankingPage() {
       
       if (result.success) {
         await refetchPlayers();
-        console.log('✅ Estatísticas recalculadas:', result.message);
       } else {
         console.error('❌ Erro:', result.error);
         alert('Erro ao recalcular: ' + result.error);

@@ -73,14 +73,6 @@ export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps
     });
   });
 
-  console.log('[PlayerDashboard] Player ID:', playerId);
-  console.log('[PlayerDashboard] Player data:', playerData);
-  console.log('[PlayerDashboard] Total sessions:', sessions.length);
-  console.log('[PlayerDashboard] Player sessions found:', playerSessions.length);
-  if (playerSessions.length > 0) {
-    console.log('[PlayerDashboard] Sample session players_data:', playerSessions[0].players_data);
-  }
-
   // Calcular métricas do jogador
   const playerStats = playerSessions.reduce((acc, session: Session) => {
     if (!Array.isArray(session.players_data)) return acc;

@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Spade, ArrowRight, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 import type { UserTenant } from '@/lib/types';
 
 export default function SelectTenantPage() {
@@ -23,28 +24,46 @@ export default function SelectTenantPage() {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      fetchUserTenants();
+      // Small delay to ensure session is fully loaded
+      const timer = setTimeout(() => {
+        fetchUserTenants();
+      }, 100);
+      return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user]);
 
   const fetchUserTenants = async () => {
     try {
-      const response = await fetch('/api/user-tenants');
+      // Get the current session token
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !session?.access_token) {
+        console.error('[SELECT_TENANT] Sem sessão válida ao buscar tenants:', sessionError);
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/user-tenants', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
       const data = await response.json();
 
       if (data.success) {
         setTenants(data.data);
-        
+
         // If user has only one tenant, redirect automatically
         if (data.data.length === 1) {
           await selectTenant(data.data[0].tenant_id);
         }
-      } else {
-        console.error('Error fetching tenants:', data.error);
       }
     } catch (error) {
-      console.error('Error fetching user tenants:', error);
+      console.error('[SELECT_TENANT] Erro ao buscar tenants:', error);
     } finally {
       setLoading(false);
     }
@@ -53,10 +72,20 @@ export default function SelectTenantPage() {
   const selectTenant = async (tenantId: number) => {
     try {
       setSwitching(tenantId);
-      
+
+      // Get the current session token
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !session?.access_token) {
+        console.error('[SELECT_TENANT] Sem sessão válida:', sessionError);
+        alert('Sessão expirada. Faça login novamente.');
+        return;
+      }
+
       const response = await fetch('/api/user-tenants', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ tenant_id: tenantId }),
@@ -65,14 +94,14 @@ export default function SelectTenantPage() {
       const data = await response.json();
 
       if (data.success) {
-        // Force a page reload to update auth context
+        // Redirect to dashboard, which will trigger auth context reload
         window.location.href = '/dashboard';
       } else {
-        console.error('Error switching tenant:', data.error);
+        console.error('[SELECT_TENANT] Falha na seleção:', data.error);
         alert(data.error || 'Erro ao selecionar home game');
       }
     } catch (error) {
-      console.error('Error selecting tenant:', error);
+      console.error('[SELECT_TENANT] Exceção:', error);
       alert('Erro ao selecionar home game');
     } finally {
       setSwitching(null);

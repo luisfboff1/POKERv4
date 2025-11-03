@@ -31,10 +31,6 @@ export default function RankingPage() {
   const playerStats = useMemo((): PlayerStats[] => {
     if (!players.length || !sessions.length) return [];
 
-    console.log('🔄 Calculando ranking dinamicamente das sessões...');
-    console.log('📊 Sessões encontradas:', sessions.length);
-    console.log('👥 Players cadastrados:', players.length);
-
     const stats = new Map<string, PlayerStats>();
 
     // Inicializar stats para todos os players cadastrados
@@ -61,14 +57,11 @@ export default function RankingPage() {
         return;
       }
 
-      console.log('📈 Processando sessão:', session.date, 'com', session.players_data.length, 'jogadores');
-
       session.players_data.forEach((sessionPlayer: SessionPlayerData) => {
         if (!sessionPlayer.name) return;
 
         const playerStat = stats.get(sessionPlayer.name);
         if (!playerStat) {
-          console.log('⚠️  Jogador não cadastrado encontrado na sessão:', sessionPlayer.name);
           return; // Só processa jogadores que estão cadastrados
         }
 
@@ -107,9 +100,7 @@ export default function RankingPage() {
 
     // Ordenar por lucro total (maior para menor)
     const sortedStats = finalStats.sort((a, b) => b.profit - a.profit);
-    
-    console.log('📋 Ranking calculado:', sortedStats.map(s => `${s.name}: R$ ${s.profit.toFixed(2)}`));
-    
+
     return sortedStats;
   }, [players, sessions]);
 

@@ -99,16 +99,10 @@ export async function middleware(request: NextRequest) {
 
     if (!session) {
       // No valid session, redirect to login
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[Middleware] No session for ${pathname}, redirecting to /login`);
-      }
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
     // User is authenticated, return response with updated cookies
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Middleware] Authenticated access to ${pathname}`);
-    }
     return response;
   } catch (error) {
     console.error('[Middleware] Unexpected error:', error);

@@ -8,7 +8,6 @@ export async function GET(req: NextRequest) {
     const authHeader = req.headers.get('authorization');
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('[/api/auth/user] No authorization header');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -18,11 +17,8 @@ export async function GET(req: NextRequest) {
     const { data: { user: supabaseUser }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !supabaseUser) {
-      console.log('[/api/auth/user] Invalid token:', authError);
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
-
-    console.log('[/api/auth/user] Fetching user for email:', supabaseUser.email);
 
     // Fetch user data from database using service role to bypass RLS
     const { data: userData, error: userError } = await supabaseServer
@@ -35,10 +31,7 @@ export async function GET(req: NextRequest) {
         tenant_id,
         player_id,
         is_active,
-        current_tenant_id,
-        tenants!users_tenant_id_fkey (
-          name
-        )
+        current_tenant_id
       `)
       .eq('email', supabaseUser.email)
       .eq('is_active', true)
@@ -72,15 +65,33 @@ export async function GET(req: NextRequest) {
     }
 
     if (!userData) {
-      console.log('[/api/auth/user] No user data returned for:', supabaseUser.email);
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'User not found',
-        email: supabaseUser.email 
+        email: supabaseUser.email
       }, { status: 404 });
     }
 
-    console.log('[/api/auth/user] User found:', userData.email);
-    return NextResponse.json({ user: userData }, { status: 200 });
+    // Fetch current tenant name based on current_tenant_id
+    let currentTenantName = null;
+    const tenantIdToUse = userData.current_tenant_id || userData.tenant_id;
+
+    if (tenantIdToUse) {
+      const { data: tenantData } = await supabaseServer
+        .from('tenants')
+        .select('name')
+        .eq('id', tenantIdToUse)
+        .single();
+
+      currentTenantName = tenantData?.name;
+    }
+
+    // Return user data with current tenant name
+    const responseData = {
+      ...userData,
+      tenants: currentTenantName ? { name: currentTenantName } : null
+    };
+
+    return NextResponse.json({ user: responseData }, { status: 200 });
   } catch (error) {
     console.error('[/api/auth/user] Unexpected error:', error);
     return NextResponse.json({ 

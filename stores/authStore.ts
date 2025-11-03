@@ -19,6 +19,7 @@ interface AuthState {
   setInitialized: (initialized: boolean) => void;
   signOut: () => Promise<void>;
   initialize: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -58,7 +59,7 @@ export const useAuthStore = create<AuthState>()(
 
           // Get current session
           const { data: { session }, error } = await supabase.auth.getSession();
-          
+
           if (error) {
             console.error('Error getting session:', error);
             set({ loading: false, initialized: true });
@@ -79,15 +80,30 @@ export const useAuthStore = create<AuthState>()(
               if (response.ok) {
                 const { user: userData } = await response.json();
                 const tenant = Array.isArray(userData.tenants) ? userData.tenants[0] : userData.tenants;
-                
+
+                // Fetch user's tenants
+                const tenantsResponse = await fetch('/api/user-tenants', {
+                  headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                  },
+                });
+
+                let userTenants = [];
+                if (tenantsResponse.ok) {
+                  const tenantsData = await tenantsResponse.json();
+                  userTenants = tenantsData.success ? tenantsData.data : [];
+                }
+
                 const user: User = {
                   id: userData.id,
                   name: userData.name,
                   email: userData.email,
                   role: userData.role,
-                  team_id: userData.tenant_id,
+                  team_id: userData.current_tenant_id || userData.tenant_id,
                   team_name: tenant?.name,
                   player_id: userData.player_id,
+                  current_tenant_id: userData.current_tenant_id || userData.tenant_id,
+                  tenants: userTenants,
                 };
 
                 set({
@@ -109,11 +125,72 @@ export const useAuthStore = create<AuthState>()(
           set({ loading: false, initialized: true });
         }
       },
+
+      refreshUser: async () => {
+        try {
+          set({ loading: true });
+
+          const { data: { session }, error } = await supabase.auth.getSession();
+
+          if (error || !session) {
+            console.error('No session found during refresh:', error);
+            set({ loading: false });
+            return;
+          }
+
+          const response = await fetch('/api/auth/user', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            const { user: userData } = await response.json();
+            const tenant = Array.isArray(userData.tenants) ? userData.tenants[0] : userData.tenants;
+
+            // Fetch user's tenants
+            const tenantsResponse = await fetch('/api/user-tenants', {
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+              },
+            });
+
+            let userTenants = [];
+            if (tenantsResponse.ok) {
+              const tenantsData = await tenantsResponse.json();
+              userTenants = tenantsData.success ? tenantsData.data : [];
+            }
+
+            const user: User = {
+              id: userData.id,
+              name: userData.name,
+              email: userData.email,
+              role: userData.role,
+              team_id: userData.current_tenant_id || userData.tenant_id,
+              team_name: tenant?.name,
+              player_id: userData.player_id,
+              current_tenant_id: userData.current_tenant_id || userData.tenant_id,
+              tenants: userTenants,
+            };
+
+            set({ user });
+          }
+
+          set({ loading: false });
+        } catch (error) {
+          console.error('Error refreshing user:', error);
+          set({ loading: false });
+        }
+      },
     }),
     {
       name: 'auth-storage',
       partialize: (state) => ({
-        user: state.user,
+        // Don't persist user data or initialized state
+        // This ensures fresh data is fetched on every page load
+        // Especially important after tenant switches
       }),
     }
   )

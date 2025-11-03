@@ -11,10 +11,20 @@ export async function GET(req: NextRequest) {
   try {
     const user = await requireAuth(req);
 
-    // Get user's tenants using the helper function
-    const { data: userTenants, error } = await supabaseServer.rpc('get_user_tenants', {
-      user_email: user.email
-    });
+    // Get user's tenants directly from user_tenants table
+    const { data: userTenants, error } = await supabaseServer
+      .from('user_tenants')
+      .select(`
+        tenant_id,
+        role,
+        player_id,
+        is_active,
+        tenants!user_tenants_tenant_id_fkey (
+          name
+        )
+      `)
+      .eq('user_id', user.id)
+      .eq('is_active', true);
 
     if (error) {
       console.error('Error fetching user tenants:', error);
@@ -24,9 +34,27 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      data: userTenants as UserTenant[] 
+    // Format the response to match UserTenant type
+    const formattedTenants = (userTenants || []).map((ut: unknown) => {
+      const userTenant = ut as {
+        tenant_id: number;
+        role: string;
+        player_id: number | null;
+        is_active: boolean;
+        tenants: { name: string } | null;
+      };
+      return {
+        tenant_id: userTenant.tenant_id,
+        tenant_name: userTenant.tenants?.name || 'Nome não encontrado',
+        role: userTenant.role,
+        player_id: userTenant.player_id,
+        is_active: userTenant.is_active
+      };
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: formattedTenants as UserTenant[]
     });
   } catch (error) {
     console.error('Error in GET /api/user-tenants:', error);
@@ -56,6 +84,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Verificar se o usuário tem acesso ao tenant solicitado
+    const { data: userTenantAccess, error: accessError } = await supabaseServer
+      .from('user_tenants')
+      .select('tenant_id, role, is_active')
+      .eq('user_id', user.id)
+      .eq('tenant_id', tenant_id)
+      .eq('is_active', true)
+      .single();
+
+    if (accessError || !userTenantAccess) {
+      return NextResponse.json(
+        { success: false, error: 'Você não tem acesso a este home game' },
+        { status: 403 }
+      );
+    }
+
     // Use the helper function to switch tenant
     const { data: success, error } = await supabaseServer.rpc('switch_user_tenant', {
       user_email: user.email,
@@ -63,10 +107,10 @@ export async function POST(req: NextRequest) {
     });
 
     if (error || !success) {
-      console.error('Error switching tenant:', error);
+      console.error('[TENANT_SWITCH] Erro ao executar switch_user_tenant RPC:', error);
       return NextResponse.json(
-        { success: false, error: 'Você não tem acesso a este home game' },
-        { status: 403 }
+        { success: false, error: 'Erro ao trocar de home game' },
+        { status: 500 }
       );
     }
 
@@ -85,21 +129,21 @@ export async function POST(req: NextRequest) {
         .select('name')
         .eq('id', userData.current_tenant_id)
         .single();
-      
+
       currentTenantName = tenantData?.name;
     }
 
     if (userError) {
-      console.error('Error fetching updated user:', userError);
+      console.error('[TENANT_SWITCH] Erro ao buscar dados atualizados do usuário:', userError);
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       data: {
         ...userData,
         current_tenant_name: currentTenantName
       },
-      message: 'Home game alterado com sucesso' 
+      message: 'Home game alterado com sucesso'
     });
   } catch (error) {
     console.error('Error in POST /api/user-tenants:', error);

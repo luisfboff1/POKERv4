@@ -43,14 +43,10 @@ export default function SchedulePage() {
       const now = new Date();
       const allSessions = (response.data as Session[]) || [];
 
-      console.log('[Schedule Page] Total sessions fetched:', allSessions.length);
-
       const scheduledSessions = allSessions.filter((s: Session) => {
         if (!s.scheduled_date) return false;
         return new Date(s.scheduled_date) > now;
       });
-
-      console.log('[Schedule Page] Filtered scheduled sessions:', scheduledSessions.length);
 
       // Set sessions first without confirmations
       setSessions(scheduledSessions);

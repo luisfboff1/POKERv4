@@ -9,13 +9,10 @@ import { supabaseServer } from '@/lib/supabaseServer';
  */
 export async function GET(req: NextRequest) {
   try {
-    console.log('[/api/users] Starting request...');
     const user = await requireAuth(req);
-    console.log('[/api/users] Authenticated user:', { id: user.id, email: user.email, role: user.role, tenant_id: user.tenant_id });
 
     // Super admin can see all users and players
     if (user.role === 'super_admin') {
-      console.log('[/api/users] Super admin mode - fetching all players');
       // Get all players first
       const { data: players, error: playersError} = await supabaseServer
         .from('players')
@@ -23,35 +20,22 @@ export async function GET(req: NextRequest) {
         .order('name', { ascending: true });
 
       if (playersError) {
-        console.error('[/api/users] Error fetching players:', {
-          message: playersError.message,
-          details: playersError.details,
-          hint: playersError.hint,
-          code: playersError.code,
-        });
+        console.error('[/api/users] Error fetching players:', playersError);
         return NextResponse.json(
           { success: false, error: 'Erro ao buscar usuários' },
           { status: 500 }
         );
       }
-      console.log(`[/api/users] Fetched ${players?.length || 0} players`);
 
       // Get all users
-      console.log('[/api/users] Fetching users...');
       const { data: users, error: usersError } = await supabaseServer
         .from('users')
         .select('id, name, email, role, is_active, current_tenant_id')
         .order('name', { ascending: true });
 
       if (usersError) {
-        console.error('[/api/users] Error fetching users:', {
-          message: usersError.message,
-          details: usersError.details,
-          hint: usersError.hint,
-          code: usersError.code,
-        });
+        console.error('[/api/users] Error fetching users:', usersError);
       }
-      console.log(`[/api/users] Fetched ${users?.length || 0} users`);
 
       // Create a map of users by ID for quick lookup
       const usersMap = new Map((users || []).map(u => [u.id, u]));
@@ -68,15 +52,16 @@ export async function GET(req: NextRequest) {
               const { data: tenants, error: rpcError } = await supabaseServer.rpc('get_user_tenants', {
                 user_email: userAccount.email
               });
-              console.log(`[/api/users] get_user_tenants for ${userAccount.email}:`, { tenants, error: rpcError });
               if (!rpcError && tenants) {
-                userTenants = tenants.map((t: any) => ({
-                  tenant_id: t.tenant_id,
-                  tenant_name: t.tenant_name,
-                  role: t.role
-                }));
+                userTenants = tenants.map((t: unknown) => {
+                  const tenant = t as { tenant_id: number; tenant_name: string; role: string };
+                  return {
+                    tenant_id: tenant.tenant_id,
+                    tenant_name: tenant.tenant_name,
+                    role: tenant.role
+                  };
+                });
               }
-              console.log(`[/api/users] userTenants mapped:`, userTenants);
             } else if (player.tenant_id) {
               // Se NÃO tem conta de usuário, buscar nome do tenant do player
               const { data: tenantData } = await supabaseServer
@@ -123,8 +108,6 @@ export async function GET(req: NextRequest) {
           }
         })
       );
-
-      console.log('[/api/users] Super admin - returning combined data:', JSON.stringify(combined.slice(0, 2), null, 2));
 
       return NextResponse.json({
         success: true,

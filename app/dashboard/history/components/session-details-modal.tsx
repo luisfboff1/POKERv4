@@ -245,9 +245,8 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
                   paidTransfers={session.paid_transfers || {}}
                   disabled={!editing}
                   onTransferUpdate={async (transfers) => {
-                    console.log('🔄 Transferências atualizadas:', transfers);
                     setCurrentTransfers(transfers);
-                    
+
                     // Sistema de auto-aprovação: verifica se pode aprovar automaticamente
                     try {
                       await onTransferUpdate(transfers);
@@ -256,10 +255,7 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
                     }
                   }}
                   onStatusChange={(status) => {
-                    console.log('📊 Status da sessão mudou para:', status);
-                    if (status === 'completed') {
-                      console.log('🎯 Todos os pagamentos completos! Sessão será aprovada automaticamente.');
-                    }
+                    // Status updated
                   }}
                 />
               </div>

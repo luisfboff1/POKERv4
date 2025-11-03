@@ -28,9 +28,7 @@ export default function LoginPage() {
 
   // Redirect authenticated users away from login page
   useEffect(() => {
-    console.log('Login page useEffect - authLoading:', authLoading, 'user:', user);
     if (!authLoading && user) {
-      console.log('Redirecting after login...');
       // Check if user has multiple tenants
       if (user.tenants && user.tenants.length > 1) {
         // Redirect to tenant selection
