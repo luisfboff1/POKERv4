@@ -100,7 +100,8 @@ export const Plasma: React.FC<PlasmaProps> = ({
   const mousePos = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
     // Disable Plasma on mobile devices to prevent performance issues
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -125,7 +126,7 @@ export const Plasma: React.FC<PlasmaProps> = ({
       canvas.style.display = 'block';
       canvas.style.width = '100%';
       canvas.style.height = '100%';
-      containerRef.current.appendChild(canvas);
+      container.appendChild(canvas);
 
       const geometry = new Triangle(gl);
 
@@ -150,7 +151,7 @@ export const Plasma: React.FC<PlasmaProps> = ({
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!mouseInteractive) return;
-      const rect = containerRef.current!.getBoundingClientRect();
+      const rect = container.getBoundingClientRect();
       mousePos.current.x = e.clientX - rect.left;
       mousePos.current.y = e.clientY - rect.top;
       const mouseUniform = program.uniforms.uMouse.value as Float32Array;
@@ -159,11 +160,11 @@ export const Plasma: React.FC<PlasmaProps> = ({
     };
 
     if (mouseInteractive) {
-      containerRef.current.addEventListener('mousemove', handleMouseMove);
+      container.addEventListener('mousemove', handleMouseMove);
     }
 
     const setSize = () => {
-      const rect = containerRef.current!.getBoundingClientRect();
+      const rect = container.getBoundingClientRect();
       const width = Math.max(1, Math.floor(rect.width));
       const height = Math.max(1, Math.floor(rect.height));
       renderer.setSize(width, height);
@@ -173,7 +174,7 @@ export const Plasma: React.FC<PlasmaProps> = ({
     };
 
     const ro = new ResizeObserver(setSize);
-    ro.observe(containerRef.current);
+    ro.observe(container);
     setSize();
 
     let raf = 0;
@@ -197,11 +198,11 @@ export const Plasma: React.FC<PlasmaProps> = ({
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
-      if (mouseInteractive && containerRef.current) {
-        containerRef.current.removeEventListener('mousemove', handleMouseMove);
+      if (mouseInteractive) {
+        container.removeEventListener('mousemove', handleMouseMove);
       }
       try {
-        containerRef.current?.removeChild(canvas);
+        container.removeChild(canvas);
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (_error) {
         // Ignore cleanup errors

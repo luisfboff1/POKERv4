@@ -254,7 +254,7 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
                       console.error('Erro na auto-aprovação:', error);
                     }
                   }}
-                  onStatusChange={(status) => {
+                  onStatusChange={(_status) => {
                     // Status updated
                   }}
                 />
