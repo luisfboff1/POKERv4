@@ -1,6 +1,8 @@
 # 🎯 Poker Manager - Sistema Multi-Tenant de Gestão de Poker
 
-> **Sistema SaaS moderno** para gerenciamento de home games de poker com Supabase Auth, Next.js 15, multi-tenancy, analytics em tempo real e muito mais!
+> **Sistema SaaS moderno** para gerenciamento de home games de poker com Supabase Auth, Next.js 15, multi-tenancy, Row Level Security e muito mais!
+
+**Status**: ✅ Em Produção | Vercel + Supabase
 
 ## 🚨 IMPORTANTE: Configuração de Permissões do Schema
 
@@ -82,92 +84,106 @@ Este erro ocorre porque você tem um usuário no Supabase Auth mas não existe u
 
 ## 🏗️ **Arquitetura Moderna Full-Stack**
 
-### **Frontend (Next.js 15 + React 19)**
+### **Full-Stack Architecture (Next.js 15)**
 ```
 app/
-├── layout.tsx                     # Layout raiz com providers
-├── page.tsx                       # Landing page
-├── globals.css                    # Estilos globais + Tailwind
-├── login/                         # Página de login com OAuth
-├── register/                      # Registro de novos tenants
-├── dashboard/                     # Dashboard principal autenticado
-├── forgot-password/              # Recuperação de senha
-├── accept-invite/                # Aceitar convites
-└── api/                          # API Routes (Server-side)
-    ├── auth/
-    │   ├── login/route.ts        # Login com Supabase Auth
-    │   ├── logout/route.ts       # Logout e invalidação
-    │   └── verify/route.ts       # Verificação de token
-    ├── sessions/route.ts         # CRUD de sessões (multi-tenant)
-    ├── players/route.ts          # Gerenciamento de jogadores
-    └── invites/route.ts          # Sistema de convites
+├── api/                          # Next.js API Routes (Backend)
+│   ├── auth/                     # Autenticação
+│   │   ├── login/route.ts
+│   │   ├── logout/route.ts
+│   │   ├── register/route.ts
+│   │   ├── verify/route.ts
+│   │   └── callback/route.ts     # OAuth callback
+│   ├── sessions/                 # Gestão de sessões
+│   │   ├── route.ts
+│   │   ├── [id]/route.ts
+│   │   └── schedule/route.ts
+│   ├── players/route.ts          # Gestão de jogadores
+│   ├── invites/route.ts          # Sistema de convites
+│   └── tenants/route.ts          # Multi-tenancy
+├── dashboard/                    # Frontend (páginas protegidas)
+│   ├── layout.tsx                # Layout com auth check
+│   ├── page.tsx                  # Dashboard home
+│   ├── new/                      # Criar sessão (wizard)
+│   ├── history/                  # Histórico
+│   ├── ranking/                  # Rankings
+│   ├── invites/                  # Convites
+│   └── admin/                    # Super admin
+├── login/                        # Login page
+├── register/                     # Registro de tenants
+└── accept-invite/                # Aceitar convites
 
 components/
-├── ui/                           # Componentes base (shadcn/ui)
-│   ├── button.tsx
-│   ├── card.tsx
-│   ├── dialog.tsx
-│   └── ...
-├── PlayerDashboard.tsx           # Dashboard do jogador
-├── PlayerStatsSyncManager.tsx    # Sincronização de stats
-├── TransferManager.tsx           # Gestão de transferências
-├── Plasma.tsx                    # Efeito visual de fundo
-└── theme-toggle.tsx              # Toggle dark/light mode
+├── ui/                           # shadcn/ui components
+├── Plasma.tsx                    # Background effect
+└── [feature components]          # Feature-specific
 
 contexts/
-└── auth-context.tsx              # Estado global de autenticação
+└── auth-context.tsx              # Global auth state
 
 lib/
-├── supabaseClient.ts             # Cliente Supabase (frontend)
-├── supabaseServer.ts             # Cliente Supabase (backend)
-├── supabase-auth.ts              # Helpers de autenticação
-├── analytics.ts                  # Google Analytics integration
-└── types.ts                      # TypeScript types
+├── supabaseClient.ts             # Supabase (browser)
+├── supabaseServer.ts             # Supabase (server)
+├── transferSystem.ts             # Transfer algorithm
+├── types.ts                      # TypeScript types
+└── utils.ts                      # Utilities
 
-stores/
-└── authStore.ts                  # Zustand store para auth
+supabase/
+└── migrations/                   # Database migrations
 ```
 
-### **Backend (Next.js API Routes + Supabase)**
-- **Server-Side Rendering**: Páginas renderizadas no servidor
-- **API Routes**: Endpoints TypeScript type-safe
-- **Supabase Integration**: Auth + Database unificado
-- **Row Level Security**: Políticas no PostgreSQL
-- **Service Role**: Acesso administrativo ao banco
+### **Backend & Database**
+- **Next.js API Routes**: Endpoints TypeScript type-safe
+- **Supabase**: Backend-as-a-Service completo
+- **PostgreSQL 15**: Banco de dados relacional
+- **Row Level Security**: Políticas no PostgreSQL (schema `poker`)
+- **Migrations**: Versionamento de schema via Supabase CLI
 
-### **Banco de Dados (PostgreSQL + Supabase)**
+### **Banco de Dados (PostgreSQL 15 + Supabase)**
+
+**Schema**: `poker` (não `public`)
+
 ```sql
 -- 🏢 TENANTS (Grupos de Poker)
-tenants (
+poker.tenants (
   id, name, email, plan, status,
   max_users, max_sessions_per_month,
   created_at, updated_at
 )
 
 -- 👥 USUÁRIOS (Multi-tenant com Supabase Auth)
-users (
+poker.users (
   id, tenant_id, name, email, role,
-  is_active, last_login, player_id,
+  supabase_user_id, player_id,
+  is_active, last_login,
   created_at, updated_at
 )
--- Vinculado com auth.users do Supabase
+-- Vinculado com auth.users via supabase_user_id
+
+-- 🔗 USER_TENANTS (Multi-home game support)
+poker.user_tenants (
+  user_id, tenant_id,
+  role, is_active,
+  created_at
+)
+-- Permite usuários em múltiplos tenants
 
 -- 👤 JOGADORES (Perfis de jogadores)
-players (
+poker.players (
   id, tenant_id, name, user_id,
   total_sessions, total_buyin, total_cashout,
-  total_profit, is_active
+  total_profit, win_rate, is_active
 )
 
 -- 🎰 SESSÕES (Isoladas por tenant)
-sessions (
+poker.sessions (
   id, tenant_id, date, location, status,
   players_data, recommendations, paid_transfers,
   created_by, created_at
 )
 
--- � AUDITORIA (Logs imutáveis)
-audit_logs (
+-- 📋 AUDITORIA (Logs imutáveis)
+poker.audit_logs (
   id, tenant_id, user_id, action,
   table_name, record_id, old_data, new_data,
   ip_address, user_agent, created_at
@@ -176,68 +192,65 @@ audit_logs (
 
 ### **Segurança (Row Level Security)**
 ```sql
+-- Todas as tabelas têm RLS habilitado
+ALTER TABLE poker.sessions ENABLE ROW LEVEL SECURITY;
+
 -- Exemplo de RLS Policy
 CREATE POLICY "Users can view sessions from their tenant"
-  ON public.sessions FOR SELECT
-  USING (tenant_id = get_user_tenant_id());
+  ON poker.sessions FOR SELECT
+  USING (tenant_id IN (
+    SELECT tenant_id FROM poker.user_tenants
+    WHERE user_id = auth.uid() AND is_active = true
+  ));
 
 -- Funções helper para RLS
-get_user_tenant_id()     -- Extrai tenant do JWT
-user_has_role(role)      -- Verifica hierarquia de roles
+auth.uid()                       -- ID do usuário do Supabase Auth
+get_user_tenant_ids()            -- Lista de tenant_ids do usuário
+user_has_role(role)              -- Verifica role do usuário
 ```
 
-## 🔐 **Migração de Segurança Completa**
+## 🔐 **Segurança de Nível Empresarial**
 
-### **� Antes (Sistema Legado - VULNERÁVEL)**
-```typescript
-// ⚠️ CRÍTICO: Secret hardcoded no código
-const JWT_SECRET = process.env.JWT_SECRET || 
-  'poker_jwt_secret_2025_super_secure_key...'; // PÚBLICO NO GITHUB!
-
-// ❌ Token de 24 horas (janela de ataque grande)
-// ❌ Gestão manual de sessões
-// ❌ Sem MFA, OAuth, rate limiting
-```
-
-### **✅ Agora (Supabase Auth - SEGURO)**
+### **✅ Supabase Auth (Produção)**
 ```typescript
 // ✅ Secrets gerenciados pelo Supabase (nunca expostos)
-const { data } = await supabase.auth.signInWithPassword({
+const { data, error } = await supabase.auth.signInWithPassword({
   email, password
 });
 
-// ✅ Access token: 1 hora (vs 24h)
+// ✅ Access token: 1 hora (curta duração)
 // ✅ Refresh token: 30 dias (renovação automática)
-// ✅ MFA, OAuth, rate limiting built-in
+// ✅ MFA/2FA disponível
+// ✅ OAuth integrado (Google, Microsoft, etc)
+// ✅ Rate limiting built-in
 // ✅ RLS policies em nível de banco
 // ✅ Conformidade SOC 2, ISO 27001
 ```
 
-### **📊 Comparação de Segurança**
-| Aspecto | Antes (JWT Custom) | Agora (Supabase) |
-|---------|-------------------|------------------|
-| **Secret Management** | ⚠️ Hardcoded | ✅ Gerenciado |
-| **Token Duration** | ❌ 24h | ✅ 1h + refresh |
-| **Revocation** | ⚠️ Manual | ✅ Automática |
-| **MFA/2FA** | ❌ | ✅ Built-in |
-| **OAuth** | ❌ | ✅ Built-in |
-| **Rate Limiting** | ❌ | ✅ Built-in |
-| **RLS** | ❌ | ✅ Implementado |
-| **Manutenção** | ❌ Manual | ✅ Automática |
+### **📊 Recursos de Segurança**
+| Recurso | Status | Descrição |
+|---------|--------|-----------|
+| **Supabase Auth** | ✅ Ativo | Autenticação gerenciada |
+| **Token Duration** | ✅ 1h | Access tokens de curta duração |
+| **Auto Refresh** | ✅ Ativo | Refresh automático (30 dias) |
+| **MFA/2FA** | ✅ Disponível | Autenticação de dois fatores |
+| **OAuth** | ✅ Integrado | Google, Microsoft, etc |
+| **Rate Limiting** | ✅ Built-in | Proteção contra brute force |
+| **RLS Policies** | ✅ Implementado | Isolamento por tenant |
+| **Audit Logs** | ✅ Ativo | Rastreamento completo |
 
-**Resultado:** Vulnerabilidade crítica eliminada, código ~200 linhas mais limpo.
+**Stack de Segurança**: Supabase Auth + PostgreSQL RLS + bcrypt + Next.js Middleware
 
-Ver: `SECURITY_MIGRATION_SUPABASE_AUTH.md`
-
-## ⚙️ **Sistema Multi-Tenant**
+## ⚙️ **Sistema Multi-Tenant em Produção**
 
 ### **✅ Status Atual**
-O sistema SaaS multi-tenant está **100% configurado e funcionando**:
+O sistema SaaS multi-tenant está **100% operacional na Vercel**:
 - 🟢 **PostgreSQL + Supabase** - Estrutura multi-tenant completa
 - 🟢 **Supabase Auth** - Autenticação profissional e segura
 - 🟢 **RLS Policies** - Isolamento garantido por tenant
-- 🟢 **Next.js 15** - Framework moderno e otimizado
+- 🟢 **Next.js 15** - SSR habilitado com App Router
 - 🟢 **TypeScript** - Type-safety em toda aplicação
+- 🟢 **Vercel** - Deploy automático via Git
 
 ### **📊 Tabelas do Sistema**
 - ✅ `tenants` - Grupos de poker (multi-tenant)
@@ -251,26 +264,26 @@ O sistema SaaS multi-tenant está **100% configurado e funcionando**:
 ### **Desenvolvimento Local**
 ```bash
 # 1. Clonar repositório
-git clone https://github.com/luisfboff1/POKERv4.git
-cd POKERv4
+git clone https://github.com/luisfboff1/Poker-Novo.git
+cd Poker-Novo
 
 # 2. Instalar dependências
-pnpm install
+npm install
 
 # 3. Configurar variáveis de ambiente
 # Criar arquivo .env.local com:
-NEXT_PUBLIC_SUPABASE_URL=sua_url_supabase
+NEXT_PUBLIC_SUPABASE_URL=https://jhodhxvvhohygijqcxbo.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anon
 SUPABASE_SERVICE_ROLE_KEY=sua_chave_service
 NEXT_PUBLIC_GA_MEASUREMENT_ID=seu_id_analytics (opcional)
 
-# 4. Aplicar migrations no Supabase
-# Executar no SQL Editor:
-# - db/migrations/remove_user_sessions.sql
-# - db/migrations/enable_rls_policies_fixed.sql
+# 4. Aplicar migrations no Supabase (se necessário)
+# As migrations estão em supabase/migrations/
+# Aplicar via Supabase CLI:
+supabase db push --project-ref jhodhxvvhohygijqcxbo
 
 # 5. Executar servidor de desenvolvimento
-pnpm dev
+npm run dev
 
 # 6. Acessar no navegador
 http://localhost:3000
@@ -278,25 +291,30 @@ http://localhost:3000
 
 ### **Produção (Vercel) - Deploy Automatizado**
 ```bash
-# 1. Conectar repositório no Vercel
-# 2. Configurar variáveis de ambiente
-# 3. Deploy automático a cada push na main
+# Deploy automático via Git
+# 1. Push para branch main
+git push origin main
 
-# Ou deploy manual:
-pnpm build
-pnpm start
+# 2. Vercel detecta e faz deploy automaticamente
+
+# Ou deploy manual via CLI:
+npm i -g vercel
+vercel          # Deploy preview
+vercel --prod   # Deploy production
 ```
 
 ### **TypeScript & Validação**
 ```bash
 # Verificar tipos
-pnpm typecheck
+npm run typecheck
 
-# Lint
-pnpm lint
+# Lint e correções
+npm run lint
+npm run lint:fix
 
-# Build de produção
-pnpm build
+# Build de produção (local)
+npm run build
+npm start
 ```
 
 ## 💡 **Como Usar o Sistema**
@@ -369,156 +387,111 @@ Total: 2 transferências (mínimo possível)
 - **Sucesso**: Confirmações de ações realizadas
 - **Vazio**: Orientações quando não há dados
 
-## 📁 **Estrutura Completa do Projeto SaaS**
+## 📁 **Estrutura do Projeto**
 
 ```
-📦 Poker SaaS - Sistema Multi-Tenant/
-├── 📁 src/                          # Frontend React
-│   ├── App.jsx                      # Router principal com rotas protegidas
-│   ├── main.jsx                     # Ponto de entrada da aplicação
-│   ├── index.css                    # Estilos globais + Tailwind
-│   ├── contexts/                    # Estado global
-│   │   ├── AuthContext.jsx          # Contexto de autenticação
-│   │   └── AgentContext.jsx         # Contexto do PokerBot Agente
-│   ├── components/                  # Componentes React
-│   │   ├── Layout/                  # Layout principal autenticado
-│   │   ├── ProtectedRoute/          # Controle de acesso por roles
-│   │   ├── PokerBot/                # Interface do agente IA
-│   │   ├── SessionManager/          # Gerenciamento de sessões
-│   │   └── ErrorBoundary/           # Tratamento de erros React
-│   ├── pages/                       # Páginas da aplicação
-│   │   ├── Login/                   # Página de login
-│   │   ├── Register/                # Registro de novos tenants
-│   │   ├── Home/                    # Dashboard principal
-│   │   ├── NewSession/              # Criar nova sessão
-│   │   ├── History/                 # Histórico de sessões
-│   │   ├── Ranking/                 # Rankings e estatísticas
-│   │   ├── Invites/                 # Gerenciar convites
-│   │   ├── SuperAdmin/              # Dashboard super admin
-│   │   └── AcceptInvite/            # Aceitar convites via email
-│   └── services/                    # Cliente HTTP para APIs
-│       └── api.js                   # Cliente HTTP para todas as APIs
-├── 📁 api/                          # Backend PHP Multi-Tenant
-│   ├── config.php                   # Configuração do banco + CORS
-│   ├── jwt_helper.php               # Geração e validação de JWT
-│   ├── middleware/                  # Middleware de autenticação
-│   │   └── auth_middleware.php      # Auth e autorização por roles
-│   ├── auth.php                     # Sistema de autenticação
-│   ├── register.php                 # Registro de novos tenants
-│   ├── approve.php                  # Aprovação de tenants
-│   ├── session.php                  # CRUD de sessões (filtrado por tenant)
-│   ├── players.php                  # API de jogadores únicos
-│   ├── invite.php                   # Sistema de convites
-│   ├── accept_invite.php            # Processar convites via email
-│   ├── super_admin.php              # Dashboard e APIs do super admin
-│   ├── agent.php                    # APIs do PokerBot Agente
-│   ├── pdf_generator.php            # Geração de relatórios PDF
-│   ├── email_config.php             # Configuração SMTP e templates
-│   ├── setup_saas.sql               # Script de criação do banco multi-tenant
-│   └── composer.json                # Dependências PHP (PHPMailer)
-├── 📁 .github/workflows/            # CI/CD Automatizado
-│   └── deploy-hostinger.yml         # Deploy automático para Hostinger
-├── 📁 explicacoes/                  # Documentação técnica completa
-│   ├── APRENDIZADOS_PROJETO_SAAS.md # Aprendizados e erros
-│   ├── CONFIGURACAO_SMTP_EMAIL.md   # Setup de emails
-│   ├── CORRECOES_SISTEMA_COMPLETAS.md # Correções implementadas
-│   ├── ESTRUTURA_ABAS.md            # Estrutura das abas
-│   ├── HISTORICO_ABAS.md            # Histórico e navegação
-│   ├── HOSTINGER_SETUP.md           # Setup no Hostinger
-│   ├── OTIMIZACAO_TRANSFERENCIAS_COMPLETA.md # Doc. otimização
-│   ├── PLANO_POKERBOT_AGENTE.md     # Documentação do PokerBot
-│   ├── PROMPT_FUNCIONALIDADES.md    # Prompt de funcionalidades
-│   ├── SETUP_GITHUB_SECRETS.md      # Configuração de deploy
-│   ├── SISTEMA_JANTA_COMPLETO.md    # Doc. sistema de janta
-│   ├── HISTORICO_MIGRACAO_SAAS.md   # Histórico da migração para SaaS
-│   └── RELATORIO_LIMPEZA_PROJETO.md # Relatório de limpeza do projeto
-├── 📁 dist/                         # Build de produção (gerado automaticamente)
-│   ├── assets/                      # Assets otimizados
-│   ├── favicon.svg                  # Ícone da aplicação
-│   ├── index.html                   # HTML principal
-│   └── manifest.json                # PWA manifest
+📦 Poker SaaS - Next.js 15 Full-Stack/
+├── 📁 app/                          # Next.js App Router
+│   ├── api/                         # API Routes (Backend)
+│   │   ├── auth/                    # Autenticação
+│   │   ├── sessions/                # Sessões
+│   │   ├── players/                 # Jogadores
+│   │   ├── invites/                 # Convites
+│   │   ├── tenants/                 # Tenants
+│   │   └── users/                   # Usuários
+│   ├── dashboard/                   # Páginas protegidas
+│   │   ├── layout.tsx               # Layout com auth
+│   │   ├── page.tsx                 # Dashboard home
+│   │   ├── new/                     # Criar sessão
+│   │   ├── history/                 # Histórico
+│   │   ├── ranking/                 # Rankings
+│   │   ├── invites/                 # Convites
+│   │   └── admin/                   # Super admin
+│   ├── login/                       # Login page
+│   ├── register/                    # Registro
+│   ├── accept-invite/               # Aceitar convites
+│   ├── layout.tsx                   # Root layout
+│   └── page.tsx                     # Landing page
+├── 📁 components/                   # Componentes React
+│   ├── ui/                          # shadcn/ui components
+│   ├── Plasma.tsx                   # Background effect
+│   └── [feature components]/        # Feature-specific
+├── 📁 contexts/                     # Estado global
+│   └── auth-context.tsx             # Contexto de autenticação
+├── 📁 lib/                          # Bibliotecas e utilitários
+│   ├── supabaseClient.ts            # Supabase (browser)
+│   ├── supabaseServer.ts            # Supabase (server)
+│   ├── transferSystem.ts            # Algoritmo de otimização
+│   ├── types.ts                     # TypeScript types
+│   └── utils.ts                     # Utilitários
+├── 📁 supabase/                     # Supabase config
+│   └── migrations/                  # Database migrations
+│       └── *.sql                    # Migration files
 ├── 📁 public/                       # Arquivos estáticos
-│   ├── favicon.svg                  # Ícone da aplicação
-│   └── manifest.json                # PWA manifest
-├── 📁 node_modules/                 # Dependências Node.js (gerado automaticamente)
-├── 📄 .htaccess                     # Rewrite rules Apache (SPA routing)
-├── 📄 package.json                  # Dependências Node.js
-├── 📄 package-lock.json             # Lock file das dependências
-├── 📄 vite.config.js                # Configuração do Vite
-├── 📄 tailwind.config.js            # Configuração do Tailwind
-├── 📄 postcss.config.js             # Configuração do PostCSS
-├── 📄 index.html                    # HTML principal (desenvolvimento)
-├── 📄 README.md                     # Documentação completa do projeto
-├── 📄 PROMPT_REPLICACAO_PROJETO_SAAS.md # Guia para replicar projeto
-├── 📄 GUIA_ALINHAMENTO_PERFEITO_SAAS.md # Guia de alinhamento
-└── 📄 RELATORIO_LIMPEZA_PROJETO.md  # Relatório de limpeza
+├── 📁 db/                           # Database docs e backups
+│   ├── migrations/                  # Migration docs
+│   └── backups/                     # Database backups
+├── 📄 middleware.ts                 # Next.js middleware (auth)
+├── 📄 next.config.ts                # Next.js config
+├── 📄 tailwind.config.ts            # Tailwind config
+├── 📄 tsconfig.json                 # TypeScript config
+├── 📄 package.json                  # Dependências
+├── 📄 .env.local                    # Environment vars (não commitado)
+├── 📄 CLAUDE.md                     # Documentação para Claude Code
+└── 📄 README.md                     # Este arquivo
 ```
 
-## 🔧 **Stack Tecnológico Completo**
+## 🔧 **Stack Tecnológico**
 
 ### **Frontend**
-- **Next.js 15**: Framework React com App Router
-- **React 19**: Biblioteca UI com Server Components
-- **TypeScript 5**: Tipagem estática e type-safety
-- **Tailwind CSS 4**: Framework CSS utilitário moderno
+- **Next.js 15**: Framework React com App Router e Server Components
+- **React 19**: Biblioteca UI moderna
+- **TypeScript 5**: Type-safety completo
+- **Tailwind CSS 4**: Framework CSS utilitário
 - **Framer Motion**: Animações fluidas
-- **Zustand**: State management leve
 - **Radix UI**: Componentes acessíveis (shadcn/ui)
-- **Lucide Icons**: Ícones modernos
+- **Lucide Icons**: Ícones SVG modernos
 
 ### **Backend**
-- **Next.js API Routes**: Endpoints TypeScript type-safe
-- **Supabase**: Backend-as-a-Service completo
-  - Auth: Autenticação e autorização
-  - Database: PostgreSQL gerenciado
-  - Storage: Armazenamento de arquivos
-  - Realtime: Atualizações em tempo real
-- **PostgreSQL 15**: Banco de dados relacional
-- **Row Level Security**: Políticas de segurança no banco
+- **Next.js API Routes**: Endpoints TypeScript serverless
+- **Supabase**: Backend-as-a-Service
+  - **Auth**: Autenticação gerenciada
+  - **Database**: PostgreSQL 15 gerenciado
+  - **Row Level Security**: Políticas de segurança
+- **bcryptjs**: Hash seguro de senhas
 
-### **Autenticação & Segurança**
-- **Supabase Auth**: Sistema profissional de auth
-- **JWT**: Tokens seguros com refresh automático
-- **OAuth 2.0**: Google, Microsoft, etc.
-- **MFA/2FA**: Autenticação de dois fatores
-- **RLS Policies**: Isolamento de dados por tenant
-- **bcrypt**: Hash seguro de senhas
+### **Segurança**
+- **Supabase Auth**: Tokens JWT com refresh automático
+- **OAuth 2.0**: Suporte para Google, Microsoft, etc
+- **MFA/2FA**: Disponível via Supabase
+- **RLS Policies**: Isolamento multi-tenant no banco
+- **Next.js Middleware**: Proteção de rotas server-side
 
-### **Analytics & Monitoring**
-- **Vercel Analytics**: Performance e Web Vitals
-- **Google Analytics 4**: Tracking de eventos
-- **Error Boundary**: Tratamento de erros React
-- **Audit Logs**: Rastreamento de ações
+### **DevOps**
+- **Vercel**: Deploy automático serverless
+- **GitHub**: CI/CD via Git push
+- **Supabase CLI**: Migrations e database management
+- **TypeScript**: Validação em build time
+- **ESLint**: Code quality
 
-### **DevOps & Deploy**
-- **Vercel**: Plataforma de deploy otimizada
-- **GitHub**: Controle de versão e CI/CD
-- **pnpm**: Gerenciador de pacotes rápido
-- **Environment Variables**: Configuração segura
-- **TypeScript**: Validação em tempo de build
+### **Database Migrations**
 
-### **Database Migrations (MANDATORY)**
-- **Supabase Migrations**: Versionamento de schema
-- **pg_dump**: Backup completo do banco
-- **Row Level Security**: Políticas aplicadas via migrations
+⚠️ **REGRA CRÍTICA**: SEMPRE use migrations para mudanças estruturais!
 
-> **⚠️ REGRA CRÍTICA**: SEMPRE use migrations para mudanças no banco!
-> 
-> ```powershell
-> # 1. Criar migration
-> supabase migration new add_new_column
-> 
-> # 2. Editar SQL gerado em supabase/migrations/
-> # 3. Aplicar em produção
-> supabase db push --project-ref jhodhxvvhohygijqcxbo
-> 
-> # 4. Commitar no Git
-> git add supabase/migrations/ && git commit -m "feat: add column"
-> ```
-> 
-> **Nunca execute SQL direto no Dashboard para mudanças estruturais!**
-> 
-> 📖 **Guia Completo**: [`db/MIGRATION_WORKFLOW.md`](./db/MIGRATION_WORKFLOW.md)
+```bash
+# 1. Criar migration
+supabase migration new add_feature
+
+# 2. Editar SQL em supabase/migrations/
+# 3. Aplicar em produção
+supabase db push --project-ref jhodhxvvhohygijqcxbo
+
+# 4. Commitar no Git
+git add supabase/migrations/
+git commit -m "feat: add feature migration"
+```
+
+**Migrations existentes**: `supabase/migrations/`
 
 ## 📊 **Métricas do Sistema**
 
@@ -588,17 +561,15 @@ Total: 2 transferências (mínimo possível)
 
 ## 🌐 **URLs e Acesso**
 
-### **🔗 Links Principais**
-- **🏠 Aplicação**: `https://seu-dominio.vercel.app/`
-- **🔐 Login**: `https://seu-dominio.vercel.app/login`
-- **📝 Registro**: `https://seu-dominio.vercel.app/register`
-- **📊 Dashboard**: `https://seu-dominio.vercel.app/dashboard`
+### **🔗 Links**
+- **🏠 Aplicação**: Vercel (deploy automático)
+- **📖 Repositório**: [Poker-Novo](https://github.com/luisfboff1/Poker-Novo)
+- **🗃️ Database**: Supabase PostgreSQL (schema `poker`)
 
-### **📧 Contatos**
+### **📧 Contato**
 - **Desenvolvedor**: Luis Fernando Boff
 - **Email**: luisfboff@hotmail.com
 - **GitHub**: [@luisfboff1](https://github.com/luisfboff1)
-- **Repositório**: [POKERv4](https://github.com/luisfboff1/POKERv4)
 
 ---
 
@@ -607,32 +578,32 @@ Total: 2 transferências (mínimo possível)
 ### **v1.0 - Sistema Básico (2024)**
 - ❌ Sistema simples sem autenticação
 - ❌ Single-tenant (apenas um grupo)
-- ❌ PHP + MySQL tradicional
-- ❌ Sem segurança adequada
+- ❌ Frontend estático
 
-### **v2.0 - SaaS Multi-Tenant (2025)**
-- ✅ Sistema SaaS completo
-- ✅ Multi-tenant com isolamento
-- ✅ JWT customizado (vulnerável)
-- ✅ React + Vite + PHP
+### **v2.0 - SaaS Multi-Tenant (2025 Q1)**
+- ✅ Sistema SaaS multi-tenant
+- ✅ JWT customizado + PHP
+- ✅ MySQL + multi-tenant isolation
 
-### **v3.0 - Next.js Migration (2025)**
+### **v3.0 - Next.js Migration (2025 Q2)**
 - ✅ Migração para Next.js 15
 - ✅ TypeScript completo
-- ✅ Server Components
-- ✅ API Routes modernas
+- ✅ Server Components + API Routes
 
-### **v4.0 - Segurança Empresarial (Atual - 2025)**
-- ✅ Supabase Auth (elimina vulnerabilidades)
-- ✅ PostgreSQL com RLS
-- ✅ OAuth integrado
-- ✅ MFA/2FA pronto
-- ✅ Conformidade SOC 2, ISO 27001
-- ✅ Zero secrets hardcoded
-- ✅ Tokens de curta duração (1h)
-- ✅ Refresh automático (30 dias)
+### **v4.0 - Produção Atual (2025 Q3)**
+- ✅ **Supabase Auth** (eliminou vulnerabilidades)
+- ✅ **PostgreSQL** com RLS (schema `poker`)
+- ✅ **Vercel** deployment automático
+- ✅ **OAuth** integrado (Google, Microsoft)
+- ✅ **MFA/2FA** disponível
+- ✅ **Multi-home game** (`user_tenants`)
+- ✅ **Zero secrets** hardcoded
+- ✅ **Tokens seguros** (1h + refresh 30d)
+- ✅ **Conformidade** SOC 2, ISO 27001
 
-**De um sistema simples para amigos, transformamos em uma plataforma SaaS de nível empresarial!**
+**De um sistema simples → Plataforma SaaS de nível empresarial em produção!**
+
+🔗 **Aplicação em Produção**: Vercel + Supabase
 
 ---
 
