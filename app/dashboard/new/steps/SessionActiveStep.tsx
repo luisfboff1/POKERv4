@@ -9,6 +9,8 @@ import type { SessionStep } from './SessionCreateStep';
 import { formatCurrency } from '@/lib/format';
 import { RebuyModal } from '../modals/RebuyModal';
 import { useConfirmModal } from '@/components/ui/modal';
+import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table';
+import { ColumnDef } from '@tanstack/react-table';
 
 interface SessionActiveStepProps {
   currentSession: LiveSession;
@@ -68,6 +70,134 @@ export const SessionActiveStep: React.FC<SessionActiveStepProps> = ({
     ? Math.round(currentSession.players.reduce((sum, p) => sum + p.buyin, 0) / currentSession.players.length)
     : 50;
 
+  // Define columns for active session table
+  const columns: ColumnDef<LivePlayer>[] = [
+    {
+      accessorKey: "name",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Jogador" />
+      ),
+      cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
+    },
+    {
+      accessorKey: "buyin",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Buy-in" />
+      ),
+      cell: ({ row }) => formatCurrency(row.getValue("buyin")),
+    },
+    {
+      accessorKey: "rebuys",
+      header: "Rebuys",
+      cell: ({ row }) => {
+        const player = row.original;
+        const rebuyTotal = player.rebuys.reduce((s, r) => s + r, 0);
+        return (
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-1">
+              <div className="text-xs text-muted-foreground">
+                {player.rebuys.length} ({formatCurrency(rebuyTotal)})
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {player.rebuys.map((r, i) => (
+                  <div key={i} className="bg-muted px-2 py-1 rounded flex items-center gap-1">
+                    <span className="text-xs">{formatCurrency(r)}</span>
+                    {typeof editRebuy === 'function' && (
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openRebuyModal(player.id, player.name, i);
+                        }}
+                        className="h-auto p-0.5"
+                        title="Editar rebuy"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    )}
+                    {typeof removeRebuy === 'function' && (
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          confirm({
+                            title: 'Remover Rebuy',
+                            message: `Remover rebuy de ${player.name} ${formatCurrency(r)}?`,
+                            onConfirm: () => removeRebuy(player.id, i),
+                            confirmText: 'Remover',
+                            cancelText: 'Cancelar',
+                            variant: 'destructive'
+                          });
+                        }}
+                        className="h-auto p-0.5"
+                        title="Remover rebuy"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              onClick={(e) => {
+                e.stopPropagation();
+                addRebuy(player.id, defaultBuyin);
+              }}
+              title="Adicionar rebuy"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "janta",
+      header: "Janta",
+      cell: ({ row }) => {
+        const player = row.original;
+        return (
+          <Input
+            type="number"
+            value={player.janta || ''}
+            placeholder="0"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => updatePlayerField(player.id, 'janta', Number(e.target.value) || 0)}
+            className="h-8 w-24"
+          />
+        );
+      },
+    },
+    {
+      accessorKey: "totalBuyin",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Total" />
+      ),
+      cell: ({ row }) => formatCurrency(row.getValue("totalBuyin")),
+    },
+    {
+      id: "actions",
+      header: "Ações",
+      cell: ({ row }) => (
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={(e) => {
+            e.stopPropagation();
+            openRebuyModal(row.original.id, row.original.name);
+          }}
+        >
+          <Plus className="h-3 w-3 mr-1" /> Rebuy
+        </Button>
+      ),
+    },
+  ];
+
   return (
     <>
   <div className="space-y-6">
@@ -119,82 +249,15 @@ export const SessionActiveStep: React.FC<SessionActiveStepProps> = ({
         <CardTitle>Controle de Mesa</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full table-auto text-sm">
-            <thead>
-              <tr className="text-left">
-                <th className="px-4 py-2">Jogador</th>
-                <th className="px-4 py-2">Buy-in</th>
-                <th className="px-4 py-2">Rebuys</th>
-                <th className="px-4 py-2">Janta</th>
-                <th className="px-4 py-2">Total</th>
-                <th className="px-4 py-2">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentSession.players.map((player: LivePlayer) => {
-                const rebuyTotal = player.rebuys.reduce((s, r) => s + r, 0);
-                return (
-                  <tr key={player.id} className="border-t">
-                    <td className="px-4 py-3">{player.name}</td>
-                    <td className="px-4 py-3">{formatCurrency(player.buyin)}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex flex-col">
-                          <div className="text-xs text-muted-foreground">{player.rebuys.length} ({formatCurrency(rebuyTotal)})</div>
-                          <div className="flex gap-2">
-                            {player.rebuys.map((r, i) => (
-                              <div key={i} className="bg-muted px-2 py-1 rounded flex items-center gap-2">
-                                <span className="text-xs">{formatCurrency(r)}</span>
-                                {typeof editRebuy === 'function' && (
-                                  <Button size="sm" variant="ghost" onClick={() => openRebuyModal(player.id, player.name, i)} title="Editar rebuy">
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                )}
-                                {typeof removeRebuy === 'function' && (
-                                  <Button size="sm" variant="ghost" onClick={() => {
-                                    confirm({
-                                      title: 'Remover Rebuy',
-                                      message: `Remover rebuy de ${player.name} R$ ${r.toLocaleString('pt-BR')}?`,
-                                      onConfirm: () => removeRebuy(player.id, i),
-                                      confirmText: 'Remover',
-                                      cancelText: 'Cancelar',
-                                      variant: 'destructive'
-                                    });
-                                  }} title="Remover rebuy">
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <Button size="sm" variant="ghost" onClick={() => addRebuy(player.id, defaultBuyin)} title="Adicionar rebuy">
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Input
-                        type="number"
-                        value={player.janta || ''}
-                        placeholder="0"
-                        onChange={(e) => updatePlayerField(player.id, 'janta', Number(e.target.value) || 0)}
-                        className="h-8 w-32"
-                      />
-                    </td>
-                    <td className="px-4 py-3">{formatCurrency(player.totalBuyin)}</td>
-                    <td className="px-4 py-3">
-                      <Button size="sm" variant="outline" onClick={() => openRebuyModal(player.id, player.name)}>
-                        <Plus className="h-3 w-3 mr-1" /> Rebuy
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          columns={columns}
+          data={currentSession.players}
+          searchKey="name"
+          searchPlaceholder="Filtrar por jogador..."
+          enableColumnVisibility={true}
+          enableSorting={true}
+          enableFiltering={true}
+        />
       </CardContent>
     </Card>
       </div>

@@ -2,11 +2,12 @@
 
 import { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { LoadingState, EmptyState, ErrorState } from '@/components/ui/loading';
 import { usePlayers, useSessions } from '@/hooks/useApi';
 import { Trophy, Medal, Award, TrendingUp, TrendingDown } from 'lucide-react';
 import type { SessionPlayerData } from '@/lib/types';
+import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table';
+import { ColumnDef } from '@tanstack/react-table';
 
 interface PlayerStats {
   id: number;
@@ -124,6 +125,120 @@ export default function RankingPage() {
     }).format(value);
   };
 
+  // Define columns for ranking table
+  const columns: ColumnDef<PlayerStats>[] = [
+    {
+      id: "position",
+      header: "Pos.",
+      cell: ({ row }) => {
+        const index = playerStats.findIndex(p => p.id === row.original.id);
+        return (
+          <div className="flex items-center justify-center">
+            {getRankIcon(index + 1)}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "name",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Jogador" />
+      ),
+      cell: ({ row }) => (
+        <div>
+          <div className="font-medium">{row.getValue("name")}</div>
+          {row.original.email && (
+            <div className="text-sm text-muted-foreground">{row.original.email}</div>
+          )}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "sessionsPlayed",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Sessões" />
+      ),
+      cell: ({ row }) => (
+        <div className="text-center">{row.getValue("sessionsPlayed")}</div>
+      ),
+    },
+    {
+      accessorKey: "totalBuyin",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Buy-in Total" />
+      ),
+      cell: ({ row }) => (
+        <div className="text-right">{formatCurrency(row.getValue("totalBuyin"))}</div>
+      ),
+    },
+    {
+      accessorKey: "totalCashout",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Cash-out Total" />
+      ),
+      cell: ({ row }) => (
+        <div className="text-right">{formatCurrency(row.getValue("totalCashout"))}</div>
+      ),
+    },
+    {
+      accessorKey: "profit",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Lucro Total" />
+      ),
+      cell: ({ row }) => {
+        const profit = row.getValue("profit") as number;
+        return (
+          <div className="flex items-center justify-end gap-1">
+            {profit >= 0 ? (
+              <TrendingUp className="h-4 w-4 text-green-500" />
+            ) : (
+              <TrendingDown className="h-4 w-4 text-red-500" />
+            )}
+            <span className={profit >= 0 ? 'text-green-600' : 'text-red-600'}>
+              {formatCurrency(profit)}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "profitPerSession",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Lucro/Sessão" />
+      ),
+      cell: ({ row }) => (
+        <div className="text-right">{formatCurrency(row.getValue("profitPerSession"))}</div>
+      ),
+    },
+    {
+      accessorKey: "winRate",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Taxa Vitória" />
+      ),
+      cell: ({ row }) => (
+        <div className="text-center">{(row.getValue("winRate") as number).toFixed(1)}%</div>
+      ),
+    },
+    {
+      accessorKey: "biggestWin",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Maior Ganho" />
+      ),
+      cell: ({ row }) => (
+        <div className="text-right text-green-600">{formatCurrency(row.getValue("biggestWin"))}</div>
+      ),
+    },
+    {
+      accessorKey: "biggestLoss",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Maior Perda" />
+      ),
+      cell: ({ row }) => (
+        <div className="text-right text-red-600">{formatCurrency(row.getValue("biggestLoss"))}</div>
+      ),
+    },
+  ];
+
   if (playersLoading || sessionsLoading) {
     return <LoadingState text="Calculando rankings dinamicamente..." />;
   }
@@ -220,60 +335,15 @@ export default function RankingPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-16">Pos.</TableHead>
-                    <TableHead>Jogador</TableHead>
-                    <TableHead className="text-center">Sessões</TableHead>
-                    <TableHead className="text-right">Buy-in Total</TableHead>
-                    <TableHead className="text-right">Cash-out Total</TableHead>
-                    <TableHead className="text-right">Lucro Total</TableHead>
-                    <TableHead className="text-right">Lucro/Sessão</TableHead>
-                    <TableHead className="text-center">Taxa Vitória</TableHead>
-                    <TableHead className="text-right">Maior Ganho</TableHead>
-                    <TableHead className="text-right">Maior Perda</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {playersWithSessions.map((player, index) => (
-                    <TableRow key={player.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center justify-center">
-                          {getRankIcon(index + 1)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{player.name}</div>
-                          {player.email && (
-                            <div className="text-sm text-muted-foreground">{player.email}</div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">{player.sessionsPlayed}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(player.totalBuyin)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(player.totalCashout)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          {player.profit >= 0 ? (
-                            <TrendingUp className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <TrendingDown className="h-4 w-4 text-red-500" />
-                          )}
-                          <span className={player.profit >= 0 ? 'text-green-600' : 'text-red-600'}>
-                            {formatCurrency(player.profit)}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">{formatCurrency(player.profitPerSession)}</TableCell>
-                      <TableCell className="text-center">{player.winRate.toFixed(1)}%</TableCell>
-                      <TableCell className="text-right text-green-600">{formatCurrency(player.biggestWin)}</TableCell>
-                      <TableCell className="text-right text-red-600">{formatCurrency(player.biggestLoss)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <DataTable
+                columns={columns}
+                data={playersWithSessions}
+                searchKey="name"
+                searchPlaceholder="Filtrar por jogador..."
+                enableColumnVisibility={true}
+                enableSorting={true}
+                enableFiltering={true}
+              />
             </CardContent>
           </Card>
         </>
