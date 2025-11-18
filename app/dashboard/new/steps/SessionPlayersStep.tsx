@@ -2,9 +2,11 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Plus, Minus, Search, UserPlus } from 'lucide-react';
+import { Users, Plus, Search, UserPlus, Trash2 } from 'lucide-react';
 import type { LiveSession, LivePlayer } from '@/lib/types';
 import type { SessionStep } from './SessionCreateStep';
+import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table';
+import { ColumnDef } from '@tanstack/react-table';
 
 // Helper simples de moeda (poderá ser substituído por formatCurrency util)
 import { formatCurrency } from '@/lib/format';
@@ -43,7 +45,52 @@ export const SessionPlayersStep: React.FC<SessionPlayersStepProps> = ({
   removePlayer,
   totals,
   setStep
-}) => (
+}) => {
+  // Define columns for player table
+  const columns: ColumnDef<LivePlayer>[] = [
+    {
+      accessorKey: "name",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Jogador" />
+      ),
+      cell: ({ row }) => {
+        const index = currentSession.players.findIndex(p => p.id === row.original.id);
+        return (
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-sm font-medium">
+              {index + 1}
+            </div>
+            <span className="font-medium">{row.getValue("name")}</span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "buyin",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Buy-in" />
+      ),
+      cell: ({ row }) => formatCurrency(row.getValue("buyin")),
+    },
+    {
+      id: "actions",
+      header: "Ações",
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            removePlayer(row.original.id);
+          }}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      ),
+    },
+  ];
+
+  return (
   <div className="space-y-6">
     <div className="flex items-center justify-between">
       <div>
@@ -163,37 +210,25 @@ export const SessionPlayersStep: React.FC<SessionPlayersStepProps> = ({
             <p className="text-sm">Adicione pelo menos 2 jogadores para começar</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {currentSession.players.map((player: LivePlayer, index: number) => (
-              <div key={player.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-sm font-medium">
-                    {index + 1}
-                  </div>
-                  <div>
-                    <p className="font-medium">{player.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Buy-in: {formatCurrency(player.buyin)}
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removePlayer(player.id)}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-            <div className="pt-3 border-t">
+          <>
+            <DataTable
+              columns={columns}
+              data={currentSession.players}
+              searchKey="name"
+              searchPlaceholder="Filtrar por jogador..."
+              enableColumnVisibility={true}
+              enableSorting={true}
+              enableFiltering={true}
+            />
+            <div className="pt-4 mt-4 border-t">
               <div className="text-sm text-muted-foreground">
                 Total em mesa: {formatCurrency(totals.totalBuyin)}
               </div>
             </div>
-          </div>
+          </>
         )}
       </CardContent>
     </Card>
   </div>
 );
+};
