@@ -17,6 +17,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         {/* Google Analytics - Aplicado a todas as páginas */}
         {GA_TRACKING_ID && (
           <>
@@ -38,7 +39,7 @@ export default function RootLayout({
           </>
         )}
       </head>
-      <body>
+      <body className="overflow-x-hidden">
         <AuthProvider>
           {children}
         </AuthProvider>

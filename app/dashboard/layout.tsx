@@ -73,7 +73,7 @@ export default function DashboardLayout({
   return (
     <div className="flex h-screen overflow-hidden bg-gradient-to-br from-background via-background to-muted/20">
       {/* Mobile Header */}
-      <div className="fixed left-0 right-0 top-0 z-50 flex h-16 items-center justify-between border-b border-border/50 bg-background/80 px-4 backdrop-blur-xl md:hidden">
+      <div className="fixed left-0 right-0 top-0 z-50 flex h-16 items-center justify-between border-b border-border/50 bg-background/95 px-4 backdrop-blur-xl md:hidden shadow-sm">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/60 shadow-lg">
             <Spade className="h-5 w-5 text-primary-foreground" />
@@ -99,7 +99,8 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed md:static inset-y-0 left-0 z-40 flex flex-col',
+          'fixed md:static left-0 z-40 flex flex-col',
+          'top-16 bottom-0 md:top-0 md:bottom-auto md:inset-y-0',
           'bg-card/80 backdrop-blur-lg border-r border-border/60 shadow-xl',
           'transform transition-all duration-300 ease-out',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',
@@ -224,14 +225,16 @@ export default function DashboardLayout({
       )}
 
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden mt-16 md:mt-0">
         <div className={cn(
-          "h-full w-full overflow-y-auto pt-16 md:pt-0 p-4 md:p-8 transition-all duration-300",
+          "h-full w-full overflow-y-auto overflow-x-hidden p-4 md:p-8 transition-all duration-300",
           sidebarCollapsed && "md:ml-0"
         )}>
-          <ErrorBoundary>
-            {children}
-          </ErrorBoundary>
+          <div className="max-w-full">
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </div>
         </div>
       </main>
     </div>

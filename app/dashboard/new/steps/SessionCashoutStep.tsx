@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,40 @@ interface SessionCashoutStepProps {
   setStep: (step: SessionStep) => void;
   calculateRecommendations: () => void;
 }
+
+// Component for cash-out input to avoid hook issues in cell renderer
+const CashoutInput: React.FC<{
+  player: LivePlayer;
+  updatePlayerField: UpdateLivePlayerField;
+}> = ({ player, updatePlayerField }) => {
+  const [localValue, setLocalValue] = useState(player.cashout?.toString() || '');
+  
+  useEffect(() => {
+    setLocalValue(player.cashout?.toString() || '');
+  }, [player.cashout]);
+
+  return (
+    <Input
+      type="number"
+      placeholder="0"
+      value={localValue}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => setLocalValue(e.target.value)}
+      onBlur={() => {
+        const value = Number(localValue) || 0;
+        updatePlayerField(player.id, 'cashout', value);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          const value = Number(localValue) || 0;
+          updatePlayerField(player.id, 'cashout', value);
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      className="w-32"
+    />
+  );
+};
 
 export const SessionCashoutStep: React.FC<SessionCashoutStepProps> = ({
   currentSession,
@@ -48,16 +82,7 @@ export const SessionCashoutStep: React.FC<SessionCashoutStepProps> = ({
       header: "Cash-out (R$)",
       cell: ({ row }) => {
         const player = row.original;
-        return (
-          <Input
-            type="number"
-            placeholder="0"
-            value={player.cashout || ''}
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => updatePlayerField(player.id, 'cashout', Number(e.target.value) || 0)}
-            className="w-32"
-          />
-        );
+        return <CashoutInput player={player} updatePlayerField={updatePlayerField} />;
       },
     },
     {
