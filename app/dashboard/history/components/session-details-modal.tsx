@@ -1,4 +1,4 @@
-import { Modal, ModalContent } from '@/components/ui/modal';
+import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { SessionPlayersTable } from './session-players-table';
 import TransferManager from '@/components/TransferManager';
@@ -135,9 +135,8 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
       variant="solid"
       forceOpaque
     >
-      <ModalContent>
-        {session && (
-          <div className="space-y-6">
+      {session && (
+        <div className="space-y-6">
             <div className="flex justify-end gap-2">
               {!editing && (
                 <Button
@@ -256,7 +255,6 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
             )}
           </div>
         )}
-      </ModalContent>
     </Modal>
   );
 }
