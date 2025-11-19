@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Edit, Trash2 } from 'lucide-react';
@@ -23,6 +23,40 @@ interface SessionActiveStepProps {
   editRebuy?: (id: string, index: number, amount: number) => void;
 }
 
+// Component for janta input to avoid hook issues in cell renderer
+const JantaInput: React.FC<{
+  player: LivePlayer;
+  updatePlayerField: UpdateLivePlayerField;
+}> = ({ player, updatePlayerField }) => {
+  const [localValue, setLocalValue] = useState(player.janta?.toString() || '');
+  
+  useEffect(() => {
+    setLocalValue(player.janta?.toString() || '');
+  }, [player.janta]);
+
+  return (
+    <Input
+      type="number"
+      value={localValue}
+      placeholder="0"
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => setLocalValue(e.target.value)}
+      onBlur={() => {
+        const value = Number(localValue) || 0;
+        updatePlayerField(player.id, 'janta', value);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          const value = Number(localValue) || 0;
+          updatePlayerField(player.id, 'janta', value);
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      className="h-8 w-24"
+    />
+  );
+};
+
 export const SessionActiveStep: React.FC<SessionActiveStepProps> = ({
   currentSession,
   totals,
@@ -41,7 +75,7 @@ export const SessionActiveStep: React.FC<SessionActiveStepProps> = ({
     }
   );
   const [initialRebuyAmount, setInitialRebuyAmount] = useState<number | undefined>(undefined);
-  const { confirm, ConfirmModalComponent: _ConfirmModalComponent } = useConfirmModal();
+  const { confirm, ConfirmModalComponent } = useConfirmModal();
 
   const openRebuyModal = (playerId: string, playerName: string, index?: number) => {
     // if editing, try to get current amount
@@ -161,16 +195,7 @@ export const SessionActiveStep: React.FC<SessionActiveStepProps> = ({
       header: "Janta",
       cell: ({ row }) => {
         const player = row.original;
-        return (
-          <Input
-            type="number"
-            value={player.janta || ''}
-            placeholder="0"
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => updatePlayerField(player.id, 'janta', Number(e.target.value) || 0)}
-            className="h-8 w-24"
-          />
-        );
+        return <JantaInput player={player} updatePlayerField={updatePlayerField} />;
       },
     },
     {
@@ -270,6 +295,7 @@ export const SessionActiveStep: React.FC<SessionActiveStepProps> = ({
         defaultBuyin={defaultBuyin}
         initialAmount={initialRebuyAmount}
       />
+      {ConfirmModalComponent}
     </>
   );
 };
