@@ -107,7 +107,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl transition-all duration-300 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/40 backdrop-blur-xl transition-all duration-300 animate-fade-in"
       onClick={handleOverlayClick}
       role="dialog"
       aria-modal="true"
@@ -115,7 +115,7 @@ export function Modal({
     >
       <div
         ref={modalRef}
-        className={`relative w-full ${sizeClasses[size]} bg-card/95 backdrop-blur-xl text-card-foreground border border-border rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in-0 zoom-in-95 duration-300`}
+        className={`relative w-full ${sizeClasses[size]} bg-card/95 backdrop-blur-xl text-card-foreground border border-border rounded-2xl shadow-2xl max-h-[90vh] my-4 sm:my-8 mx-4 overflow-hidden flex flex-col animate-in fade-in-0 zoom-in-95 duration-300`}
       >
         {showHeader && (title || showCloseButton) && (
           <div className="flex items-center justify-between p-4 md:p-6 border-b border-border sticky top-0 z-10 bg-card/80 backdrop-blur-xl shadow-sm">

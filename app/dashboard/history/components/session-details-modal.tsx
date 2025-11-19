@@ -1,6 +1,6 @@
 import { Modal, ModalContent } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
-import { PlayerPaymentRow } from './player-payment-row';
+import { SessionPlayersTable } from './session-players-table';
 import TransferManager from '@/components/TransferManager';
 import { useSessionAutoApproval } from '@/lib/sessionAutoApproval';
 import type { LocalSession } from './sessions-table';
@@ -209,19 +209,13 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
             </div>
             {session.players_data && (
               <div>
-                <h4 className="font-medium mb-3">Jogadores</h4>
-                <div className="space-y-2">
-                  {session.players_data.map((player, index) => (
-                    <PlayerPaymentRow
-                      key={index}
-                      player={player}
-                      index={index}
-                      sessionId={session.id}
-                      editing={editing}
-                      onToggle={(field, value) => updatePlayerPayment(index, field, value)}
-                    />
-                  ))}
-                </div>
+                <h4 className="font-medium mb-4">Jogadores</h4>
+                <SessionPlayersTable
+                  players={session.players_data}
+                  sessionId={session.id}
+                  editing={editing}
+                  onToggleJanta={(playerIndex, value) => updatePlayerPayment(playerIndex, 'janta_paid', value)}
+                />
               </div>
             )}
             {session.players_data && session.players_data.length > 0 && (
