@@ -60,6 +60,7 @@
   html {
     min-height: 100%;
     scroll-behavior: smooth;
+    overflow-x: hidden;
   }
 
   body {
@@ -69,6 +70,7 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     transition: background-color 150ms ease, color 150ms ease;
+    overflow-x: hidden;
   }
 
   .dark {
