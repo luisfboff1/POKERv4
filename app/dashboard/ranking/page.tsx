@@ -11,7 +11,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { MobileList } from '@/components/ui/mobile-list';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { cn } from '@/lib/utils';
-import { getResponsiveTypography, mobileGrid } from '@/lib/mobile-utils';
+import { getResponsiveTypography } from '@/lib/mobile-utils';
 
 interface PlayerStats {
   id: number;
