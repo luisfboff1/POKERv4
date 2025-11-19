@@ -1,18 +1,24 @@
 'use client';
 
 import { useAuth } from '@/contexts/auth-context';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { useSessions, usePlayers } from '@/hooks/useApi';
 import type { Session, SessionPlayerData } from '@/lib/types';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Plus, History, Trophy, Users, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import PlayerDashboard from '@/components/PlayerDashboard';
 import { cn } from '@/lib/utils';
+import { MobileStatCard } from '@/components/ui/mobile-card';
+import { MobileList } from '@/components/ui/mobile-list';
+import { FAB } from '@/components/ui/fab';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
+import { getResponsiveTypography, mobileGrid, horizontalScroll } from '@/lib/mobile-utils';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { sessions, loading } = useSessions();
+  const router = useRouter();
+  const { sessions, loading, refetch } = useSessions();
   const { players } = usePlayers();
 
   // Se o usuário tem um jogador vinculado, mostrar dashboard de jogador
@@ -42,245 +48,311 @@ export default function DashboardPage() {
     { totalBuyin: 0, totalCashout: 0 }
   );
 
+  // Quick actions
+  const quickActions = [
+    ...(user?.role === 'admin' || user?.role === 'super_admin' 
+      ? [{
+          icon: Plus,
+          name: 'Nova sessão',
+          description: 'Configure mesa e jogadores',
+          href: '/dashboard/new',
+          color: 'primary' as const
+        }]
+      : []
+    ),
+    {
+      icon: History,
+      name: 'Histórico',
+      description: 'Consulte estatísticas',
+      href: '/dashboard/history',
+      color: 'secondary' as const
+    },
+    {
+      icon: Trophy,
+      name: 'Ranking',
+      description: 'Desempenho dos jogadores',
+      href: '/dashboard/ranking',
+      color: 'secondary' as const
+    },
+    ...(user?.role === 'admin' || user?.role === 'super_admin'
+      ? [{
+          icon: Users,
+          name: 'Convites',
+          description: 'Gerencie membros',
+          href: '/dashboard/invites',
+          color: 'secondary' as const
+        }]
+      : []
+    ),
+  ];
+
+  const handleRefresh = async () => {
+    await refetch();
+  };
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Bem-vindo, {user?.name}!</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Organize sessões, acompanhe o PokerBot e mantenha controle financeiro em tempo real
-        </p>
-      </div>
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className={cn('space-y-4', 'md:space-y-8')}>
+        {/* Header */}
+        <div className="space-y-1">
+          <h1 className={getResponsiveTypography('display')}>
+            Bem-vindo, {user?.name}!
+          </h1>
+          <p className={getResponsiveTypography('caption')}>
+            Organize sessões e mantenha controle financeiro em tempo real
+          </p>
+        </div>
 
-      {/* Estatísticas principais */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Sessões</CardTitle>
-            <History className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalSessions}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.pendingSessions} pendentes
-            </p>
-          </CardContent>
-        </Card>
+        {/* Estatísticas principais - Mobile: 2 cols, Desktop: 4 cols */}
+        <div className={mobileGrid.stats}>
+          <MobileStatCard
+            icon={<History className="h-4 w-4" />}
+            value={stats.totalSessions}
+            label="Sessões"
+            subtitle={`${stats.pendingSessions} pendentes`}
+          />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Jogadores Ativos</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalPlayers}</div>
-            <p className="text-xs text-muted-foreground">
-              membros registrados
-            </p>
-          </CardContent>
-        </Card>
+          <MobileStatCard
+            icon={<Users className="h-4 w-4" />}
+            value={stats.totalPlayers}
+            label="Jogadores"
+            subtitle="membros ativos"
+          />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Volume Total</CardTitle>
-            <Trophy className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              R$ {financialStats.totalBuyin.toLocaleString('pt-BR')}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              em buy-ins
-            </p>
-          </CardContent>
-        </Card>
+          <MobileStatCard
+            icon={<Trophy className="h-4 w-4" />}
+            value={`R$ ${financialStats.totalBuyin.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`}
+            label="Volume"
+            subtitle="em buy-ins"
+          />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pendências</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {stats.pendingSessions}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stats.pendingSessions === 0 ? (
+          <MobileStatCard
+            icon={<Clock className="h-4 w-4" />}
+            value={stats.pendingSessions}
+            label="Pendências"
+            subtitle={
+              stats.pendingSessions === 0 ? (
                 <span className="flex items-center gap-1 text-green-600">
                   <CheckCircle className="h-3 w-3" />
                   Tudo em dia
                 </span>
-              ) : stats.pendingSessions === 1 ? (
-                <span className="flex items-center gap-1 text-yellow-600">
-                  <AlertCircle className="h-3 w-3" />
-                  1 sessão pendente
-                </span>
               ) : (
                 <span className="flex items-center gap-1 text-yellow-600">
                   <AlertCircle className="h-3 w-3" />
-                  {stats.pendingSessions} sessões pendentes
+                  {stats.pendingSessions === 1 ? '1 pendente' : `${stats.pendingSessions} pendentes`}
                 </span>
-              )}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+              )
+            }
+          />
+        </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-        {(user?.role === 'admin' || user?.role === 'super_admin') && (
-          <Card className="transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]">
-            <Link href="/dashboard/new" className="block">
-              <CardHeader className="space-y-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <Plus className="h-5 w-5" />
-                </div>
-                <div className="space-y-1">
-                  <CardTitle className="text-lg">Nova sessão</CardTitle>
-              <CardDescription className="text-muted-foreground/80">
-                Configure mesas, blinds e jogadores em minutos
-              </CardDescription>
-                </div>
-              </CardHeader>
-            </Link>
-          </Card>
-        )}
+        {/* Quick Actions - Mobile: horizontal scroll, Desktop: grid */}
+        <div>
+          <h2 className={cn(
+            getResponsiveTypography('subtitle'),
+            'mb-3 px-3 md:px-0'
+          )}>
+            Ações rápidas
+          </h2>
+          <div className={horizontalScroll}>
+            <div className="flex gap-3 md:grid md:grid-cols-2 xl:grid-cols-4">
+              {quickActions.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <Link
+                    key={action.href}
+                    href={action.href}
+                    className={cn(
+                      // Mobile: compact card in horizontal scroll
+                      'flex-shrink-0 w-40 rounded-lg bg-surface/50 p-4',
+                      'active:scale-95 transition-transform',
+                      // Desktop: full card
+                      'md:w-auto md:rounded-xl md:bg-card md:border md:border-border md:p-6 md:shadow-sm',
+                      'md:hover:-translate-y-1 md:hover:shadow-lg'
+                    )}
+                  >
+                    <div className="space-y-2 md:space-y-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center md:h-12 md:w-12">
+                        <Icon className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <h3 className="font-semibold text-sm md:text-base">
+                          {action.name}
+                        </h3>
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {action.description}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
 
-        <Card className="transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]">
-          <Link href="/dashboard/history" className="block">
-            <CardHeader className="space-y-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <History className="h-5 w-5" />
-              </div>
-              <div className="space-y-1">
-                <CardTitle className="text-lg">Histórico</CardTitle>
-              <CardDescription className="text-muted-foreground/80">
-                Consulte estatísticas passadas e exporte relatórios
-              </CardDescription>
-              </div>
-            </CardHeader>
-          </Link>
-        </Card>
-
-        <Card className="transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]">
-          <Link href="/dashboard/ranking" className="block">
-            <CardHeader className="space-y-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Trophy className="h-5 w-5" />
-              </div>
-              <div className="space-y-1">
-                <CardTitle className="text-lg">Ranking</CardTitle>
-              <CardDescription className="text-muted-foreground/80">
-                Acompanhe desempenho, ganhos e constância
-              </CardDescription>
-              </div>
-            </CardHeader>
-          </Link>
-        </Card>
-
-        {(user?.role === 'admin' || user?.role === 'super_admin') && (
-          <Card className="transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]">
-            <Link href="/dashboard/invites" className="block">
-              <CardHeader className="space-y-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <Users className="h-5 w-5" />
-                </div>
-                <div className="space-y-1">
-                  <CardTitle className="text-lg">Convites</CardTitle>
-              <CardDescription className="text-muted-foreground/80">
-                Envie convites e acompanhe aprovações em tempo real
-              </CardDescription>
-                </div>
-              </CardHeader>
-            </Link>
-          </Card>
-        )}
-      </div>
-
-      {/* Recent Sessions */}
-      <Card className="bg-surface text-surface-foreground">
-        <CardHeader>
-          <div className="flex items-center justify-between">
+        {/* Recent Sessions */}
+        <div>
+          <div className="flex items-center justify-between mb-3 px-3 md:px-0">
             <div>
-              <CardTitle>Sessões recentes</CardTitle>
-              <CardDescription>
-                Visualize rapidamente o status das últimas mesas
-              </CardDescription>
+              <h2 className={getResponsiveTypography('subtitle')}>
+                Sessões recentes
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Visualize o status das últimas mesas
+              </p>
             </div>
             {(user?.role === 'admin' || user?.role === 'super_admin') && (
-              <Link href="/dashboard/new" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
-                <Plus className="mr-2 h-4 w-4" />Nova sessão
-              </Link>
+              <Button
+                variant="outline"
+                size="sm"
+                className="hidden md:flex"
+                onClick={() => router.push('/dashboard/new')}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Nova sessão
+              </Button>
             )}
           </div>
-        </CardHeader>
-        <CardContent>
+
           {loading ? (
-            <div className="flex items-center justify-center py-8">
+            <div className="flex items-center justify-center py-12">
               <div className="flex flex-col items-center gap-2">
-                <div className="animate-spin rounded-full border-2 border-border border-t-primary bg-white/30 backdrop-blur-md shadow-lg h-8 w-8 transition-all duration-300" aria-label="Carregando" role="status" />
-                <span className="ml-3 text-muted-foreground animate-pulse" aria-live="polite">Carregando sessões...</span>
+                <div className="animate-spin rounded-full border-2 border-border border-t-primary h-8 w-8" />
+                <span className="text-sm text-muted-foreground">Carregando...</span>
               </div>
             </div>
           ) : stats.recentSessions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border/80 bg-surface py-12 text-center text-sm text-muted-foreground">
+            <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border/80 bg-surface/30 py-12 text-center mx-3 md:mx-0">
               <History className="h-10 w-10 text-primary/60" />
               <div>
-                <p className="text-base font-medium text-foreground">Nenhuma sessão encontrada</p>
-                <p className="mt-1 text-muted-foreground">
-                  Assim que registrar sessões, elas aparecerão aqui automaticamente.
+                <p className="text-base font-medium text-foreground">
+                  Nenhuma sessão encontrada
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Comece criando sua primeira sessão
                 </p>
               </div>
               {(user?.role === 'admin' || user?.role === 'super_admin') && (
-                <Link href="/dashboard/new" className={cn(buttonVariants({ variant: "secondary" }))}>
+                <Button onClick={() => router.push('/dashboard/new')}>
                   <Plus className="mr-2 h-4 w-4" />
                   Criar primeira sessão
-                </Link>
+                </Button>
               )}
             </div>
           ) : (
-            <div className="space-y-4">
-              {stats.recentSessions.map((session: Session) => {
-                const playerCount = session.players_data ? session.players_data.length : 0;
-                const totalBuyin = session.players_data ?
-                  session.players_data.reduce((sum: number, p: SessionPlayerData) => sum + (p.buyin || 0), 0) : 0;
-                
-                return (
-                  <div 
-                    key={session.id} 
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div>
-                      <div className="font-medium">{session.location}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {new Date(session.date).toLocaleDateString('pt-BR')} • {playerCount} jogadores
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium">R$ {totalBuyin.toLocaleString('pt-BR')}</div>
-                      <div className={`text-sm ${
-                        session.status === 'pending' ? 'text-yellow-600' :
-                        session.status === 'approved' ? 'text-green-600' :
-                        'text-gray-600'
-                      }`}>
-                        {session.status === 'pending' ? 'Pendente' :
-                         session.status === 'approved' ? 'Aprovada' : 'Fechada'}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              
-              <div className="pt-4 border-t">
-                <Link href="/dashboard/history" className={cn(buttonVariants({ variant: "outline" }), "w-full")}>
-                  Ver todas as sessões
-                </Link>
+            <>
+              {/* Mobile: List view */}
+              <div className="md:hidden px-3">
+                <MobileList
+                  items={stats.recentSessions.map((session: Session) => {
+                    const playerCount = session.players_data?.length || 0;
+                    const totalBuyin = session.players_data
+                      ? session.players_data.reduce(
+                          (sum: number, p: SessionPlayerData) => sum + (p.buyin || 0),
+                          0
+                        )
+                      : 0;
+
+                    const statusColors = {
+                      pending: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
+                      approved: 'bg-green-500/10 text-green-600 border-green-500/20',
+                      closed: 'bg-gray-500/10 text-gray-600 border-gray-500/20'
+                    };
+
+                    const statusText = {
+                      pending: 'Pendente',
+                      approved: 'Aprovada',
+                      closed: 'Fechada'
+                    };
+
+                    return {
+                      id: session.id,
+                      primary: session.location,
+                      secondary: `${new Date(session.date).toLocaleDateString('pt-BR')} • ${playerCount} jogadores`,
+                      meta: `R$ ${totalBuyin.toLocaleString('pt-BR')}`,
+                      badge: (
+                        <span className={cn(
+                          'text-xs font-medium px-2 py-0.5 rounded-full border',
+                          statusColors[session.status]
+                        )}>
+                          {statusText[session.status]}
+                        </span>
+                      ),
+                      onClick: () => router.push(`/dashboard/history?session=${session.id}`)
+                    };
+                  })}
+                  emptyMessage="Nenhuma sessão recente"
+                />
               </div>
-            </div>
+
+              {/* Desktop: Card list */}
+              <div className="hidden md:block bg-card rounded-xl border border-border shadow-sm">
+                <div className="divide-y divide-border">
+                  {stats.recentSessions.map((session: Session) => {
+                    const playerCount = session.players_data?.length || 0;
+                    const totalBuyin = session.players_data
+                      ? session.players_data.reduce(
+                          (sum: number, p: SessionPlayerData) => sum + (p.buyin || 0),
+                          0
+                        )
+                      : 0;
+
+                    return (
+                      <div
+                        key={session.id}
+                        className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => router.push(`/dashboard/history?session=${session.id}`)}
+                      >
+                        <div>
+                          <div className="font-medium">{session.location}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {new Date(session.date).toLocaleDateString('pt-BR')} • {playerCount} jogadores
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-medium">R$ {totalBuyin.toLocaleString('pt-BR')}</div>
+                          <div
+                            className={cn(
+                              'text-sm',
+                              session.status === 'pending' && 'text-yellow-600',
+                              session.status === 'approved' && 'text-green-600',
+                              session.status === 'closed' && 'text-gray-600'
+                            )}
+                          >
+                            {session.status === 'pending' ? 'Pendente' :
+                             session.status === 'approved' ? 'Aprovada' : 'Fechada'}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="p-4 border-t border-border">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => router.push('/dashboard/history')}
+                  >
+                    Ver todas as sessões
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+
+        {/* FAB for mobile - Nova Sessão */}
+        {(user?.role === 'admin' || user?.role === 'super_admin') && (
+          <FAB
+            icon={<Plus className="h-5 w-5" />}
+            label="Nova Sessão"
+            onClick={() => router.push('/dashboard/new')}
+            position="bottomRight"
+          />
+        )}
+      </div>
+    </PullToRefresh>
   );
 }
-

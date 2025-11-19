@@ -110,7 +110,7 @@ interface MobileStatCardProps extends React.HTMLAttributes<HTMLDivElement> {
   icon?: React.ReactNode;
   value: string | number;
   label: string;
-  subtitle?: string;
+  subtitle?: string | React.ReactNode;
   trend?: 'up' | 'down' | 'neutral';
   trendValue?: string;
 }
@@ -159,9 +159,9 @@ export const MobileStatCard = React.forwardRef<HTMLDivElement, MobileStatCardPro
         {(subtitle || trendValue) && (
           <div className="flex items-center gap-2">
             {subtitle && (
-              <p className="text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground">
                 {subtitle}
-              </p>
+              </div>
             )}
             {trendValue && (
               <span className={cn(
