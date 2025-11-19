@@ -11,6 +11,8 @@ import { useSessionState } from '@/hooks/useSessionState';
 import { usePlayerActions } from '@/hooks/usePlayerActions';
 import { useTransferRecommendations } from '@/hooks/useTransferRecommendations';
 import type { LiveSession, TransferRecommendation } from '@/lib/types';
+import { cn } from '@/lib/utils';
+import { getResponsiveTypography } from '@/lib/mobile-utils';
 
 // Componentes de etapas
 import { SessionCreateStep } from './steps/SessionCreateStep';
@@ -172,24 +174,31 @@ export default function CurrentSessionPage() {
   // Render sem sessão
   if (!currentSession) {
     return (
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-3">
-            <Play className="h-8 w-8 text-primary" />
+      <div className={cn('space-y-4 md:space-y-6')}>
+        <div className="space-y-1">
+          <h1 className={cn(
+            getResponsiveTypography('display'),
+            'flex items-center gap-2 md:gap-3'
+          )}>
+            <Play className="h-6 w-6 md:h-8 md:w-8 text-primary" />
             Sessão Atual
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">Gerencie uma sessão de poker em tempo real</p>
+          <p className={getResponsiveTypography('caption')}>
+            Gerencie uma sessão de poker em tempo real
+          </p>
         </div>
-        <Card className="text-center py-12">
-          <CardContent className="space-y-6">
-            <div className="mx-auto w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center">
-              <Play className="h-12 w-12 text-primary" />
+        <Card className="text-center py-8 md:py-12">
+          <CardContent className="space-y-4 md:space-y-6">
+            <div className="mx-auto w-20 h-20 md:w-24 md:h-24 bg-primary/10 rounded-full flex items-center justify-center">
+              <Play className="h-10 w-10 md:h-12 md:w-12 text-primary" />
             </div>
             <div>
-              <h3 className="text-xl font-semibold mb-2">Nenhuma sessão ativa</h3>
-              <p className="text-muted-foreground">Crie uma nova sessão para começar a gerenciar uma partida de poker</p>
+              <h3 className="text-lg md:text-xl font-semibold mb-2">Nenhuma sessão ativa</h3>
+              <p className="text-sm md:text-base text-muted-foreground">
+                Crie uma nova sessão para começar a gerenciar uma partida de poker
+              </p>
             </div>
-            <Button onClick={createNewSession} size="lg">
+            <Button onClick={createNewSession} size="lg" className="w-full md:w-auto">
               <Plus className="mr-2 h-5 w-5" />
               Criar Nova Sessão
             </Button>
@@ -328,7 +337,7 @@ export default function CurrentSessionPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={cn('space-y-4 md:space-y-6')}>
       {content}
       <AddPlayerModal
         isOpen={addPlayerModal.isOpen}
