@@ -107,7 +107,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm transition-all duration-300 animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={handleOverlayClick}
       role="dialog"
       aria-modal="true"
@@ -115,17 +115,17 @@ export function Modal({
     >
       <div
         ref={modalRef}
-        className={`relative w-full ${sizeClasses[size]} bg-card backdrop-blur-xl text-card-foreground border border-border/50 rounded-xl shadow-2xl max-h-[85vh] my-auto overflow-hidden flex flex-col animate-in fade-in-0 zoom-in-95 duration-200`}
+        className={`relative w-full ${sizeClasses[size]} bg-card text-card-foreground border border-border rounded-lg shadow-xl max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200`}
       >
         {showHeader && (title || showCloseButton) && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-gradient-to-b from-card to-card/80">
-            {title && <h2 id="modal-title" className="font-semibold text-xl tracking-tight text-foreground">{title}</h2>}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            {title && <h2 id="modal-title" className="font-semibold text-xl text-foreground">{title}</h2>}
             {showCloseButton && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={onClose}
-                className="ml-2 hover:bg-muted/50 transition-colors"
+                className="ml-2 hover:bg-muted"
                 aria-label="Fechar modal"
               >
                 <X className="h-5 w-5" />
@@ -134,7 +134,7 @@ export function Modal({
           </div>
         )}
         {description && (
-          <div className="px-6 py-3 text-muted-foreground text-sm border-b border-border/50 bg-muted/20">{description}</div>
+          <div className="px-6 py-3 text-sm text-muted-foreground border-b border-border">{description}</div>
         )}
         <div className="flex-1 overflow-y-auto p-6">{children}</div>
       </div>
