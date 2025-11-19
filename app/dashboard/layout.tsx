@@ -99,7 +99,8 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed md:static inset-y-0 left-0 z-40 flex flex-col',
+          'fixed md:static left-0 z-40 flex flex-col',
+          'top-16 bottom-0 md:top-0 md:bottom-auto md:inset-y-0',
           'bg-card/80 backdrop-blur-lg border-r border-border/60 shadow-xl',
           'transform transition-all duration-300 ease-out',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',
