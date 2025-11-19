@@ -224,9 +224,9 @@ export default function DashboardLayout({
       )}
 
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden mt-16 md:mt-0">
         <div className={cn(
-          "h-full w-full overflow-y-auto overflow-x-hidden pt-16 md:pt-0 p-4 md:p-8 transition-all duration-300",
+          "h-full w-full overflow-y-auto overflow-x-hidden p-4 md:p-8 transition-all duration-300",
           sidebarCollapsed && "md:ml-0"
         )}>
           <div className="max-w-full">
