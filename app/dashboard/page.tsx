@@ -92,10 +92,33 @@ export default function DashboardPage() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className={cn('space-y-4', 'md:space-y-8')}>
+      <div className={cn('space-y-4 md:space-y-6')}>
+        {/* Mobile improvements banner - Desktop only */}
+        <div className="hidden md:block rounded-lg border border-primary/20 bg-primary/5 p-4">
+          <div className="flex items-start gap-3">
+            <div className="rounded-full bg-primary/10 p-2">
+              <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-sm text-foreground">
+                📱 Melhorias Mobile Implementadas
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                As melhorias de UX mobile estão ativas! Para ver: <strong>pressione Ctrl+Shift+M</strong> (ou Cmd+Shift+M no Mac) para ativar o modo mobile no DevTools.
+                Experimente: scroll horizontal, lista compacta, FAB flutuante e pull-to-refresh.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Header */}
         <div className="space-y-1">
-          <h1 className={getResponsiveTypography('display')}>
+          <h1 className={cn(
+            getResponsiveTypography('display'),
+            'bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent'
+          )}>
             Bem-vindo, {user?.name}!
           </h1>
           <p className={getResponsiveTypography('caption')}>
@@ -104,7 +127,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Estatísticas principais - Mobile: 2 cols, Desktop: 4 cols */}
-        <div className={mobileGrid.stats}>
+        <div className={cn(mobileGrid.stats, 'animate-in fade-in duration-500')}>
           <MobileStatCard
             icon={<History className="h-4 w-4" />}
             value={stats.totalSessions}

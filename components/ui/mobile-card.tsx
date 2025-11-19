@@ -132,19 +132,19 @@ export const MobileStatCard = React.forwardRef<HTMLDivElement, MobileStatCardPro
         className={cn(
           // Mobile: compact, minimal
           'rounded-lg bg-surface/50 p-4 space-y-2',
-          // Desktop: full card
-          'md:rounded-xl md:bg-card md:border md:border-border md:p-6 md:shadow-sm',
+          // Desktop: slightly more elevated, better shadow
+          'md:rounded-xl md:bg-card/80 md:backdrop-blur-sm md:border md:border-border/60 md:p-5 md:shadow-md md:hover:shadow-lg md:transition-all',
           className
         )}
         {...props}
       >
         {/* Icon and Label */}
         <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground md:text-sm">
+          <span className="text-xs text-muted-foreground md:text-sm font-medium">
             {label}
           </span>
           {icon && (
-            <div className="text-primary flex-shrink-0">
+            <div className="text-primary/70 flex-shrink-0 md:text-primary">
               {icon}
             </div>
           )}
