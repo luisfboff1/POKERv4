@@ -92,11 +92,11 @@ export function Modal({
   if (!isOpen) return null;
 
   const sizeClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-    full: 'max-w-[95vw] max-h-[95vh]'
+    sm: 'max-w-md',
+    md: 'max-w-lg',
+    lg: 'max-w-3xl',
+    xl: 'max-w-5xl',
+    full: 'max-w-7xl'
   };
 
   const handleOverlayClick = (e: React.MouseEvent) => {
@@ -107,7 +107,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/40 backdrop-blur-xl transition-all duration-300 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm transition-all duration-300 animate-fade-in overflow-y-auto"
       onClick={handleOverlayClick}
       role="dialog"
       aria-modal="true"
@@ -115,17 +115,17 @@ export function Modal({
     >
       <div
         ref={modalRef}
-        className={`relative w-full ${sizeClasses[size]} bg-card/95 backdrop-blur-xl text-card-foreground border border-border rounded-2xl shadow-2xl max-h-[90vh] my-4 sm:my-8 mx-4 overflow-hidden flex flex-col animate-in fade-in-0 zoom-in-95 duration-300`}
+        className={`relative w-full ${sizeClasses[size]} bg-card backdrop-blur-xl text-card-foreground border border-border/50 rounded-xl shadow-2xl max-h-[85vh] my-auto overflow-hidden flex flex-col animate-in fade-in-0 zoom-in-95 duration-200`}
       >
         {showHeader && (title || showCloseButton) && (
-          <div className="flex items-center justify-between p-4 md:p-6 border-b border-border sticky top-0 z-10 bg-card/80 backdrop-blur-xl shadow-sm">
-            {title && <div id="modal-title" className="font-semibold text-lg tracking-tight animate-fade-in-up text-foreground">{title}</div>}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-gradient-to-b from-card to-card/80">
+            {title && <h2 id="modal-title" className="font-semibold text-xl tracking-tight text-foreground">{title}</h2>}
             {showCloseButton && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={onClose}
-                className="ml-2"
+                className="ml-2 hover:bg-muted/50 transition-colors"
                 aria-label="Fechar modal"
               >
                 <X className="h-5 w-5" />
@@ -134,9 +134,9 @@ export function Modal({
           </div>
         )}
         {description && (
-          <div className="px-4 md:px-6 py-2 text-muted-foreground text-sm border-b border-border bg-muted/30 backdrop-blur animate-fade-in-up">{description}</div>
+          <div className="px-6 py-3 text-muted-foreground text-sm border-b border-border/50 bg-muted/20">{description}</div>
         )}
-        <div className="flex-1 overflow-y-auto bg-card/50 backdrop-blur text-card-foreground p-4 md:p-6 transition-all duration-300">{children}</div>
+        <div className="flex-1 overflow-y-auto p-6">{children}</div>
       </div>
     </div>
     );
