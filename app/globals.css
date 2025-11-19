@@ -262,3 +262,55 @@
   animation: gradient-slow 15s ease infinite;
 }
 
+/* Mobile-First Utilities */
+@layer utilities {
+  /* Touch feedback for mobile interactions */
+  .touch-feedback {
+    @apply active:scale-95 active:opacity-80 transition-all duration-100;
+  }
+  
+  .touch-feedback-soft {
+    @apply active:scale-98 active:opacity-90 transition-all duration-150;
+  }
+  
+  .touch-feedback-subtle {
+    @apply active:opacity-70 transition-opacity duration-100;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe areas for devices with notches */
+  @supports (padding: env(safe-area-inset-bottom)) {
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .pt-safe {
+      padding-top: env(safe-area-inset-top);
+    }
+    
+    .pl-safe {
+      padding-left: env(safe-area-inset-left);
+    }
+    
+    .pr-safe {
+      padding-right: env(safe-area-inset-right);
+    }
+    
+    .p-safe {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+  }
+}
+

@@ -9,6 +9,13 @@ import { SessionFilters } from './components/session-filters';
 import { SessionsTable } from './components/sessions-table';
 import type { LocalSession } from './components/sessions-table';
 import { SessionDetailsModal } from './components/session-details-modal';
+import { MobileList } from '@/components/ui/mobile-list';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { getResponsiveTypography } from '@/lib/mobile-utils';
+import { Eye, Trash2, SlidersHorizontal, History } from 'lucide-react';
+import type { SessionPlayerData } from '@/lib/types';
 // helpers usados dentro dos componentes importados
 
 interface SessionFiltersState {
@@ -31,6 +38,7 @@ export default function HistoryPage() {
     dateTo: ''
   });
   const [selectedSession, setSelectedSession] = useState<HistoricSessionMinimal | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
   const sessionDetailsModal = useModal();
   const { confirm, ConfirmModalComponent } = useConfirmModal();
 
@@ -71,7 +79,9 @@ export default function HistoryPage() {
     });
   };
 
-
+  const handleRefresh = async () => {
+    await refetch();
+  };
 
   if (loading) {
     return <LoadingState text="Carregando histórico..." />;
@@ -81,40 +91,158 @@ export default function HistoryPage() {
     return <ErrorState message={error} retry={refetch} />;
   }
 
+  const canModerate = user?.role === 'admin' || user?.role === 'super_admin';
+
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Histórico de sessões</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Acompanhe todas as partidas realizadas no seu clube
-        </p>
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className={cn('space-y-4 md:space-y-6')}>
+        {/* Header with mobile-optimized spacing */}
+        <div className="space-y-1">
+          <h1 className={getResponsiveTypography('display')}>
+            Histórico de sessões
+          </h1>
+          <p className={getResponsiveTypography('caption')}>
+            Acompanhe todas as partidas realizadas no seu clube
+          </p>
+        </div>
+
+        {/* Filters - Desktop: inline, Mobile: modal */}
+        <div className="flex items-center gap-3">
+          {/* Desktop filters */}
+          <div className="hidden md:block flex-1">
+            <SessionFilters value={filters} onChange={setFilters} />
+          </div>
+          
+          {/* Mobile filter button */}
+          <Button
+            variant="outline"
+            size="default"
+            className="md:hidden flex-1"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <SlidersHorizontal className="mr-2 h-4 w-4" />
+            Filtros {(filters.status !== 'all' || filters.search || filters.dateFrom || filters.dateTo) && '(ativos)'}
+          </Button>
+        </div>
+
+        {/* Mobile filters modal */}
+        {showFilters && (
+          <div className="md:hidden bg-surface/50 rounded-lg p-4 space-y-4 border border-border/50">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">Filtros</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFilters(false)}
+              >
+                Fechar
+              </Button>
+            </div>
+            <SessionFilters value={filters} onChange={setFilters} />
+          </div>
+        )}
+
+        {/* Sessions - Mobile: List, Desktop: Table */}
+        <div className="md:hidden">
+          <MobileList
+            items={filteredSessions.map((session) => {
+              const playerCount = session.players_data?.length || 0;
+              const totalBuyin = session.players_data
+                ? session.players_data.reduce(
+                    (sum: number, p: SessionPlayerData) => sum + (p.buyin || 0),
+                    0
+                  )
+                : 0;
+
+              const statusColors = {
+                pending: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
+                approved: 'bg-green-500/10 text-green-600 border-green-500/20',
+                closed: 'bg-gray-500/10 text-gray-600 border-gray-500/20'
+              };
+
+              const statusText = {
+                pending: 'Pendente',
+                approved: 'Aprovada',
+                closed: 'Fechada'
+              };
+
+              return {
+                id: session.id,
+                primary: session.location,
+                secondary: `${new Date(session.date).toLocaleDateString('pt-BR')} • ${playerCount} jogadores`,
+                meta: `R$ ${totalBuyin.toLocaleString('pt-BR')}`,
+                badge: (
+                  <span className={cn(
+                    'text-xs font-medium px-2 py-0.5 rounded-full border',
+                    statusColors[session.status]
+                  )}>
+                    {statusText[session.status]}
+                  </span>
+                ),
+                actions: canModerate ? (
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedSession(session);
+                        sessionDetailsModal.open();
+                      }}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteSession(session.id);
+                      }}
+                      disabled={isPending}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ) : undefined,
+                onClick: () => {
+                  setSelectedSession(session);
+                  sessionDetailsModal.open();
+                }
+              };
+            })}
+            emptyMessage="Nenhuma sessão encontrada"
+            emptyIcon={<History className="h-10 w-10" />}
+          />
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block">
+          <SessionsTable
+            sessions={filteredSessions}
+            totalSessions={sessions.length}
+            isPendingAction={isPending}
+            canModerate={canModerate}
+            onView={(s) => { setSelectedSession(s); sessionDetailsModal.open(); }}
+            onDelete={handleDeleteSession}
+          />
+        </div>
+
+        <SessionDetailsModal
+          session={selectedSession}
+          isOpen={sessionDetailsModal.isOpen}
+          onClose={() => { sessionDetailsModal.close(); setSelectedSession(null); }}
+          onUpdateSessionPlayers={setSelectedSession}
+          onSave={async (id, payload, paidTransfers) => { 
+            await updateSessionPayments(id, payload, paidTransfers); 
+            await refetch(); 
+          }}
+        />
+
+        {/* Modal de Confirmação */}
+        {ConfirmModalComponent}
       </div>
-
-      <SessionFilters value={filters} onChange={setFilters} />
-
-      <SessionsTable
-        sessions={filteredSessions}
-        totalSessions={sessions.length}
-        isPendingAction={isPending}
-        canModerate={user?.role === 'admin' || user?.role === 'super_admin'}
-        onView={(s) => { setSelectedSession(s); sessionDetailsModal.open(); }}
-        onDelete={handleDeleteSession}
-      />
-
-      <SessionDetailsModal
-        session={selectedSession}
-        isOpen={sessionDetailsModal.isOpen}
-        onClose={() => { sessionDetailsModal.close(); setSelectedSession(null); }}
-  onUpdateSessionPlayers={setSelectedSession}
-        onSave={async (id, payload, paidTransfers) => { 
-          await updateSessionPayments(id, payload, paidTransfers); 
-          await refetch(); 
-        }}
-      />
-
-      {/* Modal de Confirmação */}
-      {ConfirmModalComponent}
-    </div>
+    </PullToRefresh>
   );
 }
 

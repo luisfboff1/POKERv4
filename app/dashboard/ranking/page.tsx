@@ -8,6 +8,10 @@ import { Trophy, Medal, Award, TrendingUp, TrendingDown } from 'lucide-react';
 import type { SessionPlayerData } from '@/lib/types';
 import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
+import { MobileList } from '@/components/ui/mobile-list';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
+import { cn } from '@/lib/utils';
+import { getResponsiveTypography } from '@/lib/mobile-utils';
 
 interface PlayerStats {
   id: number;
@@ -25,8 +29,8 @@ interface PlayerStats {
 }
 
 export default function RankingPage() {
-  const { players, loading: playersLoading, error: playersError } = usePlayers();
-  const { sessions, loading: sessionsLoading } = useSessions();
+  const { players, loading: playersLoading, error: playersError, refetch: refetchPlayers } = usePlayers();
+  const { sessions, loading: sessionsLoading, refetch: refetchSessions } = useSessions();
 
   // Calcular estatísticas DINAMICAMENTE baseado apenas nas sessões
   const playerStats = useMemo((): PlayerStats[] => {
@@ -239,6 +243,10 @@ export default function RankingPage() {
     },
   ];
 
+  const handleRefresh = async () => {
+    await Promise.all([refetchPlayers(), refetchSessions()]);
+  };
+
   if (playersLoading || sessionsLoading) {
     return <LoadingState text="Calculando rankings dinamicamente..." />;
   }
@@ -249,10 +257,12 @@ export default function RankingPage() {
 
   if (!players.length) {
     return (
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Ranking de jogadores</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+      <div className={cn('space-y-4 md:space-y-6')}>
+        <div className="space-y-1">
+          <h1 className={getResponsiveTypography('display')}>
+            Ranking de jogadores
+          </h1>
+          <p className={getResponsiveTypography('caption')}>
             Nenhum jogador cadastrado ainda
           </p>
         </div>
@@ -269,85 +279,161 @@ export default function RankingPage() {
   const playersWithSessions = playerStats.filter(player => player.sessionsPlayed > 0);
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Ranking de jogadores</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className={cn('space-y-4 md:space-y-6')}>
+        <div className="space-y-1">
+          <h1 className={getResponsiveTypography('display')}>
+            Ranking de jogadores
+          </h1>
+          <p className={getResponsiveTypography('caption')}>
             Calculado dinamicamente de {sessions.length} sessões • {playersWithSessions.length} jogadores com histórico
           </p>
-        </div>
-      </div>
-
-      {playersWithSessions.length === 0 ? (
-        <EmptyState 
-          icon={Trophy}
-          title="Nenhuma sessão encontrada"
-          description="O ranking aparecerá quando houver sessões aprovadas com jogadores."
-        />
-      ) : (
-        <>
-          {/* Cards de destaque */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {playersWithSessions.slice(0, 3).map((player, index) => (
-              <Card key={player.name} className={`${
-                index === 0 ? 'ring-2 ring-yellow-500/20 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20' :
-                index === 1 ? 'ring-2 ring-gray-400/20 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-800/20' :
-                'ring-2 ring-orange-600/20 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20'
-              }`}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-3">
-                    {getRankIcon(index + 1)}
-                    <div>
-                      <CardTitle className="text-lg">{player.name}</CardTitle>
-                      <CardDescription>
-                        {index === 0 ? '🏆 Líder' : index === 1 ? '🥈 Vice-líder' : '🥉 Terceiro lugar'}
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Lucro total:</span>
-                    <span className={`font-semibold ${player.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(player.profit)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Sessões:</span>
-                    <span className="font-medium">{player.sessionsPlayed}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Taxa de vitória:</span>
-                    <span className="font-medium">{player.winRate.toFixed(1)}%</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
           </div>
 
-          {/* Tabela completa */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Classificação geral</CardTitle>
-              <CardDescription>
-                Todos os jogadores ordenados por lucro total • Calculado em tempo real
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DataTable
-                columns={columns}
-                data={playersWithSessions}
-                searchKey="name"
-                searchPlaceholder="Filtrar por jogador..."
-                enableColumnVisibility={true}
-                enableSorting={true}
-                enableFiltering={true}
-              />
-            </CardContent>
-          </Card>
-        </>
-      )}
-    </div>
+        {playersWithSessions.length === 0 ? (
+          <EmptyState 
+            icon={Trophy}
+            title="Nenhuma sessão encontrada"
+            description="O ranking aparecerá quando houver sessões aprovadas com jogadores."
+          />
+        ) : (
+          <>
+            {/* Top 3 - Mobile: Compact, Desktop: Full cards */}
+            <div className={cn(
+              'grid gap-3 md:gap-6',
+              'grid-cols-3 md:grid-cols-3'
+            )}>
+              {playersWithSessions.slice(0, 3).map((player, index) => {
+                const gradients = [
+                  'from-yellow-500/20 to-yellow-600/10 border-yellow-500/30',
+                  'from-gray-400/20 to-gray-500/10 border-gray-400/30',
+                  'from-orange-600/20 to-orange-700/10 border-orange-600/30'
+                ];
+
+                const icons = [
+                  <Trophy key="1" className="h-5 w-5 md:h-6 md:w-6 text-yellow-500" />,
+                  <Medal key="2" className="h-5 w-5 md:h-6 md:w-6 text-gray-400" />,
+                  <Award key="3" className="h-5 w-5 md:h-6 md:w-6 text-orange-600" />
+                ];
+
+                return (
+                  <div
+                    key={player.name}
+                    className={cn(
+                      'rounded-lg border bg-gradient-to-br p-3 md:rounded-xl md:p-5',
+                      gradients[index]
+                    )}
+                  >
+                    {/* Icon - centered on mobile */}
+                    <div className="flex justify-center mb-2 md:mb-3">
+                      {icons[index]}
+                    </div>
+
+                    {/* Player name - truncated on mobile */}
+                    <h3 className="font-semibold text-sm md:text-base text-center truncate mb-1">
+                      {player.name}
+                    </h3>
+
+                    {/* Main stat - profit */}
+                    <p className={cn(
+                      'text-center font-bold text-base md:text-xl mb-2',
+                      player.profit >= 0 ? 'text-green-600' : 'text-red-600'
+                    )}>
+                      {player.profit >= 0 ? '+' : ''}R$ {Math.abs(player.profit).toFixed(0)}
+                    </p>
+
+                    {/* Additional info - hide on very small mobile */}
+                    <div className="hidden sm:flex flex-col gap-1 text-xs text-muted-foreground">
+                      <div className="flex justify-between">
+                        <span>Sessões:</span>
+                        <span className="font-medium text-foreground">{player.sessionsPlayed}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Taxa:</span>
+                        <span className="font-medium text-foreground">{player.winRate.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Remaining players - Mobile: List, Desktop: Table */}
+            <div>
+              <h2 className={cn(
+                getResponsiveTypography('subtitle'),
+                'mb-3 px-3 md:px-0'
+              )}>
+                Classificação geral
+              </h2>
+
+              {/* Mobile List */}
+              <div className="md:hidden">
+                <MobileList
+                  items={playersWithSessions.map((player, index) => ({
+                    id: player.id,
+                    icon: (
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-xs font-bold">
+                        {index + 1}
+                      </div>
+                    ),
+                    primary: (
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{player.name}</span>
+                        {index < 3 && (
+                          <span>
+                            {index === 0 && <Trophy className="h-3 w-3 text-yellow-500" />}
+                            {index === 1 && <Medal className="h-3 w-3 text-gray-400" />}
+                            {index === 2 && <Award className="h-3 w-3 text-orange-600" />}
+                          </span>
+                        )}
+                      </div>
+                    ),
+                    secondary: `${player.sessionsPlayed} sessões • Taxa: ${player.winRate.toFixed(1)}%`,
+                    meta: (
+                      <div className="text-right">
+                        <p className={cn(
+                          'font-semibold text-sm',
+                          player.profit >= 0 ? 'text-green-600' : 'text-red-600'
+                        )}>
+                          {player.profit >= 0 ? '+' : ''}R$ {Math.abs(player.profit).toFixed(0)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatCurrency(player.profitPerSession)}/sessão
+                        </p>
+                      </div>
+                    )
+                  }))}
+                  emptyMessage="Nenhum jogador encontrado"
+                />
+              </div>
+
+              {/* Desktop Table */}
+              <div className="hidden md:block">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Classificação completa</CardTitle>
+                    <CardDescription>
+                      Todos os jogadores ordenados por lucro total • Calculado em tempo real
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <DataTable
+                      columns={columns}
+                      data={playersWithSessions}
+                      searchKey="name"
+                      searchPlaceholder="Filtrar por jogador..."
+                      enableColumnVisibility={true}
+                      enableSorting={true}
+                      enableFiltering={true}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </PullToRefresh>
   );
 }
