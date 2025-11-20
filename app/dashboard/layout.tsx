@@ -71,7 +71,7 @@ export default function DashboardLayout({
   );
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="flex h-screen bg-gradient-to-br from-background via-background to-muted/20">
       {/* Mobile Header */}
       <div className="fixed left-0 right-0 top-0 z-50 flex h-16 items-center justify-between border-b border-border/50 bg-background/95 px-4 backdrop-blur-xl md:hidden shadow-sm">
         <div className="flex items-center gap-3">
@@ -225,7 +225,7 @@ export default function DashboardLayout({
       )}
 
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden mt-16 md:mt-0">
+      <main className="flex-1 mt-16 md:mt-0">
         <div className={cn(
           "h-full w-full overflow-y-auto overflow-x-hidden p-4 md:p-8 transition-all duration-300",
           sidebarCollapsed && "md:ml-0"
