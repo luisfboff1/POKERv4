@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { Button } from './button';
@@ -105,20 +106,20 @@ export function Modal({
     }
   };
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={handleOverlayClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? 'modal-title' : undefined}
     >
-      {/* Scrollable container */}
+      {/* Scrollable container for tall modals */}
       <div className="fixed inset-0 overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
           <div
             ref={modalRef}
-            className={`relative w-full ${sizeClasses[size]} bg-card text-card-foreground border border-border rounded-lg shadow-xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 my-8`}
+            className={`relative w-full ${sizeClasses[size]} bg-card text-card-foreground border border-border rounded-lg shadow-xl flex flex-col animate-in zoom-in-95 duration-200 my-8 max-h-[calc(100vh-4rem)]`}
             onClick={(e) => e.stopPropagation()}
           >
             {showHeader && (title || showCloseButton) && (
@@ -140,13 +141,15 @@ export function Modal({
             {description && (
               <div className="px-6 py-3 text-sm text-muted-foreground border-b border-border shrink-0">{description}</div>
             )}
-            <div className="overflow-y-auto p-6 max-h-[calc(85vh-8rem)]">{children}</div>
+            <div className="overflow-y-auto overflow-x-hidden p-6">{children}</div>
           </div>
         </div>
       </div>
     </div>
-    );
-  }
+  );
+
+  return createPortal(modalContent, document.body);
+}
 
 interface ModalContentProps {
   children: ReactNode;

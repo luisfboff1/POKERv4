@@ -94,7 +94,7 @@ export default function HistoryPage() {
   const canModerate = user?.role === 'admin' || user?.role === 'super_admin';
 
   return (
-    <PullToRefresh onRefresh={handleRefresh}>
+    <PullToRefresh onRefresh={handleRefresh} enabled={!sessionDetailsModal.isOpen}>
       <div className={cn('space-y-4 md:space-y-6')}>
         {/* Header with mobile-optimized spacing */}
         <div className="space-y-1">

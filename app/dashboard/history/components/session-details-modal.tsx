@@ -1,4 +1,4 @@
-import { Modal } from '@/components/ui/modal';
+import { Modal, ModalFooter } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { SessionPlayersTable } from './session-players-table';
 import TransferManager from '@/components/TransferManager';
@@ -131,81 +131,14 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
       onClose={() => { setEditing(false); onClose(); }}
       title="Detalhes da Sessão"
       description={session ? `${session.location} - ${new Date(session.date).toLocaleDateString('pt-BR')}` : ''}
-      size="lg"
+      size="xl"
       variant="solid"
       forceOpaque
     >
       {session && (
-        <div className="space-y-6">
-            <div className="flex justify-end gap-2">
-              {!editing && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    // Criar snapshot somente ao entrar em edição
-                    if (session?.players_data) {
-                      originalPlayersRef.current = session.players_data.map((p) => ({
-                        id: (p.id ?? p.name) as string | number,
-                        janta_paid: !!p.janta_paid,
-                      }));
-                    } else {
-                      originalPlayersRef.current = [];
-                    }
-                    
-                    // Criar snapshot das transferências
-                    if (session?.paid_transfers) {
-                      originalTransfersRef.current = { ...session.paid_transfers };
-                    } else {
-                      originalTransfersRef.current = {};
-                    }
-                    
-                    setEditing(true);
-                  }}
-                >
-                  Editar Pagamentos
-                </Button>
-              )}
-              {editing && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      // Restaurar snapshot se cancelar
-                      if (originalPlayersRef.current && session?.players_data) {
-                        onUpdateSessionPlayers((prev) => {
-                          if (!prev) return prev;
-                          const restored = prev.players_data?.map((p) => {
-                            const snap = originalPlayersRef.current!.find((s) => s.id === (p.id ?? p.name));
-                            if (!snap) return p;
-                            return { ...p, janta_paid: snap.janta_paid };
-                          });
-                          return { 
-                            ...prev, 
-                            players_data: restored,
-                            paid_transfers: originalTransfersRef.current || {}
-                          };
-                        });
-                      }
-                      
-                      setEditing(false);
-                      originalPlayersRef.current = null;
-                      originalTransfersRef.current = null;
-                    }}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    onClick={handleSave}
-                    disabled={!hasPaymentChanges || saving}
-                  >
-                    {saving ? 'Salvando...' : 'Salvar'}
-                  </Button>
-                </>
-              )}
-            </div>
+        <div className="flex flex-col h-full -m-6">
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {session.players_data && (
               <div>
                 <h4 className="font-medium mb-4">Jogadores</h4>
@@ -254,6 +187,78 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
               </div>
             )}
           </div>
+          
+          {/* Fixed footer with action buttons */}
+          <ModalFooter>
+            {!editing && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  // Criar snapshot somente ao entrar em edição
+                  if (session?.players_data) {
+                    originalPlayersRef.current = session.players_data.map((p) => ({
+                      id: (p.id ?? p.name) as string | number,
+                      janta_paid: !!p.janta_paid,
+                    }));
+                  } else {
+                    originalPlayersRef.current = [];
+                  }
+                  
+                  // Criar snapshot das transferências
+                  if (session?.paid_transfers) {
+                    originalTransfersRef.current = { ...session.paid_transfers };
+                  } else {
+                    originalTransfersRef.current = {};
+                  }
+                  
+                  setEditing(true);
+                }}
+              >
+                Editar Pagamentos
+              </Button>
+            )}
+            {editing && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    // Restaurar snapshot se cancelar
+                    if (originalPlayersRef.current && session?.players_data) {
+                      onUpdateSessionPlayers((prev) => {
+                        if (!prev) return prev;
+                        const restored = prev.players_data?.map((p) => {
+                          const snap = originalPlayersRef.current!.find((s) => s.id === (p.id ?? p.name));
+                          if (!snap) return p;
+                          return { ...p, janta_paid: snap.janta_paid };
+                        });
+                        return { 
+                          ...prev, 
+                          players_data: restored,
+                          paid_transfers: originalTransfersRef.current || {}
+                        };
+                      });
+                    }
+                    
+                    setEditing(false);
+                    originalPlayersRef.current = null;
+                    originalTransfersRef.current = null;
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  size="sm" 
+                  onClick={handleSave}
+                  disabled={!hasPaymentChanges || saving}
+                >
+                  {saving ? 'Salvando...' : 'Salvar'}
+                </Button>
+              </>
+            )}
+          </ModalFooter>
+        </div>
         )}
     </Modal>
   );
