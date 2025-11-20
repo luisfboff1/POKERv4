@@ -118,7 +118,7 @@ export function Modal({
         <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
           <div
             ref={modalRef}
-            className={`relative w-full ${sizeClasses[size]} bg-card text-card-foreground border border-border rounded-lg shadow-xl flex flex-col animate-in zoom-in-95 duration-200 my-8 max-h-[calc(100vh-4rem)]`}
+            className={`relative w-full ${sizeClasses[size]} bg-card text-card-foreground border border-border rounded-lg shadow-xl flex flex-col animate-in zoom-in-95 duration-200 my-4 max-h-[calc(100vh-2rem)]`}
             onClick={(e) => e.stopPropagation()}
           >
             {showHeader && (title || showCloseButton) && (
