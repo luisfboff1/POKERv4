@@ -113,33 +113,35 @@ export function Modal({
       aria-modal="true"
       aria-labelledby={title ? 'modal-title' : undefined}
     >
-      {/* Centering container without scroll */}
-      <div className="fixed inset-0 flex items-center justify-center p-4 sm:p-6">
-        <div
-          ref={modalRef}
-          className={`relative w-full ${sizeClasses[size]} bg-card text-card-foreground border border-border rounded-lg shadow-xl flex flex-col animate-in zoom-in-95 duration-200 max-h-[90vh]`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {showHeader && (title || showCloseButton) && (
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-              {title && <h2 id="modal-title" className="font-semibold text-xl text-foreground">{title}</h2>}
-              {showCloseButton && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onClose}
-                  className="ml-2 hover:bg-muted"
-                  aria-label="Fechar modal"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              )}
-            </div>
-          )}
-          {description && (
-            <div className="px-6 py-3 text-sm text-muted-foreground border-b border-border shrink-0">{description}</div>
-          )}
-          <div className="overflow-y-auto p-6">{children}</div>
+      {/* Scrollable container for tall modals */}
+      <div className="fixed inset-0 overflow-y-auto">
+        <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
+          <div
+            ref={modalRef}
+            className={`relative w-full ${sizeClasses[size]} bg-card text-card-foreground border border-border rounded-lg shadow-xl flex flex-col animate-in zoom-in-95 duration-200 my-8 max-h-[calc(100vh-4rem)]`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {showHeader && (title || showCloseButton) && (
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+                {title && <h2 id="modal-title" className="font-semibold text-xl text-foreground">{title}</h2>}
+                {showCloseButton && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onClose}
+                    className="ml-2 hover:bg-muted"
+                    aria-label="Fechar modal"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                )}
+              </div>
+            )}
+            {description && (
+              <div className="px-6 py-3 text-sm text-muted-foreground border-b border-border shrink-0">{description}</div>
+            )}
+            <div className="overflow-y-auto overflow-x-hidden p-6">{children}</div>
+          </div>
         </div>
       </div>
     </div>
