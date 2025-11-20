@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { Button } from './button';
@@ -105,7 +106,7 @@ export function Modal({
     }
   };
 
-  return (
+  const modalContent = (
     <div
       className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={handleOverlayClick}
@@ -145,8 +146,10 @@ export function Modal({
         </div>
       </div>
     </div>
-    );
-  }
+  );
+
+  return createPortal(modalContent, document.body);
+}
 
 interface ModalContentProps {
   children: ReactNode;
