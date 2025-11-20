@@ -131,7 +131,7 @@ export function SessionDetailsModal({ session, isOpen, onClose, onUpdateSessionP
       onClose={() => { setEditing(false); onClose(); }}
       title="Detalhes da Sessão"
       description={session ? `${session.location} - ${new Date(session.date).toLocaleDateString('pt-BR')}` : ''}
-      size="full"
+      size="xl"
       variant="solid"
       forceOpaque
     >
