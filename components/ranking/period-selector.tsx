@@ -44,10 +44,10 @@ export function PeriodSelector({
     : null;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 max-w-full overflow-hidden">
       <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-        <div className="flex items-center gap-2 flex-1 w-full sm:w-auto">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
+        <div className="flex items-center gap-2 flex-1 w-full sm:w-auto min-w-0">
+          <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           <Select value={selectedPeriod || 'current'} onValueChange={(value) => onPeriodChange(value === 'current' ? null : value)}>
             <SelectTrigger className="w-full sm:w-[280px]">
               <SelectValue placeholder="Selecione um período" />
@@ -82,7 +82,7 @@ export function PeriodSelector({
           <Button
             onClick={onCreatePeriod}
             size="sm"
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto flex-shrink-0"
           >
             <Plus className="h-4 w-4 mr-2" />
             Novo período
@@ -93,18 +93,18 @@ export function PeriodSelector({
       {/* Show period details and actions when a period is selected */}
       {selectedPeriodData && isAdmin && (
         <div className={cn(
-          'flex items-center justify-between p-3 rounded-lg border bg-muted/50',
-          'text-sm'
+          'flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between p-3 rounded-lg border bg-muted/50',
+          'text-sm max-w-full overflow-hidden'
         )}>
-          <div className="flex-1">
-            <p className="font-medium">{selectedPeriodData.name}</p>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium truncate">{selectedPeriodData.name}</p>
             {selectedPeriodData.description && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                 {selectedPeriodData.description}
               </p>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-shrink-0">
             <Button
               variant="ghost"
               size="sm"

@@ -366,7 +366,7 @@ function RankingPageContent() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className={cn('space-y-4 md:space-y-6')}>
+      <div className={cn('space-y-4 md:space-y-6 max-w-full overflow-x-hidden')}>
           <div className="space-y-3">
             <div className="space-y-1">
               <h1 className={getResponsiveTypography('display')}>
