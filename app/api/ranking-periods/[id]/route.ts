@@ -146,9 +146,9 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       tenant_id: user.tenant_id,
       user_id: user.id,
       action: 'update_ranking_period',
-      entity_type: 'ranking_period',
-      entity_id: periodId,
-      details: body,
+      table_name: 'ranking_periods',
+      record_id: periodId,
+      new_data: body,
     });
 
     return NextResponse.json({
@@ -219,9 +219,9 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       tenant_id: user.tenant_id,
       user_id: user.id,
       action: 'delete_ranking_period',
-      entity_type: 'ranking_period',
-      entity_id: periodId,
-      details: { name: existingPeriod.name },
+      table_name: 'ranking_periods',
+      record_id: periodId,
+      old_data: { name: existingPeriod.name },
     });
 
     return NextResponse.json({

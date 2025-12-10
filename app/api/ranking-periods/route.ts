@@ -108,9 +108,9 @@ export async function POST(req: NextRequest) {
       tenant_id: user.tenant_id,
       user_id: user.id,
       action: 'create_ranking_period',
-      entity_type: 'ranking_period',
-      entity_id: newPeriod.id,
-      details: { name: body.name, start_date: body.start_date, end_date: body.end_date },
+      table_name: 'ranking_periods',
+      record_id: newPeriod.id,
+      new_data: { name: body.name, start_date: body.start_date, end_date: body.end_date },
     });
 
     return NextResponse.json({
