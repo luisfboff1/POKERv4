@@ -9,6 +9,7 @@ import type { SessionStep } from './SessionCreateStep';
 import { formatCurrency } from '@/lib/format';
 import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
+import { cn } from '@/lib/utils';
 
 interface SessionCashoutStepProps {
   currentSession: LiveSession;
@@ -61,6 +62,71 @@ export const SessionCashoutStep: React.FC<SessionCashoutStepProps> = ({
   setStep,
   calculateRecommendations
 }) => {
+  // Mobile Player Card Component
+  const MobileCashoutCard: React.FC<{ player: LivePlayer }> = ({ player }) => {
+    const [localValue, setLocalValue] = useState(player.cashout?.toString() || '');
+    
+    useEffect(() => {
+      setLocalValue(player.cashout?.toString() || '');
+    }, [player.cashout]);
+
+    const result = player.cashout - player.totalBuyin;
+    const positive = result >= 0;
+
+    return (
+      <Card className="overflow-hidden">
+        <CardContent className="p-4 space-y-3">
+          {/* Header: Name and Info */}
+          <div className="space-y-1">
+            <h3 className="font-semibold text-base">{player.name}</h3>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span>Buy-in: {formatCurrency(player.totalBuyin)}</span>
+              <span>•</span>
+              <span>Janta: {formatCurrency(player.janta)}</span>
+            </div>
+          </div>
+
+          {/* Cashout Input */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-muted-foreground">Cash-out (R$)</label>
+            <Input
+              type="number"
+              placeholder="0"
+              value={localValue}
+              onChange={(e) => setLocalValue(e.target.value)}
+              onBlur={() => {
+                const value = Number(localValue) || 0;
+                updatePlayerField(player.id, 'cashout', value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const value = Number(localValue) || 0;
+                  updatePlayerField(player.id, 'cashout', value);
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              className="h-11 text-base"
+            />
+          </div>
+
+          {/* Result */}
+          <div className={cn(
+            "flex items-center justify-between p-3 rounded-lg",
+            positive ? "bg-green-500/10" : "bg-red-500/10"
+          )}>
+            <span className="text-sm font-medium">Resultado</span>
+            <div className={cn(
+              "text-lg font-bold",
+              positive ? "text-green-600" : "text-red-600"
+            )}>
+              {positive ? '+' : ''}{formatCurrency(result)}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   // Define columns for cashout table
   const columns: ColumnDef<LivePlayer>[] = [
     {
@@ -102,12 +168,84 @@ export const SessionCashoutStep: React.FC<SessionCashoutStepProps> = ({
   ];
 
   return (
-  <div className="space-y-6">
-    <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Finalizar Sessão</h1>
-      <p className="text-sm text-muted-foreground">Registre quanto cada jogador saiu em fichas</p>
+  <div className="space-y-4 md:space-y-6">
+    <div className="space-y-1">
+      <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Finalizar Sessão</h1>
+      <p className="text-xs md:text-sm text-muted-foreground">Registre quanto cada jogador saiu em fichas</p>
     </div>
-    <Card>
+
+    {/* Mobile View - Card List */}
+    <div className="md:hidden space-y-4">
+      <div className="flex items-center justify-between px-1">
+        <h2 className="text-base font-semibold">Cash-out dos Jogadores</h2>
+        <span className="text-sm text-muted-foreground">{currentSession.players.length} jogadores</span>
+      </div>
+      
+      <div className="space-y-3">
+        {currentSession.players.map((player) => (
+          <MobileCashoutCard key={player.id} player={player} />
+        ))}
+      </div>
+
+      {/* Mobile Summary */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <div className="grid grid-cols-2 gap-3 text-center">
+            <div className="p-3 bg-surface rounded-lg">
+              <div className="text-lg font-bold">{formatCurrency(totals.totalBuyin)}</div>
+              <div className="text-xs text-muted-foreground">Buy-in</div>
+            </div>
+            <div className="p-3 bg-surface rounded-lg">
+              <div className="text-lg font-bold">{formatCurrency(totals.totalCashout)}</div>
+              <div className="text-xs text-muted-foreground">Cash-out</div>
+            </div>
+          </div>
+          
+          <div className={cn(
+            "p-3 rounded-lg text-center",
+            isBalanced ? "bg-green-500/10" : "bg-red-500/10"
+          )}>
+            <div className={cn(
+              "flex items-center justify-center gap-2 font-bold",
+              isBalanced ? "text-green-600" : "text-red-600"
+            )}>
+              {isBalanced ? (
+                <>
+                  <CheckCircle className="h-5 w-5" />
+                  <span>Balanceado</span>
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="h-5 w-5" />
+                  <span>Diferença: {formatCurrency(Math.abs(totals.totalBuyin - totals.totalCashout))}</span>
+                </>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Mobile Actions */}
+      <div className="flex flex-col gap-2">
+        <Button
+          onClick={() => {
+            calculateRecommendations();
+            setStep('transfers');
+          }}
+          disabled={!isBalanced}
+          className="w-full h-11"
+          size="lg"
+        >
+          Continuar para Transferências
+        </Button>
+        <Button variant="outline" onClick={() => setStep('active')} className="w-full h-11">
+          Voltar
+        </Button>
+      </div>
+    </div>
+
+    {/* Desktop View - DataTable */}
+    <Card className="hidden md:block">
       <CardHeader>
         <CardTitle>Cash-out dos Jogadores</CardTitle>
         <CardDescription>Digite quanto cada jogador terminou em fichas</CardDescription>
