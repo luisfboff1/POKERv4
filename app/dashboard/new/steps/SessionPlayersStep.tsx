@@ -91,20 +91,21 @@ export const SessionPlayersStep: React.FC<SessionPlayersStepProps> = ({
   ];
 
   return (
-  <div className="space-y-6">
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+  <div className="space-y-4 md:space-y-6">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="min-w-0">
+        <h1 className="text-xl md:text-2xl font-semibold tracking-tight truncate">
           {currentSession.location}
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs md:text-sm text-muted-foreground">
           {new Date(currentSession.date).toLocaleDateString('pt-BR')} • Adicionando jogadores
         </p>
       </div>
       <Button
         onClick={() => setStep('active')}
         disabled={currentSession.players.length < 2}
-        size="sm"
+        size="default"
+        className="w-full sm:w-auto"
       >
         <Plus className="mr-2 h-4 w-4" />
         Começar Jogo
@@ -113,25 +114,25 @@ export const SessionPlayersStep: React.FC<SessionPlayersStepProps> = ({
 
     {error && (
       <Card className="border-destructive/50 bg-destructive/5">
-        <CardContent className="pt-4">
-          <p className="text-sm text-destructive">{error}</p>
+        <CardContent className="pt-3 md:pt-4 pb-3 md:pb-4">
+          <p className="text-xs md:text-sm text-destructive">{error}</p>
         </CardContent>
       </Card>
     )}
 
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <UserPlus className="h-5 w-5" />
+        <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+          <UserPlus className="h-4 w-4 md:h-5 md:w-5" />
           Adicionar Jogador
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar jogador existente ou criar novo (Enter para adicionar)..."
+              placeholder="Buscar jogador ou criar novo (Enter para adicionar)..."
               value={searchPlayer}
               onChange={(e) => setSearchPlayer(e.target.value)}
               onKeyDown={(e) => {
@@ -146,23 +147,27 @@ export const SessionPlayersStep: React.FC<SessionPlayersStepProps> = ({
                   setSearchPlayer('');
                 }
               }}
-              className="pl-10"
+              className="pl-10 h-11"
             />
           </div>
-          <Button
-            variant="outline"
-            onClick={() => addPlayerModal.open()}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Novo
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => playersListModal.open()}
-          >
-            <Users className="h-4 w-4 mr-2" />
-            Lista
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => addPlayerModal.open()}
+              className="flex-1 sm:flex-none h-11"
+            >
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="sm:inline">Novo</span>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => playersListModal.open()}
+              className="flex-1 sm:flex-none h-11"
+            >
+              <Users className="h-4 w-4 sm:mr-2" />
+              <span className="sm:inline">Lista</span>
+            </Button>
+          </div>
         </div>
 
         {searchPlayer && filteredExistingPlayers.length > 0 && (
@@ -186,7 +191,8 @@ export const SessionPlayersStep: React.FC<SessionPlayersStepProps> = ({
           <div>
             <Button
               onClick={() => addPlayerToSession(searchPlayer.trim(), false)}
-              size="sm"
+              size="default"
+              className="w-full sm:w-auto"
             >
               <Plus className="h-4 w-4 mr-1" /> Adicionar &quot;{searchPlayer.trim()}&quot;
             </Button>
@@ -197,17 +203,17 @@ export const SessionPlayersStep: React.FC<SessionPlayersStepProps> = ({
 
     <Card>
       <CardHeader>
-        <CardTitle>Jogadores na mesa ({currentSession.players.length})</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-base md:text-lg">Jogadores na mesa ({currentSession.players.length})</CardTitle>
+        <CardDescription className="text-xs md:text-sm">
           Buy-in inicial: {formatCurrency(defaultBuyin)}
         </CardDescription>
       </CardHeader>
       <CardContent>
         {currentSession.players.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <Users className="mx-auto h-12 w-12 mb-3 opacity-50" />
-            <p>Nenhum jogador adicionado</p>
-            <p className="text-sm">Adicione pelo menos 2 jogadores para começar</p>
+            <Users className="mx-auto h-10 w-10 md:h-12 md:w-12 mb-3 opacity-50" />
+            <p className="text-sm md:text-base">Nenhum jogador adicionado</p>
+            <p className="text-xs md:text-sm">Adicione pelo menos 2 jogadores para começar</p>
           </div>
         ) : (
           <>
@@ -221,7 +227,7 @@ export const SessionPlayersStep: React.FC<SessionPlayersStepProps> = ({
               enableFiltering={true}
             />
             <div className="pt-4 mt-4 border-t">
-              <div className="text-sm text-muted-foreground">
+              <div className="text-xs md:text-sm text-muted-foreground">
                 Total em mesa: {formatCurrency(totals.totalBuyin)}
               </div>
             </div>

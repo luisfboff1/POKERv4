@@ -223,53 +223,186 @@ export const SessionActiveStep: React.FC<SessionActiveStepProps> = ({
     },
   ];
 
+  // Mobile Player Card Component
+  const MobilePlayerCard: React.FC<{ player: LivePlayer }> = ({ player }) => {
+    const [localJanta, setLocalJanta] = useState(player.janta?.toString() || '');
+    
+    useEffect(() => {
+      setLocalJanta(player.janta?.toString() || '');
+    }, [player.janta]);
+
+    return (
+      <Card className="overflow-hidden">
+        <CardContent className="p-4 space-y-3">
+          {/* Header: Name and Total */}
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-base truncate">{player.name}</h3>
+              <p className="text-sm text-muted-foreground">
+                Buy-in: {formatCurrency(player.buyin)}
+              </p>
+            </div>
+            <div className="text-right ml-2">
+              <div className="text-lg font-bold">{formatCurrency(player.totalBuyin)}</div>
+              <p className="text-xs text-muted-foreground">Total</p>
+            </div>
+          </div>
+
+          {/* Rebuys Section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Rebuys</span>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openRebuyModal(player.id, player.name);
+                }}
+                className="h-8 px-3"
+              >
+                <Plus className="h-3 w-3 mr-1" /> Adicionar
+              </Button>
+            </div>
+            {player.rebuys.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {player.rebuys.map((r, i) => (
+                  <div key={i} className="bg-muted px-3 py-1.5 rounded-lg flex items-center gap-2">
+                    <span className="text-sm font-medium">{formatCurrency(r)}</span>
+                    <div className="flex gap-1">
+                      {typeof editRebuy === 'function' && (
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openRebuyModal(player.id, player.name, i);
+                          }}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      )}
+                      {typeof removeRebuy === 'function' && (
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            confirm({
+                              title: 'Remover Rebuy',
+                              message: `Remover rebuy de ${player.name} ${formatCurrency(r)}?`,
+                              onConfirm: () => removeRebuy(player.id, i),
+                              confirmText: 'Remover',
+                              cancelText: 'Cancelar',
+                              variant: 'destructive'
+                            });
+                          }}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Nenhum rebuy</p>
+            )}
+          </div>
+
+          {/* Janta Input */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-muted-foreground">Janta (R$)</label>
+            <Input
+              type="number"
+              value={localJanta}
+              placeholder="0"
+              onChange={(e) => setLocalJanta(e.target.value)}
+              onBlur={() => {
+                const value = Number(localJanta) || 0;
+                updatePlayerField(player.id, 'janta', value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const value = Number(localJanta) || 0;
+                  updatePlayerField(player.id, 'janta', value);
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              className="h-11 text-base"
+            />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <>
-  <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-3">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-              {currentSession.location}
+  <div className="space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl md:text-2xl font-semibold tracking-tight flex items-center gap-2 md:gap-3">
+              <div className="w-2.5 h-2.5 md:w-3 md:h-3 bg-green-500 rounded-full animate-pulse flex-shrink-0" />
+              <span className="truncate">{currentSession.location}</span>
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs md:text-sm text-muted-foreground mt-1">
               {new Date(currentSession.date).toLocaleDateString('pt-BR')} • Sessão em andamento
             </p>
           </div>
-          <Button onClick={() => setStep('cashout')} variant="outline">
+          <Button 
+            onClick={() => setStep('cashout')} 
+            variant="outline"
+            className="w-full sm:w-auto"
+            size="default"
+          >
             Finalizar Sessão
           </Button>
         </div>
 
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
       <Card>
-        <CardContent className="pt-6">
-          <div className="text-2xl font-bold">{totals.playersCount}</div>
+        <CardContent className="pt-4 md:pt-6">
+          <div className="text-xl md:text-2xl font-bold">{totals.playersCount}</div>
           <p className="text-xs text-muted-foreground">Jogadores</p>
         </CardContent>
       </Card>
       <Card>
-        <CardContent className="pt-6">
-          <div className="text-2xl font-bold">{formatCurrency(totals.totalBuyin)}</div>
+        <CardContent className="pt-4 md:pt-6">
+          <div className="text-xl md:text-2xl font-bold">{formatCurrency(totals.totalBuyin)}</div>
           <p className="text-xs text-muted-foreground">Total Buy-in</p>
         </CardContent>
       </Card>
       <Card>
-        <CardContent className="pt-6">
-          <div className="text-2xl font-bold">{formatCurrency(totals.totalJanta)}</div>
+        <CardContent className="pt-4 md:pt-6">
+          <div className="text-xl md:text-2xl font-bold">{formatCurrency(totals.totalJanta)}</div>
           <p className="text-xs text-muted-foreground">Janta</p>
         </CardContent>
       </Card>
       <Card>
-        <CardContent className="pt-6">
-          <Button size="sm" className="w-full" onClick={() => addPlayerModal.open()}>
+        <CardContent className="pt-4 md:pt-6">
+          <Button size="sm" className="w-full h-9 md:h-10" onClick={() => addPlayerModal.open()}>
             <Plus className="h-4 w-4 mr-1" /> Jogador
           </Button>
         </CardContent>
       </Card>
     </div>
 
-    <Card>
+    {/* Mobile View - Card List */}
+    <div className="md:hidden space-y-3">
+      <div className="flex items-center justify-between px-1">
+        <h2 className="text-base font-semibold">Controle de Mesa</h2>
+        <span className="text-sm text-muted-foreground">{currentSession.players.length} jogadores</span>
+      </div>
+      {currentSession.players.map((player) => (
+        <MobilePlayerCard key={player.id} player={player} />
+      ))}
+    </div>
+
+    {/* Desktop View - DataTable */}
+    <Card className="hidden md:block">
       <CardHeader>
         <CardTitle>Controle de Mesa</CardTitle>
       </CardHeader>

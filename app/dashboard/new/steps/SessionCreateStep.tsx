@@ -31,66 +31,69 @@ export const SessionCreateStep: React.FC<SessionCreateStepProps> = ({
   startSession,
   setCurrentSessionNull
 }) => (
-  <div className="space-y-8">
-    <div>
-      <h1 className="text-3xl font-semibold tracking-tight">Nova Sessão</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
+  <div className="space-y-4 md:space-y-8">
+    <div className="space-y-1">
+      <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Nova Sessão</h1>
+      <p className="text-xs md:text-sm text-muted-foreground">
         Configure os dados básicos para iniciar uma nova partida
       </p>
     </div>
     {error && (
       <Card className="border-destructive/50 bg-destructive/5">
-        <CardContent className="pt-6">
-          <p className="text-sm text-destructive">{error}</p>
+        <CardContent className="pt-3 md:pt-6 pb-3 md:pb-6">
+          <p className="text-xs md:text-sm text-destructive">{error}</p>
         </CardContent>
       </Card>
     )}
     <Card>
       <CardHeader>
-        <CardTitle>Dados da sessão</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-base md:text-lg">Dados da sessão</CardTitle>
+        <CardDescription className="text-xs md:text-sm">
           Defina onde e quando será realizada a partida
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="date">Data</Label>
+            <Label htmlFor="date" className="text-sm">Data</Label>
             <Input
               id="date"
               type="date"
               value={currentSession?.date}
               onChange={e => setCurrentSession({ ...currentSession, date: e.target.value })}
+              className="h-11"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="location">Local *</Label>
+            <Label htmlFor="location" className="text-sm">Local *</Label>
             <Input
               id="location"
               placeholder="Ex: Clube do João, Casa do Pedro..."
               value={currentSession?.location}
               onChange={e => setCurrentSession({ ...currentSession, location: e.target.value })}
+              className="h-11"
             />
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="buyin">Buy-in padrão (R$)</Label>
+          <Label htmlFor="buyin" className="text-sm">Buy-in padrão (R$)</Label>
           <Input
             id="buyin"
             type="number"
             value={defaultBuyin}
             onChange={e => setDefaultBuyin(Number(e.target.value) || 50)}
             min="1"
+            className="h-11"
           />
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs md:text-sm text-muted-foreground">
             Valor inicial que cada jogador pagará ao entrar na mesa
           </p>
         </div>
-        <div className="flex gap-3 pt-4">
+        <div className="flex flex-col sm:flex-row gap-2 md:gap-3 pt-4">
           <Button
             onClick={() => startSession(currentSession?.location || '')}
             disabled={!currentSession?.location?.trim() || loading}
-            className="flex-1"
+            className="w-full h-11 md:h-10 sm:flex-1"
           >
             {loading ? (
               <LoadingSpinner size="sm" className="mr-2" />
@@ -102,6 +105,7 @@ export const SessionCreateStep: React.FC<SessionCreateStepProps> = ({
           <Button
             variant="outline"
             onClick={setCurrentSessionNull}
+            className="w-full h-11 md:h-10 sm:w-auto"
           >
             Cancelar
           </Button>
