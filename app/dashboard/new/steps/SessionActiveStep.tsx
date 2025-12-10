@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, ArrowUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import type { LiveSession, LivePlayer } from '@/lib/types';
 import type { UpdateLivePlayerField } from './types';
@@ -76,6 +76,10 @@ export const SessionActiveStep: React.FC<SessionActiveStepProps> = ({
   );
   const [initialRebuyAmount, setInitialRebuyAmount] = useState<number | undefined>(undefined);
   const { confirm, ConfirmModalComponent } = useConfirmModal();
+  
+  // Mobile search and sort state
+  const [mobileSearchTerm, setMobileSearchTerm] = useState('');
+  const [mobileSortAlphabetically, setMobileSortAlphabetically] = useState(false);
 
   const openRebuyModal = (playerId: string, playerName: string, index?: number) => {
     // if editing, try to get current amount
@@ -103,6 +107,26 @@ export const SessionActiveStep: React.FC<SessionActiveStepProps> = ({
   const defaultBuyin = currentSession.players.length > 0
     ? Math.round(currentSession.players.reduce((sum, p) => sum + p.buyin, 0) / currentSession.players.length)
     : 50;
+
+  // Filtered and sorted players for mobile view
+  const filteredAndSortedPlayers = useMemo(() => {
+    let players = [...currentSession.players];
+    
+    // Apply search filter
+    if (mobileSearchTerm.trim()) {
+      const searchLower = mobileSearchTerm.toLowerCase();
+      players = players.filter(player => 
+        player.name.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Apply alphabetical sort
+    if (mobileSortAlphabetically) {
+      players.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+    }
+    
+    return players;
+  }, [currentSession.players, mobileSearchTerm, mobileSortAlphabetically]);
 
   // Define columns for active session table
   const columns: ColumnDef<LivePlayer>[] = [
@@ -392,13 +416,48 @@ export const SessionActiveStep: React.FC<SessionActiveStepProps> = ({
 
     {/* Mobile View - Card List */}
     <div className="md:hidden space-y-3">
-      <div className="flex items-center justify-between px-1">
-        <h2 className="text-base font-semibold">Controle de Mesa</h2>
-        <span className="text-sm text-muted-foreground">{currentSession.players.length} jogadores</span>
+      {/* Mobile Search and Sort Controls */}
+      <div className="space-y-2 px-1">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Buscar jogador..."
+              value={mobileSearchTerm}
+              onChange={(e) => setMobileSearchTerm(e.target.value)}
+              className="pl-9 h-10"
+            />
+          </div>
+          <Button
+            variant={mobileSortAlphabetically ? "default" : "outline"}
+            size="icon"
+            onClick={() => setMobileSortAlphabetically(!mobileSortAlphabetically)}
+            title={mobileSortAlphabetically ? "Ordem original" : "Ordenar A-Z"}
+            className="h-10 w-10 flex-shrink-0"
+          >
+            <ArrowUpDown className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold">Controle de Mesa</h2>
+          <span className="text-sm text-muted-foreground">
+            {filteredAndSortedPlayers.length} {filteredAndSortedPlayers.length === 1 ? 'jogador' : 'jogadores'}
+          </span>
+        </div>
       </div>
-      {currentSession.players.map((player) => (
-        <MobilePlayerCard key={player.id} player={player} />
-      ))}
+      
+      {filteredAndSortedPlayers.length > 0 ? (
+        filteredAndSortedPlayers.map((player) => (
+          <MobilePlayerCard key={player.id} player={player} />
+        ))
+      ) : (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <p className="text-muted-foreground">Nenhum jogador encontrado</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
 
     {/* Desktop View - DataTable */}

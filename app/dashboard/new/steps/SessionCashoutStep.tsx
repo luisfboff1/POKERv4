@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle, Search, ArrowUpDown } from 'lucide-react';
 import type { LiveSession, LivePlayer } from '@/lib/types';
 import type { UpdateLivePlayerField } from './types';
 import type { SessionStep } from './SessionCreateStep';
@@ -62,6 +62,30 @@ export const SessionCashoutStep: React.FC<SessionCashoutStepProps> = ({
   setStep,
   calculateRecommendations
 }) => {
+  // Mobile search and sort state
+  const [mobileSearchTerm, setMobileSearchTerm] = useState('');
+  const [mobileSortAlphabetically, setMobileSortAlphabetically] = useState(false);
+
+  // Filtered and sorted players for mobile view
+  const filteredAndSortedPlayers = useMemo(() => {
+    let players = [...currentSession.players];
+    
+    // Apply search filter
+    if (mobileSearchTerm.trim()) {
+      const searchLower = mobileSearchTerm.toLowerCase();
+      players = players.filter(player => 
+        player.name.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Apply alphabetical sort
+    if (mobileSortAlphabetically) {
+      players.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+    }
+    
+    return players;
+  }, [currentSession.players, mobileSearchTerm, mobileSortAlphabetically]);
+  
   // Mobile Player Card Component
   const MobileCashoutCard: React.FC<{ player: LivePlayer }> = ({ player }) => {
     const [localValue, setLocalValue] = useState(player.cashout?.toString() || '');
@@ -176,15 +200,49 @@ export const SessionCashoutStep: React.FC<SessionCashoutStepProps> = ({
 
     {/* Mobile View - Card List */}
     <div className="md:hidden space-y-4">
-      <div className="flex items-center justify-between px-1">
-        <h2 className="text-base font-semibold">Cash-out dos Jogadores</h2>
-        <span className="text-sm text-muted-foreground">{currentSession.players.length} jogadores</span>
+      {/* Mobile Search and Sort Controls */}
+      <div className="space-y-2 px-1">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Buscar jogador..."
+              value={mobileSearchTerm}
+              onChange={(e) => setMobileSearchTerm(e.target.value)}
+              className="pl-9 h-10"
+            />
+          </div>
+          <Button
+            variant={mobileSortAlphabetically ? "default" : "outline"}
+            size="icon"
+            onClick={() => setMobileSortAlphabetically(!mobileSortAlphabetically)}
+            title={mobileSortAlphabetically ? "Ordem original" : "Ordenar A-Z"}
+            className="h-10 w-10 flex-shrink-0"
+          >
+            <ArrowUpDown className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold">Cash-out dos Jogadores</h2>
+          <span className="text-sm text-muted-foreground">
+            {filteredAndSortedPlayers.length} {filteredAndSortedPlayers.length === 1 ? 'jogador' : 'jogadores'}
+          </span>
+        </div>
       </div>
       
       <div className="space-y-3">
-        {currentSession.players.map((player) => (
-          <MobileCashoutCard key={player.id} player={player} />
-        ))}
+        {filteredAndSortedPlayers.length > 0 ? (
+          filteredAndSortedPlayers.map((player) => (
+            <MobileCashoutCard key={player.id} player={player} />
+          ))
+        ) : (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p className="text-muted-foreground">Nenhum jogador encontrado</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Mobile Summary */}
