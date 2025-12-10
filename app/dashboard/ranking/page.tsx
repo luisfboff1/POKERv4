@@ -419,7 +419,7 @@ function RankingPageContent() {
           <>
             {/* Top 3 - Mobile: Compact, Desktop: Full cards */}
             <div className={cn(
-              'grid gap-3 md:gap-6',
+              'grid gap-3 md:gap-6 max-w-full',
               'grid-cols-3 md:grid-cols-3'
             )}>
               {playersWithSessions.slice(0, 3).map((player, index) => {
@@ -478,7 +478,7 @@ function RankingPageContent() {
             </div>
 
             {/* Remaining players - Mobile: List, Desktop: Table */}
-            <div>
+            <div className="max-w-full overflow-hidden">
               <h2 className={cn(
                 getResponsiveTypography('subtitle'),
                 'mb-3 px-3 md:px-0'
@@ -528,15 +528,15 @@ function RankingPageContent() {
               </div>
 
               {/* Desktop Table */}
-              <div className="hidden md:block">
-                <Card>
+              <div className="hidden md:block max-w-full overflow-hidden">
+                <Card className="max-w-full">
                   <CardHeader>
                     <CardTitle>Classificação completa</CardTitle>
                     <CardDescription>
                       Todos os jogadores ordenados por lucro total • Calculado em tempo real
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="max-w-full overflow-hidden">
                     <DataTable
                       columns={columns}
                       data={playersWithSessions}
