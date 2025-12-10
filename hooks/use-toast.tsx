@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 
 interface Toast {
   id: string;
@@ -19,20 +19,36 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [timeouts, setTimeouts] = useState<Map<string, NodeJS.Timeout>>(new Map());
 
-  const toast = (newToast: Omit<Toast, 'id'>) => {
-    const id = Math.random().toString(36).substring(7);
+  const dismiss = useCallback((id: string) => {
+    const timeout = timeouts.get(id);
+    if (timeout) {
+      clearTimeout(timeout);
+      setTimeouts(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(id);
+        return newMap;
+      });
+    }
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, [timeouts]);
+
+  const toast = useCallback((newToast: Omit<Toast, 'id'>) => {
+    const id = crypto.randomUUID?.() || Math.random().toString(36).substring(7);
     setToasts((prev) => [...prev, { ...newToast, id }]);
 
     // Auto dismiss after 5 seconds
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
       dismiss(id);
     }, 5000);
-  };
 
-  const dismiss = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
+    setTimeouts(prev => {
+      const newMap = new Map(prev);
+      newMap.set(id, timeout);
+      return newMap;
+    });
+  }, [dismiss]);
 
   return (
     <ToastContext.Provider value={{ toasts, toast, dismiss }}>

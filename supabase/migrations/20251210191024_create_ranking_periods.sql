@@ -2,7 +2,7 @@
 -- POKER MANAGER - RANKING PERIODS
 -- =============================================
 -- Migration: Create ranking_periods table for historical rankings
--- Date: 2024-12-10
+-- Date: 2025-12-10
 -- =============================================
 
 -- =============================================

@@ -14,7 +14,8 @@ import { cn } from '@/lib/utils';
 import { getResponsiveTypography } from '@/lib/mobile-utils';
 import { PeriodSelector } from '@/components/ranking/period-selector';
 import { PeriodDialog } from '@/components/ranking/period-dialog';
-import { ToastProvider } from '@/hooks/use-toast';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ToastProvider, useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/auth-context';
 
 interface PlayerStats {
@@ -32,15 +33,18 @@ interface PlayerStats {
   lastPlayed: string | null;
 }
 
-export default function RankingPage() {
+function RankingPageContent() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const { players, loading: playersLoading, error: playersError, refetch: refetchPlayers } = usePlayers();
   const { sessions, loading: sessionsLoading, refetch: refetchSessions } = useSessions();
   const { periods, loading: periodsLoading, createPeriod, updatePeriod, deletePeriod, refetch: refetchPeriods } = useRankingPeriods();
   
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<RankingPeriod | null>(null);
+  const [deletingPeriodId, setDeletingPeriodId] = useState<number | null>(null);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
@@ -146,17 +150,32 @@ export default function RankingPage() {
     setDialogOpen(true);
   };
 
-  const handleDeletePeriod = async (periodId: number) => {
-    if (!confirm('Tem certeza que deseja excluir este período?')) return;
+  const handleDeletePeriod = (periodId: number) => {
+    setDeletingPeriodId(periodId);
+    setConfirmDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingPeriodId) return;
 
     try {
-      await deletePeriod(periodId);
-      if (selectedPeriod === periodId.toString()) {
+      await deletePeriod(deletingPeriodId);
+      if (selectedPeriod === deletingPeriodId.toString()) {
         setSelectedPeriod(null);
       }
+      toast({
+        title: 'Sucesso',
+        description: 'Período excluído com sucesso',
+      });
     } catch (error) {
       console.error('Error deleting period:', error);
-      alert('Erro ao excluir período');
+      toast({
+        title: 'Erro',
+        description: error instanceof Error ? error.message : 'Erro ao excluir período',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeletingPeriodId(null);
     }
   };
 
@@ -346,9 +365,8 @@ export default function RankingPage() {
     : `Calculado dinamicamente de ${filteredSessions.length} sessões`;
 
   return (
-    <ToastProvider>
-      <PullToRefresh onRefresh={handleRefresh}>
-        <div className={cn('space-y-4 md:space-y-6')}>
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className={cn('space-y-4 md:space-y-6')}>
           <div className="space-y-3">
             <div className="space-y-1">
               <h1 className={getResponsiveTypography('display')}>
@@ -377,6 +395,18 @@ export default function RankingPage() {
             onOpenChange={setDialogOpen}
             period={editingPeriod}
             onSave={handleSavePeriod}
+          />
+
+          {/* Confirm Delete Dialog */}
+          <ConfirmDialog
+            open={confirmDialogOpen}
+            onOpenChange={setConfirmDialogOpen}
+            title="Excluir período"
+            description="Tem certeza que deseja excluir este período? Esta ação não pode ser desfeita."
+            onConfirm={confirmDelete}
+            confirmText="Excluir"
+            cancelText="Cancelar"
+            variant="destructive"
           />
 
         {playersWithSessions.length === 0 ? (
@@ -524,6 +554,13 @@ export default function RankingPage() {
         )}
       </div>
     </PullToRefresh>
+  );
+}
+
+export default function RankingPage() {
+  return (
+    <ToastProvider>
+      <RankingPageContent />
     </ToastProvider>
   );
 }

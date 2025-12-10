@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,12 +19,33 @@ export function PeriodDialog({ open, onOpenChange, period, onSave }: PeriodDialo
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<CreateRankingPeriodPayload>({
-    name: period?.name || '',
-    description: period?.description || '',
-    start_date: period?.start_date || '',
-    end_date: period?.end_date || '',
-    is_active: period?.is_active !== undefined ? period.is_active : true,
+    name: '',
+    description: '',
+    start_date: '',
+    end_date: '',
+    is_active: true,
   });
+
+  // Reset form when period prop changes
+  useEffect(() => {
+    if (period) {
+      setFormData({
+        name: period.name,
+        description: period.description || '',
+        start_date: period.start_date,
+        end_date: period.end_date,
+        is_active: period.is_active,
+      });
+    } else {
+      setFormData({
+        name: '',
+        description: '',
+        start_date: '',
+        end_date: '',
+        is_active: true,
+      });
+    }
+  }, [period]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
