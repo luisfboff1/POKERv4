@@ -4,15 +4,16 @@ import { supabaseServer, createAuditLog } from '@/lib/supabaseServer';
 import type { UpdateRankingPeriodPayload } from '@/lib/types';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // GET /api/ranking-periods/[id] - Get a specific ranking period
-export async function GET(req: NextRequest, { params }: RouteParams) {
+export async function GET(req: NextRequest, context: RouteParams) {
   try {
     const user = await requireAuth(req);
+    const params = await context.params;
     const periodId = parseInt(params.id);
 
     if (isNaN(periodId)) {
@@ -55,9 +56,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 }
 
 // PUT /api/ranking-periods/[id] - Update a ranking period (admin only)
-export async function PUT(req: NextRequest, { params }: RouteParams) {
+export async function PUT(req: NextRequest, context: RouteParams) {
   try {
     const user = await requireAuth(req);
+    const params = await context.params;
     const periodId = parseInt(params.id);
 
     // Check if user is admin
@@ -148,7 +150,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       action: 'update_ranking_period',
       table_name: 'ranking_periods',
       record_id: periodId,
-      new_data: body,
+      new_data: body as Record<string, unknown>,
     });
 
     return NextResponse.json({
@@ -168,9 +170,10 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 }
 
 // DELETE /api/ranking-periods/[id] - Delete a ranking period (admin only)
-export async function DELETE(req: NextRequest, { params }: RouteParams) {
+export async function DELETE(req: NextRequest, context: RouteParams) {
   try {
     const user = await requireAuth(req);
+    const params = await context.params;
     const periodId = parseInt(params.id);
 
     // Check if user is admin
