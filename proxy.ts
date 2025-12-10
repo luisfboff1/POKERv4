@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
-// Create Supabase client for middleware with optimized cookie handling
-function createMiddlewareClient(request: NextRequest) {
+// Create Supabase client for proxy with optimized cookie handling
+function createProxyClient(request: NextRequest) {
   // Create a response to store cookies
   let response = NextResponse.next({
     request: {
@@ -63,7 +63,7 @@ function createMiddlewareClient(request: NextRequest) {
   return { supabase, response };
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes that don't require authentication
@@ -87,13 +87,13 @@ export async function middleware(request: NextRequest) {
 
   // Check authentication for protected routes
   try {
-    const { supabase, response } = createMiddlewareClient(request);
+    const { supabase, response } = createProxyClient(request);
 
     // Get session from cookie - this will automatically refresh if needed
     const { data: { session }, error } = await supabase.auth.getSession();
 
     if (error) {
-      console.error('[Middleware] Auth error:', error.message);
+      console.error('[Proxy] Auth error:', error.message);
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
@@ -105,13 +105,13 @@ export async function middleware(request: NextRequest) {
     // User is authenticated, return response with updated cookies
     return response;
   } catch (error) {
-    console.error('[Middleware] Unexpected error:', error);
+    console.error('[Proxy] Unexpected error:', error);
     // On error, redirect to login for safety
     return NextResponse.redirect(new URL('/login', request.url));
   }
 }
 
-// Note: Middleware automatically runs on Edge Runtime for optimal performance
+// Note: Proxy automatically runs on Edge Runtime for optimal performance
 
 export const config = {
   matcher: [
