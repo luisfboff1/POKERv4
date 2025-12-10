@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { api, ApiError } from '@/lib/api';
-import type { Session, SessionDetail, Player, Invite, CreateSessionPayload, SessionPlayerData, Tenant } from '@/lib/types';
+import type { Session, SessionDetail, Player, Invite, CreateSessionPayload, SessionPlayerData, Tenant, RankingPeriod, CreateRankingPeriodPayload, UpdateRankingPeriodPayload } from '@/lib/types';
 
 // Hook genérico para chamadas de API
 export function useApi<T>(
@@ -266,4 +266,52 @@ export function useDashboardStats() {
   };
 
   return stats;
+}
+
+// Hook específico para ranking periods
+export function useRankingPeriods() {
+  const { data, loading, error, refetch } = useApi<RankingPeriod[]>(
+    () => api.rankingPeriods.list(),
+    []
+  );
+
+  const createPeriod = async (periodData: CreateRankingPeriodPayload) => {
+    try {
+      await api.rankingPeriods.create(periodData);
+      await refetch();
+      return true;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const updatePeriod = async (id: number, periodData: UpdateRankingPeriodPayload) => {
+    try {
+      await api.rankingPeriods.update(id, periodData);
+      await refetch();
+      return true;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const deletePeriod = async (id: number) => {
+    try {
+      await api.rankingPeriods.delete(id);
+      await refetch();
+      return true;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  return {
+    periods: data || [],
+    loading,
+    error,
+    refetch,
+    createPeriod,
+    updatePeriod,
+    deletePeriod,
+  };
 }
