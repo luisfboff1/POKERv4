@@ -200,3 +200,33 @@ export interface CreateSessionPayload {
   paid_transfers?: Record<string, boolean>;
 }
 
+// ===== RANKING PERIODS =====
+export interface RankingPeriod {
+  id: number;
+  tenant_id: number;
+  name: string;
+  description?: string;
+  start_date: string; // ISO date format (YYYY-MM-DD)
+  end_date: string; // ISO date format (YYYY-MM-DD)
+  is_active: boolean;
+  created_by?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateRankingPeriodPayload {
+  name: string;
+  description?: string;
+  start_date: string;
+  end_date: string;
+  is_active?: boolean;
+}
+
+export interface UpdateRankingPeriodPayload {
+  name?: string;
+  description?: string;
+  start_date?: string;
+  end_date?: string;
+  is_active?: boolean;
+}
+

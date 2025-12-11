@@ -294,5 +294,29 @@ export const api = {
         body: JSON.stringify({ role, tenantId }),
       }),
   },
+
+  // ===== RANKING PERIODS =====
+  rankingPeriods: {
+    list: () => fetchAPI('/ranking-periods'),
+
+    get: (id: number) => fetchAPI(`/ranking-periods/${id}`),
+
+    create: (data: { name: string; description?: string; start_date: string; end_date: string; is_active?: boolean }) =>
+      fetchAPI('/ranking-periods', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    update: (id: number, data: { name?: string; description?: string; start_date?: string; end_date?: string; is_active?: boolean }) =>
+      fetchAPI(`/ranking-periods/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    delete: (id: number) =>
+      fetchAPI(`/ranking-periods/${id}`, {
+        method: 'DELETE',
+      }),
+  },
 };
 

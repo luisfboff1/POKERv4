@@ -1,17 +1,22 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingState, EmptyState, ErrorState } from '@/components/ui/loading';
-import { usePlayers, useSessions } from '@/hooks/useApi';
+import { usePlayers, useSessions, useRankingPeriods } from '@/hooks/useApi';
 import { Trophy, Medal, Award, TrendingUp, TrendingDown } from 'lucide-react';
-import type { SessionPlayerData } from '@/lib/types';
+import type { SessionPlayerData, RankingPeriod, CreateRankingPeriodPayload, UpdateRankingPeriodPayload } from '@/lib/types';
 import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { MobileList } from '@/components/ui/mobile-list';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { cn } from '@/lib/utils';
 import { getResponsiveTypography } from '@/lib/mobile-utils';
+import { PeriodSelector } from '@/components/ranking/period-selector';
+import { PeriodDialog } from '@/components/ranking/period-dialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ToastProvider, useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/auth-context';
 
 interface PlayerStats {
   id: number;
@@ -28,13 +33,39 @@ interface PlayerStats {
   lastPlayed: string | null;
 }
 
-export default function RankingPage() {
+function RankingPageContent() {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const { players, loading: playersLoading, error: playersError, refetch: refetchPlayers } = usePlayers();
   const { sessions, loading: sessionsLoading, refetch: refetchSessions } = useSessions();
+  const { periods, loading: periodsLoading, createPeriod, updatePeriod, deletePeriod, refetch: refetchPeriods } = useRankingPeriods();
+  
+  const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [editingPeriod, setEditingPeriod] = useState<RankingPeriod | null>(null);
+  const [deletingPeriodId, setDeletingPeriodId] = useState<number | null>(null);
 
-  // Calcular estatísticas DINAMICAMENTE baseado apenas nas sessões
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+
+  // Filter sessions based on selected period
+  const filteredSessions = useMemo(() => {
+    if (!selectedPeriod) return sessions; // Show all sessions for "current"
+
+    const period = periods.find(p => p.id.toString() === selectedPeriod);
+    if (!period) return sessions;
+
+    return sessions.filter(session => {
+      const sessionDate = new Date(session.date);
+      const startDate = new Date(period.start_date);
+      const endDate = new Date(period.end_date);
+      return sessionDate >= startDate && sessionDate <= endDate;
+    });
+  }, [sessions, selectedPeriod, periods]);
+
+  // Calcular estatísticas DINAMICAMENTE baseado nas sessões filtradas
   const playerStats = useMemo((): PlayerStats[] => {
-    if (!players.length || !sessions.length) return [];
+    if (!players.length || !filteredSessions.length) return [];
 
     const stats = new Map<string, PlayerStats>();
 
@@ -56,8 +87,8 @@ export default function RankingPage() {
       });
     });
 
-    // Calcular estatísticas baseadas em TODAS as sessões (não só aprovadas)
-    sessions.forEach(session => {
+    // Calcular estatísticas baseadas em TODAS as sessões filtradas (não só aprovadas)
+    filteredSessions.forEach(session => {
       if (!session.players_data || !Array.isArray(session.players_data)) {
         return;
       }
@@ -107,7 +138,58 @@ export default function RankingPage() {
     const sortedStats = finalStats.sort((a, b) => b.profit - a.profit);
 
     return sortedStats;
-  }, [players, sessions]);
+  }, [players, filteredSessions]);
+
+  const handleCreatePeriod = () => {
+    setEditingPeriod(null);
+    setDialogOpen(true);
+  };
+
+  const handleEditPeriod = (period: RankingPeriod) => {
+    setEditingPeriod(period);
+    setDialogOpen(true);
+  };
+
+  const handleDeletePeriod = (periodId: number) => {
+    setDeletingPeriodId(periodId);
+    setConfirmDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingPeriodId) return;
+
+    try {
+      await deletePeriod(deletingPeriodId);
+      if (selectedPeriod === deletingPeriodId.toString()) {
+        setSelectedPeriod(null);
+      }
+      toast({
+        title: 'Sucesso',
+        description: 'Período excluído com sucesso',
+      });
+    } catch (error) {
+      console.error('Error deleting period:', error);
+      toast({
+        title: 'Erro',
+        description: error instanceof Error ? error.message : 'Erro ao excluir período',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeletingPeriodId(null);
+    }
+  };
+
+  const handleSavePeriod = async (data: CreateRankingPeriodPayload | UpdateRankingPeriodPayload) => {
+    if (editingPeriod) {
+      await updatePeriod(editingPeriod.id, data as UpdateRankingPeriodPayload);
+    } else {
+      await createPeriod(data as CreateRankingPeriodPayload);
+    }
+  };
+
+  const handleRefresh = async () => {
+    await Promise.all([refetchPlayers(), refetchSessions(), refetchPeriods()]);
+  };
 
   const getRankIcon = (position: number) => {
     switch (position) {
@@ -243,11 +325,7 @@ export default function RankingPage() {
     },
   ];
 
-  const handleRefresh = async () => {
-    await Promise.all([refetchPlayers(), refetchSessions()]);
-  };
-
-  if (playersLoading || sessionsLoading) {
+  if (playersLoading || sessionsLoading || periodsLoading) {
     return <LoadingState text="Calculando rankings dinamicamente..." />;
   }
 
@@ -278,17 +356,58 @@ export default function RankingPage() {
   // Filtrar apenas jogadores que realmente jogaram
   const playersWithSessions = playerStats.filter(player => player.sessionsPlayed > 0);
 
+  const selectedPeriodData = selectedPeriod
+    ? periods.find(p => p.id.toString() === selectedPeriod)
+    : null;
+
+  const periodDescription = selectedPeriodData
+    ? `${selectedPeriodData.name} • ${filteredSessions.length} sessões`
+    : `Calculado dinamicamente de ${filteredSessions.length} sessões`;
+
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className={cn('space-y-4 md:space-y-6')}>
-        <div className="space-y-1">
-          <h1 className={getResponsiveTypography('display')}>
-            Ranking de jogadores
-          </h1>
-          <p className={getResponsiveTypography('caption')}>
-            Calculado dinamicamente de {sessions.length} sessões • {playersWithSessions.length} jogadores com histórico
-          </p>
+      <div className={cn('space-y-4 md:space-y-6 max-w-full overflow-x-hidden')}>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <h1 className={getResponsiveTypography('display')}>
+                Ranking de jogadores
+              </h1>
+              <p className={getResponsiveTypography('caption')}>
+                {periodDescription} • {playersWithSessions.length} jogadores com histórico
+              </p>
+            </div>
+
+            {/* Period Selector */}
+            <PeriodSelector
+              periods={periods}
+              selectedPeriod={selectedPeriod}
+              onPeriodChange={setSelectedPeriod}
+              onCreatePeriod={handleCreatePeriod}
+              onEditPeriod={handleEditPeriod}
+              onDeletePeriod={handleDeletePeriod}
+              isAdmin={isAdmin}
+            />
           </div>
+
+          {/* Period Dialog */}
+          <PeriodDialog
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+            period={editingPeriod}
+            onSave={handleSavePeriod}
+          />
+
+          {/* Confirm Delete Dialog */}
+          <ConfirmDialog
+            open={confirmDialogOpen}
+            onOpenChange={setConfirmDialogOpen}
+            title="Excluir período"
+            description="Tem certeza que deseja excluir este período? Esta ação não pode ser desfeita."
+            onConfirm={confirmDelete}
+            confirmText="Excluir"
+            cancelText="Cancelar"
+            variant="destructive"
+          />
 
         {playersWithSessions.length === 0 ? (
           <EmptyState 
@@ -300,7 +419,7 @@ export default function RankingPage() {
           <>
             {/* Top 3 - Mobile: Compact, Desktop: Full cards */}
             <div className={cn(
-              'grid gap-3 md:gap-6',
+              'grid gap-3 md:gap-6 max-w-full',
               'grid-cols-3 md:grid-cols-3'
             )}>
               {playersWithSessions.slice(0, 3).map((player, index) => {
@@ -359,7 +478,7 @@ export default function RankingPage() {
             </div>
 
             {/* Remaining players - Mobile: List, Desktop: Table */}
-            <div>
+            <div className="max-w-full overflow-hidden">
               <h2 className={cn(
                 getResponsiveTypography('subtitle'),
                 'mb-3 px-3 md:px-0'
@@ -409,15 +528,15 @@ export default function RankingPage() {
               </div>
 
               {/* Desktop Table */}
-              <div className="hidden md:block">
-                <Card>
+              <div className="hidden md:block max-w-full overflow-hidden">
+                <Card className="max-w-full">
                   <CardHeader>
                     <CardTitle>Classificação completa</CardTitle>
                     <CardDescription>
                       Todos os jogadores ordenados por lucro total • Calculado em tempo real
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="max-w-full overflow-hidden">
                     <DataTable
                       columns={columns}
                       data={playersWithSessions}
@@ -435,5 +554,13 @@ export default function RankingPage() {
         )}
       </div>
     </PullToRefresh>
+  );
+}
+
+export default function RankingPage() {
+  return (
+    <ToastProvider>
+      <RankingPageContent />
+    </ToastProvider>
   );
 }
