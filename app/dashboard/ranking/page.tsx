@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingState, EmptyState, ErrorState } from '@/components/ui/loading';
 import { usePlayers, useSessions, useRankingPeriods } from '@/hooks/useApi';
@@ -39,8 +39,50 @@ function RankingPageContent() {
   const { players, loading: playersLoading, error: playersError, refetch: refetchPlayers } = usePlayers();
   const { sessions, loading: sessionsLoading, refetch: refetchSessions } = useSessions();
   const { periods, loading: periodsLoading, createPeriod, updatePeriod, deletePeriod, refetch: refetchPeriods } = useRankingPeriods();
-  
+
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
+
+  // Auto-select current period when periods are loaded or changed
+  React.useEffect(() => {
+    console.log('🔍 Period Selection Effect:', {
+      periodsCount: periods.length,
+      currentSelectedPeriod: selectedPeriod
+    });
+
+    if (periods.length > 0 && !selectedPeriod) {
+      const today = new Date();
+      // Reset time to 00:00:00 for date-only comparison
+      today.setHours(0, 0, 0, 0);
+      console.log('📅 Today:', today.toISOString());
+
+      const currentPeriod = periods.find(period => {
+        const startDate = new Date(period.start_date);
+        startDate.setHours(0, 0, 0, 0);
+
+        const endDate = new Date(period.end_date);
+        endDate.setHours(23, 59, 59, 999); // End of day
+
+        const isInRange = today >= startDate && today <= endDate;
+
+        console.log(`  Period "${period.name}":`, {
+          start: startDate.toISOString(),
+          end: endDate.toISOString(),
+          isInRange,
+        });
+
+        return isInRange;
+      });
+
+      console.log('✅ Found current period:', currentPeriod ? currentPeriod.name : 'NONE');
+
+      const periodToSelect = currentPeriod
+        ? currentPeriod.id.toString()
+        : periods[0].id.toString();
+
+      console.log('🎯 Auto-selecting period:', periodToSelect);
+      setSelectedPeriod(periodToSelect);
+    }
+  }, [periods]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<RankingPeriod | null>(null);
@@ -50,10 +92,10 @@ function RankingPageContent() {
 
   // Filter sessions based on selected period
   const filteredSessions = useMemo(() => {
-    if (!selectedPeriod) return sessions; // Show all sessions for "current"
+    if (!selectedPeriod) return [];
 
     const period = periods.find(p => p.id.toString() === selectedPeriod);
-    if (!period) return sessions;
+    if (!period) return [];
 
     return sessions.filter(session => {
       const sessionDate = new Date(session.date);
@@ -185,6 +227,8 @@ function RankingPageContent() {
     } else {
       await createPeriod(data as CreateRankingPeriodPayload);
     }
+    // Refetch periods to update the list
+    await refetchPeriods();
   };
 
   const handleRefresh = async () => {
@@ -362,12 +406,13 @@ function RankingPageContent() {
 
   const periodDescription = selectedPeriodData
     ? `${selectedPeriodData.name} • ${filteredSessions.length} sessões`
-    : `Calculado dinamicamente de ${filteredSessions.length} sessões`;
+    : `Nenhum período selecionado`;
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className={cn('space-y-4 md:space-y-6 max-w-full overflow-x-hidden')}>
-          <div className="space-y-3">
+      <div className="w-full max-w-full overflow-x-hidden min-w-0">
+        <div className={cn('space-y-4 md:space-y-6 w-full min-w-0')}>
+          <div className="space-y-3 w-full min-w-0">
             <div className="space-y-1">
               <h1 className={getResponsiveTypography('display')}>
                 Ranking de jogadores
@@ -419,7 +464,7 @@ function RankingPageContent() {
           <>
             {/* Top 3 - Mobile: Compact, Desktop: Full cards */}
             <div className={cn(
-              'grid gap-3 md:gap-6 max-w-full',
+              'grid gap-3 md:gap-6 w-full',
               'grid-cols-3 md:grid-cols-3'
             )}>
               {playersWithSessions.slice(0, 3).map((player, index) => {
@@ -478,7 +523,7 @@ function RankingPageContent() {
             </div>
 
             {/* Remaining players - Mobile: List, Desktop: Table */}
-            <div className="max-w-full overflow-hidden">
+            <div className="w-full min-w-0">
               <h2 className={cn(
                 getResponsiveTypography('subtitle'),
                 'mb-3 px-3 md:px-0'
@@ -528,30 +573,33 @@ function RankingPageContent() {
               </div>
 
               {/* Desktop Table */}
-              <div className="hidden md:block max-w-full overflow-hidden">
-                <Card className="max-w-full">
+              <div className="hidden md:block w-full min-w-0">
+                <Card className="min-w-0">
                   <CardHeader>
                     <CardTitle>Classificação completa</CardTitle>
                     <CardDescription>
                       Todos os jogadores ordenados por lucro total • Calculado em tempo real
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="max-w-full overflow-hidden">
-                    <DataTable
-                      columns={columns}
-                      data={playersWithSessions}
-                      searchKey="name"
-                      searchPlaceholder="Filtrar por jogador..."
-                      enableColumnVisibility={true}
-                      enableSorting={true}
-                      enableFiltering={true}
-                    />
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto px-6 py-6">
+                      <DataTable
+                        columns={columns}
+                        data={playersWithSessions}
+                        searchKey="name"
+                        searchPlaceholder="Filtrar por jogador..."
+                        enableColumnVisibility={true}
+                        enableSorting={true}
+                        enableFiltering={true}
+                      />
+                    </div>
                   </CardContent>
                 </Card>
               </div>
             </div>
           </>
         )}
+        </div>
       </div>
     </PullToRefresh>
   );

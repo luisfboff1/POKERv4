@@ -225,12 +225,12 @@ export default function DashboardLayout({
       )}
 
       {/* Main Content */}
-      <main className="flex-1 mt-16 md:mt-0">
+      <main className="flex-1 mt-16 md:mt-0 overflow-x-hidden">
         <div className={cn(
           "h-full w-full overflow-y-auto overflow-x-hidden p-4 md:p-8 transition-all duration-300",
           sidebarCollapsed && "md:ml-0"
         )}>
-          <div className="max-w-full">
+          <div className="w-full max-w-full">
             <ErrorBoundary>
               {children}
             </ErrorBoundary>

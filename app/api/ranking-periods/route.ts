@@ -100,7 +100,13 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (insertError) {
-      throw new Error(`Failed to create ranking period: ${insertError.message}`);
+      console.error('Supabase insert error details:', {
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint,
+        code: insertError.code,
+      });
+      throw new Error(`Failed to create ranking period: ${insertError.message}${insertError.hint ? ` (Hint: ${insertError.hint})` : ''}`);
     }
 
     // Create audit log

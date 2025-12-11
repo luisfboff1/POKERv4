@@ -20,6 +20,9 @@ out/
 .env*.local
 .env.example
 
+# Doppler
+.doppler.yaml
+
 
 # IDE
 .vscode/

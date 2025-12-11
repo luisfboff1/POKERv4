@@ -26,6 +26,7 @@ export function PeriodSelector({
   isAdmin = false,
 }: PeriodSelectorProps) {
   const formatDateRange = (period: RankingPeriod) => {
+    try {
     const start = new Date(period.start_date).toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: 'short',
@@ -37,6 +38,10 @@ export function PeriodSelector({
       year: 'numeric',
     });
     return `${start} - ${end}`;
+    } catch (error) {
+      console.error('Error formatting date range:', error);
+      return 'Data inválida';
+    }
   };
 
   const selectedPeriodData = selectedPeriod
@@ -48,30 +53,14 @@ export function PeriodSelector({
       <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
         <div className="flex items-center gap-2 flex-1 w-full sm:w-auto min-w-0">
           <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-          <Select value={selectedPeriod || 'current'} onValueChange={(value) => onPeriodChange(value === 'current' ? null : value)}>
+          <Select value={selectedPeriod || ''} onValueChange={(value) => onPeriodChange(value || null)}>
             <SelectTrigger className="w-full sm:w-[280px]">
               <SelectValue placeholder="Selecione um período" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="current">
-                <div className="flex flex-col">
-                  <span className="font-medium">Ranking Atual</span>
-                  <span className="text-xs text-muted-foreground">Todas as sessões</span>
-                </div>
-              </SelectItem>
-              {periods.length > 0 && (
-                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                  Períodos históricos
-                </div>
-              )}
               {periods.map((period) => (
                 <SelectItem key={period.id} value={period.id.toString()}>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{period.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDateRange(period)}
-                    </span>
-                  </div>
+                  {period.name} ({formatDateRange(period)})
                 </SelectItem>
               ))}
             </SelectContent>
