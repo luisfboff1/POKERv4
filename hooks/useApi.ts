@@ -208,6 +208,32 @@ export function useTenants() {
   };
 }
 
+// Hook para obter o período de ranking atual
+export function useCurrentPeriod() {
+  const { data, loading, error, refetch } = useApi<RankingPeriod | null>(
+    async () => {
+      try {
+        const response = await api.sessions.getCurrentPeriod();
+        return response;
+      } catch (err) {
+        // No current period = não é erro, retorna null
+        if (err instanceof ApiError && err.status === 404) {
+          return { data: null };
+        }
+        throw err;
+      }
+    },
+    []
+  );
+
+  return {
+    currentPeriod: data,
+    loading,
+    error,
+    refetch,
+  };
+}
+
 // Hook específico para usuários (admin/super admin)
 export function useUsers() {
   const { data, loading, error, refetch } = useApi<any[]>(

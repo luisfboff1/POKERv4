@@ -67,6 +67,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check for overlapping periods
+    const { data: overlappingPeriods } = await supabaseServer
+      .from('ranking_periods')
+      .select('id, name, start_date, end_date')
+      .eq('tenant_id', user.tenant_id)
+      .or(`and(start_date.lte.${body.end_date},end_date.gte.${body.start_date})`);
+
+    if (overlappingPeriods && overlappingPeriods.length > 0) {
+      const conflict = overlappingPeriods[0];
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Período se sobrepõe a "${conflict.name}" (${new Date(conflict.start_date).toLocaleDateString('pt-BR')} - ${new Date(conflict.end_date).toLocaleDateString('pt-BR')})`
+        },
+        { status: 400 }
+      );
+    }
+
     // Check for duplicate name in same tenant
     const { data: existingPeriod } = await supabaseServer
       .from('ranking_periods')

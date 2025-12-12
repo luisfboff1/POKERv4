@@ -178,6 +178,16 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ session_id: id }),
       }),
+
+    getCurrentPeriod: () => fetchAPI('/sessions/current-period'),
+
+    getBackfillSuggestions: () => fetchAPI('/sessions/backfill-periods'),
+
+    applyBackfill: (assignments: { session_id: number; period_id: number | null }[]) =>
+      fetchAPI('/sessions/backfill-periods', {
+        method: 'POST',
+        body: JSON.stringify({ assignments }),
+      }),
   },
 
   // ===== PLAYERS =====

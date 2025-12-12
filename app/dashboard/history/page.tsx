@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { LoadingState, ErrorState } from '@/components/ui/loading';
-import { useSessions } from '@/hooks/useApi';
+import { useSessions, useRankingPeriods, useCurrentPeriod } from '@/hooks/useApi';
 import { useAuth } from '@/contexts/auth-context';
 import { useModal, useConfirmModal } from '@/components/ui/modal';
 import { SessionFilters } from './components/session-filters';
@@ -15,7 +15,8 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getResponsiveTypography } from '@/lib/mobile-utils';
 import { Eye, Trash2, SlidersHorizontal, History } from 'lucide-react';
-import type { SessionPlayerData } from '@/lib/types';
+import type { SessionPlayerData, RankingPeriod } from '@/lib/types';
+import { PeriodSelector } from '@/components/ranking/period-selector';
 // helpers usados dentro dos componentes importados
 
 interface SessionFiltersState {
@@ -31,16 +32,26 @@ export default function HistoryPage() {
   const { user } = useAuth();
   const [isPending, startTransition] = useTransition();
   const { sessions, loading, error, refetch, deleteSession, updateSessionPayments } = useSessions();
+  const { periods, loading: periodsLoading } = useRankingPeriods();
+  const { currentPeriod } = useCurrentPeriod();
   const [filters, setFilters] = useState<SessionFiltersState>({
     search: '',
     status: 'all',
     dateFrom: '',
     dateTo: ''
   });
+  const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
   const [selectedSession, setSelectedSession] = useState<HistoricSessionMinimal | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const sessionDetailsModal = useModal();
   const { confirm, ConfirmModalComponent } = useConfirmModal();
+
+  // Auto-selecionar período atual
+  useEffect(() => {
+    if (currentPeriod && !selectedPeriod && periods.length > 0) {
+      setSelectedPeriod(currentPeriod.id.toString());
+    }
+  }, [currentPeriod, selectedPeriod, periods]);
 
   // Filtrar sessões
   const filteredSessions = sessions.filter(session => {
@@ -56,6 +67,20 @@ export default function HistoryPage() {
     if (filters.dateTo && session.date > filters.dateTo) {
       return false;
     }
+
+    // Filtrar por período selecionado
+    if (selectedPeriod && selectedPeriod !== '0') {
+      const period = periods.find(p => p.id.toString() === selectedPeriod);
+      if (period) {
+        const sessionDate = new Date(session.date);
+        const startDate = new Date(period.start_date);
+        const endDate = new Date(period.end_date);
+        if (sessionDate < startDate || sessionDate > endDate) {
+          return false;
+        }
+      }
+    }
+
     return true;
   });
 
@@ -105,6 +130,22 @@ export default function HistoryPage() {
             Acompanhe todas as partidas realizadas no seu clube
           </p>
         </div>
+
+        {/* Period Selector */}
+        {!periodsLoading && periods.length > 0 && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Período de ranking</label>
+            <PeriodSelector
+              periods={[
+                { id: 0, name: 'Todas as sessões', tenant_id: 0, start_date: '', end_date: '', is_active: true, created_at: '', updated_at: '' } as RankingPeriod,
+                ...periods
+              ]}
+              selectedPeriod={selectedPeriod}
+              onPeriodChange={setSelectedPeriod}
+              isAdmin={false}
+            />
+          </div>
+        )}
 
         {/* Filters - Desktop: inline, Mobile: modal */}
         <div className="flex items-center gap-3">

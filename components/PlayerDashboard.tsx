@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useSessions, usePlayers } from '@/hooks/useApi';
+import { useSessions, usePlayers, useCurrentPeriod } from '@/hooks/useApi';
 import type { Session, SessionPlayerData } from '@/lib/types';
 import { api } from '@/lib/api';
 import Link from 'next/link';
@@ -48,6 +48,7 @@ interface PlayerDashboardProps {
 export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps) {
   const { sessions, loading: sessionsLoading } = useSessions();
   const { players, loading: playersLoading } = usePlayers();
+  const { currentPeriod, loading: periodLoading } = useCurrentPeriod();
   const [confirmations, setConfirmations] = useState<Record<number, { confirmed: boolean; confirmed_at: string | null }>>({});
   const [confirmingSession, setConfirmingSession] = useState<number | null>(null);
   const [chartType, setChartType] = useState<'cumulative' | 'profit' | 'buyin' | 'cashout' | 'ranking'>('cumulative');
@@ -55,12 +56,13 @@ export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps
 
   // Encontrar dados do jogador
   const playerData = players.find(p => p.id === playerId);
-  
-  // Filtrar sessões onde o jogador participou
+
+  // Filtrar sessões onde o jogador participou E pelo período atual
   const playerSessions = sessions.filter((session: Session) => {
     if (!Array.isArray(session.players_data)) return false;
-    // Check both id as number and as string, and also check by name matching
-    return session.players_data.some((pd: SessionPlayerData) => {
+
+    // Check if player participated
+    const participated = session.players_data.some((pd: SessionPlayerData) => {
       // Try matching by ID (handle both number and string)
       if (pd.id && (pd.id === playerId || pd.id === playerId.toString() || Number(pd.id) === playerId)) {
         return true;
@@ -71,6 +73,20 @@ export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps
       }
       return false;
     });
+
+    if (!participated) return false;
+
+    // ⚠️ IMPORTANTE: Filtrar por período atual
+    if (currentPeriod) {
+      const sessionDate = new Date(session.date);
+      const startDate = new Date(currentPeriod.start_date);
+      const endDate = new Date(currentPeriod.end_date);
+      return sessionDate >= startDate && sessionDate <= endDate;
+    }
+
+    // ⚠️ IMPORTANTE: Se não houver período, NÃO mostrar sessões
+    // (requisito: "Nada/vazio")
+    return false;
   });
 
   // Calcular métricas do jogador
@@ -331,6 +347,43 @@ export default function PlayerDashboard({ user, playerId }: PlayerDashboardProps
           Suas estatísticas pessoais e histórico de jogos
         </p>
       </div>
+
+      {/* Period Status Cards */}
+      {!periodLoading && !currentPeriod && (
+        <Card className="border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/20">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <Calendar className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-yellow-900 dark:text-yellow-100">
+                  Nenhum período de ranking ativo
+                </h3>
+                <p className="text-sm text-yellow-800 dark:text-yellow-200 mt-1">
+                  Atualmente não há um período de ranking ativo. Entre em contato com o administrador para criar períodos.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!periodLoading && currentPeriod && (
+        <Card className="border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <Calendar className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-blue-900 dark:text-blue-100">
+                  📊 {currentPeriod.name}
+                </h3>
+                <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
+                  Estatísticas do período: {new Date(currentPeriod.start_date).toLocaleDateString('pt-BR')} até {new Date(currentPeriod.end_date).toLocaleDateString('pt-BR')}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Métricas principais */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">

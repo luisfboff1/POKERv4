@@ -75,6 +75,7 @@ export interface Session {
   max_players?: number;
   is_confirmed?: boolean;
   confirmations?: SessionConfirmation[];
+  ranking_period_id?: number | null; // Link to ranking period (automatically assigned)
 }
 
 // SessionConfirmation - Confirmação de presença em sessão
