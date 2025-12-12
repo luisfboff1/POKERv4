@@ -36,11 +36,12 @@ export default function BackfillPage() {
     try {
       setLoading(true);
       const response = await api.sessions.getBackfillSuggestions();
-      setSuggestions(response.data.suggestions || []);
+      const data = response.data as { total_unassigned: number; suggestions: BackfillSuggestion[] };
+      setSuggestions(data.suggestions || []);
 
       // Auto-select all sessions with suggestions
       const autoSelect = new Set(
-        response.data.suggestions
+        data.suggestions
           .filter((s: BackfillSuggestion) => s.suggested_period_id !== null)
           .map((s: BackfillSuggestion) => s.session_id)
       );
